@@ -19,7 +19,7 @@ When you run Fetch for the first time, you will need to enter the following sett
 | Client Secret         | An OAuth Client Secret generated from the UEM Console                                                  |                                                                                                                                              |
 | OAuth Environment URL | Your region’s OAuth Authentication Environment                                                         | Find yours [here](https://docs.vmware.com/en/VMware-Workspace-ONE-UEM/2209/UEM_ConsoleBasics/GUID-BF20C949-5065-4DCF-889D-1E0151016B5A.html) |
 
-![Alt text](/assets/images/Config.png "Juice Configuration Screen")
+![Alt text](../assets/images/Config.png "Juice Configuration Screen")
 
 >### ℹ️ Notes
 > - Application Configuration is saved to: <br>
