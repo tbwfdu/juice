@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title class="pageTitle">Juice</title>
+	<meta name="description" content="Workspace ONE Application Management Tool">
+
+	<link rel="shortcut icon" href="/assets/juice.png">
+
+	<!-- Smart App Banner -->
+	
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+	<link rel="stylesheet" href="/main.css">
+</head>
+
+<body class="subPageBody">
+    <div class="headerBackground subPageHeaderBackground">
+        <div class="subContainer subPageContainer">
+        <header>
+	<div class="logo">
+		<div class="appIconShadow">
+<!--			<svg width="0" height="0">
+				<defs>
+					<clipPath id="shape">
+							<path id="shape" class="cls-1" d="M6181.23,233.709v-1.792c0-.5-0.02-1-0.02-1.523a24.257,24.257,0,0,0-.28-3.3,11.207,11.207,0,0,0-1.04-3.132,10.683,10.683,0,0,0-1.95-2.679,10.384,10.384,0,0,0-2.68-1.943,10.806,10.806,0,0,0-3.13-1.038,19.588,19.588,0,0,0-3.3-.285c-0.5-.017-1-0.017-1.52-0.017h-22.39c-0.51,0-1.01.017-1.53,0.017a24.041,24.041,0,0,0-3.3.285,11.009,11.009,0,0,0-3.13,1.038,10.491,10.491,0,0,0-4.62,4.622,10.893,10.893,0,0,0-1.04,3.132,19.2,19.2,0,0,0-.28,3.3c-0.02.5-.02,1-0.02,1.523v22.392c0,0.5.02,1,.02,1.524a24.257,24.257,0,0,0,.28,3.3,10.9,10.9,0,0,0,1.04,3.132,10.491,10.491,0,0,0,4.62,4.622,11.04,11.04,0,0,0,3.13,1.038,19.891,19.891,0,0,0,3.3.285c0.51,0.017,1.01.017,1.53,0.017h22.39c0.5,0,1-.017,1.52-0.017a24.221,24.221,0,0,0,3.3-.285,10.836,10.836,0,0,0,3.13-1.038,10.408,10.408,0,0,0,2.68-1.943,10.683,10.683,0,0,0,1.95-2.679,11.217,11.217,0,0,0,1.04-3.132,20.257,20.257,0,0,0,.28-3.3c0.02-.5.02-1,0.02-1.524v-20.6h0Z" transform="translate(-6131 -218)"/>
+					</clipPath>
+				</defs>
+			</svg>-->
+			
+				<a href="../" target="_self"><img class="headerIcon" src="/assets/juice.png"></a>
+			
+			<div class="divider"></div>
+		</div>
+		<p class="headerName">Juice</p>
+	</div>
+	<nav class="scroll">
+		<ul>
+            
+			
+				
+				<li><a href="/gettingstarted/" target="_self">Getting Started</a></li>
+				
+			
+				
+				<li><a href="/usage/" target="_self">Usage</a></li>
+				
+			
+				
+				<li><a href="/faq/" target="_self">FAQs</a></li>
+				
+			
+			
+		</ul>
+	</nav>
+<!--    <nav aria-label="Secondary navigation" class="dropdown-nav nav-layout">
+        <ul>
+            <li class="dropdown">
+                <span class="dropbtn">More</span>
+                <ul class="dropdown-menu">
+                    <li><a href="/appinventory/">App Inventory</a></li>
+                    <li><a href="/gettingstarted/">Getting Started</a></li>
+                    <li><a href="/usage/">Usage</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>-->
+</header>
+            <article class="page markdown-body">
+                <h1 class="no_toc" id="frequently-asked-questions">Frequently Asked Questions</h1>
+
+<h2 class="no_toc text-delta" id="page-contents">Page Contents</h2>
+
+<ul id="markdown-toc">
+  <li><a href="#how-often-is-the-juice-database-updated" id="markdown-toc-how-often-is-the-juice-database-updated">How often is the Juice Database updated?</a></li>
+  <li><a href="#what-operating-systems-does-juice-support" id="markdown-toc-what-operating-systems-does-juice-support">What Operating Systems does Juice support?</a></li>
+  <li><a href="#where-do-i-get-help-or-support-if-something-isnt-working" id="markdown-toc-where-do-i-get-help-or-support-if-something-isnt-working">Where do I get help or support if something isn’t working?</a></li>
+  <li><a href="#what-is-the-source-of-application-information-in-the-juice-database" id="markdown-toc-what-is-the-source-of-application-information-in-the-juice-database">What is the source of Application Information in the Juice Database?</a></li>
+  <li><a href="#what-is-the-source-of-recipes-in-the-juice-database" id="markdown-toc-what-is-the-source-of-recipes-in-the-juice-database">What is the source of Recipes in the Juice Database?</a></li>
+</ul>
+
+<h3 id="how-often-is-the-juice-database-updated">How often is the Juice Database updated?</h3>
+<p>Juice has a corresponding Web Service that automatically obtains the latest list of source applications and generates an updated database <strong>daily</strong> at approx. 00:05 UTC.
+When querying for database updates in Juice, the application communicates with this Web Service API to check for the updated database file and then replaces the local copy.</p>
+
+<h3 id="what-operating-systems-does-juice-support">What Operating Systems does Juice support?</h3>
+<p>The Juice application itself currently supports macOS 13+ on Apple Silicon. An x86 compatible build will available soon.</p>
+
+<p>Applications that Juice can <em>upload</em> to Workspace ONE is whatever version/format/architecture the Software Vendor provides in their manifests. As long as it is supported by Workspace ONE and provided in the correct format, Juice will upload it to the Catalog.</p>
+
+<h3 id="where-do-i-get-help-or-support-if-something-isnt-working">Where do I get help or support if something isn’t working?</h3>
+
+<p><a href="https://github.com/tbwfdu/Juice/issues">Raise an issue here</a> and I will get back you as soon as I can 🐛.</p>
+
+<h3 id="what-is-the-source-of-application-information-in-the-juice-database">What is the source of Application Information in the Juice Database?</h3>
+
+<p>The Juice database is populated by a separate microservice that downloads Homebrew Casks list from the <strong>Official</strong> Homebrew repository. This cask file is parsed, correlated and imported into the database that Juice uses.</p>
+
+<p>Each day, the service pulls the latest manifests from the Homebrew repository and generates a new database. This is then made available via a webhost that Juice queries to get a copy of the updated database (if its newer than its current one).</p>
+
+<p>Any application binaries, metadata, information etc. is the exact same information that Homebrew uses. This is provided by the Software Vendor and vetted by Homebrew before being added to their cask list, however Juice nor Homebrew grant any licenses, ownership or responsibility for the applications obtained or installed.</p>
+
+<h3 id="what-is-the-source-of-recipes-in-the-juice-database">What is the source of Recipes in the Juice Database?</h3>
+
+<p>Using the same microservice that downloads Application Information, Juice also automatically downloads recipes from the following AutoPkg recipe repositories on GitHub:</p>
+
+<ul>
+  <li><a href="https://github.com/autopkg/dataJAR-recipes">dataJAR-recipes</a></li>
+  <li><a href="https://github.com/autopkg/hansen-m-recipes">hansen-m-recipes</a></li>
+  <li><a href="https://github.com/autopkg/recipes">autopkg</a></li>
+  <li><a href="https://github.com/autopkg/hjuutilainen-recipes">hjuutilainen-recipes</a></li>
+  <li><a href="https://github.com/autopkg/nmcspadden-recipes">nmcspadden-recipes</a></li>
+  <li><a href="https://github.com/autopkg/grahampugh-recipes">grahampugh-recipes</a></li>
+  <li><a href="https://github.com/autopkg/rtrouton-recipes">rtrouton-recipes</a></li>
+  <li><a href="https://github.com/autopkg/homebysix-recipes">homebysix-recipes</a></li>
+</ul>
+
+<p>Each day, the service pulls any changes to the recipes, adds them to the database, and are then correlated to the Application List to find matches.</p>
+
+            </article>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+
+    </div>
+</body>
+
+</html>

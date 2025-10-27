@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title class="pageTitle">Juice</title>
+	<meta name="description" content="Workspace ONE Application Management Tool">
+
+	<link rel="shortcut icon" href="/assets/juice.png">
+
+	<!-- Smart App Banner -->
+	
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+	<link rel="stylesheet" href="/main.css">
+</head>
+
+<body class="subPageBody">
+    <div class="headerBackground subPageHeaderBackground">
+        <div class="subContainer subPageContainer">
+        <header>
+	<div class="logo">
+		<div class="appIconShadow">
+<!--			<svg width="0" height="0">
+				<defs>
+					<clipPath id="shape">
+							<path id="shape" class="cls-1" d="M6181.23,233.709v-1.792c0-.5-0.02-1-0.02-1.523a24.257,24.257,0,0,0-.28-3.3,11.207,11.207,0,0,0-1.04-3.132,10.683,10.683,0,0,0-1.95-2.679,10.384,10.384,0,0,0-2.68-1.943,10.806,10.806,0,0,0-3.13-1.038,19.588,19.588,0,0,0-3.3-.285c-0.5-.017-1-0.017-1.52-0.017h-22.39c-0.51,0-1.01.017-1.53,0.017a24.041,24.041,0,0,0-3.3.285,11.009,11.009,0,0,0-3.13,1.038,10.491,10.491,0,0,0-4.62,4.622,10.893,10.893,0,0,0-1.04,3.132,19.2,19.2,0,0,0-.28,3.3c-0.02.5-.02,1-0.02,1.523v22.392c0,0.5.02,1,.02,1.524a24.257,24.257,0,0,0,.28,3.3,10.9,10.9,0,0,0,1.04,3.132,10.491,10.491,0,0,0,4.62,4.622,11.04,11.04,0,0,0,3.13,1.038,19.891,19.891,0,0,0,3.3.285c0.51,0.017,1.01.017,1.53,0.017h22.39c0.5,0,1-.017,1.52-0.017a24.221,24.221,0,0,0,3.3-.285,10.836,10.836,0,0,0,3.13-1.038,10.408,10.408,0,0,0,2.68-1.943,10.683,10.683,0,0,0,1.95-2.679,11.217,11.217,0,0,0,1.04-3.132,20.257,20.257,0,0,0,.28-3.3c0.02-.5.02-1,0.02-1.524v-20.6h0Z" transform="translate(-6131 -218)"/>
+					</clipPath>
+				</defs>
+			</svg>-->
+			
+				<a href="../" target="_self"><img class="headerIcon" src="/assets/juice.png"></a>
+			
+			<div class="divider"></div>
+		</div>
+		<p class="headerName">Juice</p>
+	</div>
+	<nav class="scroll">
+		<ul>
+            
+			
+				
+				<li><a href="/gettingstarted/" target="_self">Getting Started</a></li>
+				
+			
+				
+				<li><a href="/usage/" target="_self">Usage</a></li>
+				
+			
+				
+				<li><a href="/faq/" target="_self">FAQs</a></li>
+				
+			
+			
+		</ul>
+	</nav>
+<!--    <nav aria-label="Secondary navigation" class="dropdown-nav nav-layout">
+        <ul>
+            <li class="dropdown">
+                <span class="dropbtn">More</span>
+                <ul class="dropdown-menu">
+                    <li><a href="/appinventory/">App Inventory</a></li>
+                    <li><a href="/gettingstarted/">Getting Started</a></li>
+                    <li><a href="/usage/">Usage</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>-->
+</header>
+            <article class="page markdown-body">
+                <h1 class="no_toc" id="usage">Usage</h1>
+
+<h3 class="no_toc text-delta" id="common-tasks">Common Tasks</h3>
+
+<ul id="markdown-toc">
+  <li><a href="#search-for-applications" id="markdown-toc-search-for-applications">Search for Applications</a></li>
+  <li><a href="#application-update-management" id="markdown-toc-application-update-management">Application Update Management</a></li>
+  <li><a href="#bulk-download-for-offline-vulnerability-scanning" id="markdown-toc-bulk-download-for-offline-vulnerability-scanning">Bulk Download for Offline Vulnerability Scanning</a></li>
+  <li><a href="#bulk-import-and-upload" id="markdown-toc-bulk-import-and-upload">Bulk Import and Upload</a></li>
+  <li><a href="#adding-or-editing-metadata" id="markdown-toc-adding-or-editing-metadata">Adding or Editing Metadata</a></li>
+  <li><a href="#adding-or-editing-application-scripts" id="markdown-toc-adding-or-editing-application-scripts">Adding or Editing Application Scripts</a></li>
+</ul>
+
+<p><br /></p>
+
+<h2 id="search-for-applications">Search for Applications</h2>
+
+<p><img src="../assets/images/Search.png" alt="Alt text" title="Search for Apps Screenshot" /></p>
+
+<p>Juice currently has an Application Repository of approximately 7500 native macOS applications in its database that an administrator can search and with a few simple clicks can import automatically into the Workspace ONE catalog, ready for deployment. If an application has a matching Autopkg recipe available, administrators will be shown an option that allows administrators to merge recipe metadata with the generated Munki pkginfo.plist file.</p>
+
+<p>Upon searching and finding a result, an Administrator can see details provided by the Software Vendor about the application, available version, filetype and then add it to the application queue.</p>
+
+<h2 id="application-update-management">Application Update Management</h2>
+
+<p><img src="../assets/images/Updates.png" alt="Alt text" title="Update Apps Screenshot" /></p>
+
+<p>Juice can query your existing catalog of native macOS Applications already in Workspace ONE UEM and identify any available application updates. If an update to an Application is available in the Juice database, Workspace ONE administrators can select the updated application and automatically upload this to the Workspace ONE UEM Application Catalog.</p>
+
+<p>From here, you have all the same capabilities (such as editing the parsed metadata and importing metadata from a matched recipe) as you would for searching an application.</p>
+
+<h2 id="bulk-download-for-offline-vulnerability-scanning">Bulk Download for Offline Vulnerability Scanning</h2>
+
+<p><img src="../assets/images/Bulk_Download.png" alt="Alt text" title="Bulk Download Screenshot" />
+After nearly 2 years of collaboration with large enterprises, it is a fundamental requirement that Applications must be scanned and validated by their own security teams. Juice allows for a two-stage process where you can download installers in bulk, have your security teams scan the files, and then import these downloaded Apps back into Juice at a later stage to do the upload into Workspace ONE.</p>
+
+<h2 id="bulk-import-and-upload">Bulk Import and Upload</h2>
+
+<p><img src="../assets/images/Bulk_Import.png" alt="Alt text" title="Bulk Import Screenshot" /></p>
+
+<p>Prior to Juice, processing and uploading of macOS applications into Workspace ONE needed to be done individually. Now Administrators can scan an <strong>existing folder</strong> of native macOS Applications and Juice will process the installers, generate the required metadata files, extract the icons and facilitate the bulk upload of apps into the Workspace ONE App Catalog. Better yet, Juice can import your <strong>own internal applications</strong>, not only those downloaded using Juice, and will scan folders recursively for suitable installers allowing you to import your own local repositories.</p>
+
+<h2 id="adding-or-editing-metadata">Adding or Editing Metadata</h2>
+
+<p>To identify which applications have available metadata, you’ll see a small icon on App results in Juice.
+<img src="../assets/images/HasRecipe.png" alt="Alt text" title="Has Recipe Icon" />
+To add any metadata from a recipe, you can do this after the application has been downloaded in Step 2 of the upload process. Simply click on the Edit button in the ‘Edit Metadata and Icons’ screen.</p>
+
+<p><img src="../assets/images/EditMetadata.png" alt="Alt text" title="Edit Metadata Button" /></p>
+
+<p>Once you’ve made any changes, you’ll get a chance to review the values and if needed, view the resulting pkginfo.plist file.</p>
+
+<p><img src="../assets/images/Changes.png" alt="Alt text" title="Changed Metadata Screen" />
+<img src="../assets/images/SaveAppMetadata.png" alt="Alt text" title="Save Metadata Screen" /></p>
+
+<p>If you ‘Enable Editing’, you can <strong>directly</strong> edit the pkginfo.plist file and add any manual metadata directly from Juice.</p>
+
+<p><img src="../assets/images/EditAppMetdata.png" alt="Alt text" title="Edit App Metadata Screen" /></p>
+
+<h2 id="adding-or-editing-application-scripts">Adding or Editing Application Scripts</h2>
+
+<p>Application Deployment using Workspace ONE UEM supports the use of scripts that are processed during certain phases of the application management process. There are 6 script types that can be provided for an Application:</p>
+
+<ul>
+  <li>Pre-Install Script</li>
+  <li>Post-Install Script</li>
+  <li>Pre-Uninstall Script</li>
+  <li>Post-Uninstall Script</li>
+  <li>InstallCheck Script</li>
+  <li>UninstallCheck Script</li>
+</ul>
+
+<p>During the upload process, you can <em>edit</em> the application metadata and the edit screen allows you to add text contents of these scripts in the UI or if there is a matching recipe and the recipe contains these scripts, you can import directly from the recipe.</p>
+
+<p><img src="../assets/images/AddScript.png" alt="Alt text" title="Add Script Screen" /></p>
+
+<p>Also, if you already have these scripts prepared for your already downloaded application, you can place these scripts in the root directory alongside your installer and Juice will automatically import them.</p>
+
+<p><img src="../assets/images/ImportedScripts.png" alt="Alt text" title="Imported Scripts Example" /></p>
+
+<blockquote>
+  <h3 class="no_toc" id="ℹ️-important">ℹ️ Important</h3>
+
+  <p>Your scripts <em>must</em> be named as below in order for Juice to automatically import them. Note that these scripts can either be save as .sh or .txt</p>
+
+  <p>preinstall_script(.sh/.txt)
+postinstall_script(.sh/.txt)
+preuninstall_script(.sh/.txt)
+postinstall_script(.sh/.txt)
+installcheck_script(.sh/.txt)
+uninstallcheck_script(.sh/.txt)</p>
+</blockquote>
+
+<blockquote>
+  <h3 class="no_toc" id="ℹ️-note">ℹ️ Note</h3>
+  <p>In order for the script content to be added to the metadata.plist file, you must “edit” the application metadata in Step 2 of the upload process. Simply placing the scripts in the directory <strong>will not</strong> add the script contents as a security measure.</p>
+</blockquote>
+
+            </article>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+
+    </div>
+</body>
+
+</html>
