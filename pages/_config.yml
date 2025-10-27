@@ -1,25 +1,18 @@
 #page title
 page_title                                : Juice                                     # Automatically populates with app name if not set and if iOS app ID is set. Otherwise enter manually.
-
-github_link                               : https://github.com/tbwfdu/juice/releases  # Enter link to GitHub repository.
-presskit_download_link                    :                                           # Enter a link to downloadable file or (e.g. public Dropbox link to a .zip file). 
-                                                                                      # Or upload your press kit file to assets and set path accordingly (e.g. "assets/your_press_kit.zip").
-
+github_link                               : https://github.com/tbwfdu/juice/releases  # Enter link to GitHub repository. 
 app_icon                                  : assets/juice.png                          # Automatically populates if not set and if iOS app ID is set.  Otherwise enter path to icon file manually.
+dbl_icon                                  : assets/dbl.png                            # Automatically populates if not set and if iOS app ID is set.  Otherwise enter path to icon file manually.
 app_name                                  : Juice                                     # Automatically populates if not set and if iOS app ID is set.  Otherwise enter manually.
 app_os                                    : apple                                     # Enter supported OS platforms - windows or apple
 app_os_title                              : macOS
 app_description                           : Workspace ONE Application Management Tool
-
 
 # Information About Yourself
 your_name                                 : Pete Lindley                                
 your_link                                 : https://github.com/tbwfdu                     
 your_city                                 : Down Under, Australia                                
 email_address                             : thisispete@gmail.com
-linkedin_username                         :                                           
-linkedin_company                          :                                           
-twitter_username                          : 
 github_username                           : tbwfdu
 
 # Feature List
@@ -48,8 +41,6 @@ features                                  :
   - title                                 : Edit Metadata & Add Scripts
     description                           : Add configuration from the PkgInfo recipe, automatically add scripts or edit the parsed metadata directly using Juice.
     fontawesome_icon_name                 : list
-
-
 
 # Theme Settings
 topbar_color                              : "#000000"
@@ -83,18 +74,6 @@ windows_icon_color                        : "#0078D4"
 apple_icon_color                          : "#666666"
 
 footer_text_color                         : "#666666"
-
-
-
-
-
-
-
-
-
-
-
-
 
 ####################################################
 ### Jekyll Configuration. No need to touch this. ###
