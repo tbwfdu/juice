@@ -1,0 +1,356 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 90;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D4E5F6010203040501 /* Juice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010203040502 /* Juice.swift */; };
+		A1B2C3D4E5F6010203040503 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010203040504 /* ContentView.swift */; };
+		A1B2C3D4E5F601020304050B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601020304050C /* Assets.xcassets */; };
+		C143485B2F26ED51009AA717 /* Juice.icon in Resources */ = {isa = PBXBuildFile; fileRef = C143485A2F26ED51009AA717 /* Juice.icon */; };
+		C153AD242F29A17B00E50AF1 /* app_aliases.json in Resources */ = {isa = PBXBuildFile; fileRef = C153AD232F29A17B00E50AF1 /* app_aliases.json */; };
+		C179E5632F260111002E8158 /* cask_apps.json in Resources */ = {isa = PBXBuildFile; fileRef = C179E5642F260111002E8158 /* cask_apps.json */; };
+		C179E5672F260111002E8158 /* recipes.json in Resources */ = {isa = PBXBuildFile; fileRef = C179E5682F260111002E8158 /* recipes.json */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C166BB9B2F2D91FC0041147B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A1B2C3D4E5F6010203040502 /* Juice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Juice.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6010203040504 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F601020304050C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C3D4E5F601020304050D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F601020304050E /* Juice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Juice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C143485A2F26ED51009AA717 /* Juice.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Juice.icon; sourceTree = "<group>"; };
+		C153AD232F29A17B00E50AF1 /* app_aliases.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = app_aliases.json; sourceTree = "<group>"; };
+		C166BB842F2D91FB0041147B /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		C166BB862F2D91FC0041147B /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		C179E5642F260111002E8158 /* cask_apps.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = cask_apps.json; sourceTree = "<group>"; };
+		C179E5682F260111002E8158 /* recipes.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = recipes.json; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C166BB882F2D91FC0041147B /* Juice-Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Juice-Widgets";
+			sourceTree = "<group>";
+		};
+		C179E55F2F25E43D002E8158 /* Components */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Components;
+			sourceTree = "<group>";
+		};
+		C179E5602F25E460002E8158 /* Views */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C179E5612F25E46A002E8158 /* Models */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C1A8B0D52F2851A700921C70 /* Extensions */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		C1A8B0D82F28539800921C70 /* Services */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXGroup section */
+		A1B2C3D4E5F6010203040511 /* JuiceSwift */ = {
+			isa = PBXGroup;
+			children = (
+				C1A8B0D82F28539800921C70 /* Services */,
+				C1A8B0D52F2851A700921C70 /* Extensions */,
+				C179E5692F260111002E8158 /* Resources */,
+				C179E5612F25E46A002E8158 /* Models */,
+				C179E5602F25E460002E8158 /* Views */,
+				C179E55F2F25E43D002E8158 /* Components */,
+				A1B2C3D4E5F6010203040502 /* Juice.swift */,
+				A1B2C3D4E5F6010203040504 /* ContentView.swift */,
+				A1B2C3D4E5F601020304050C /* Assets.xcassets */,
+				A1B2C3D4E5F601020304050D /* Info.plist */,
+			);
+			path = JuiceSwift;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6010203040512 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F601020304050E /* Juice.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6010203040513 = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6010203040511 /* JuiceSwift */,
+				C166BB882F2D91FC0041147B /* Juice-Widgets */,
+				C166BB832F2D91FB0041147B /* Frameworks */,
+				A1B2C3D4E5F6010203040512 /* Products */,
+				C143485A2F26ED51009AA717 /* Juice.icon */,
+			);
+			sourceTree = "<group>";
+			usesTabs = 1;
+		};
+		C166BB832F2D91FB0041147B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C166BB842F2D91FB0041147B /* WidgetKit.framework */,
+				C166BB862F2D91FC0041147B /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C179E5692F260111002E8158 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				C153AD232F29A17B00E50AF1 /* app_aliases.json */,
+				C179E5642F260111002E8158 /* cask_apps.json */,
+				C179E5682F260111002E8158 /* recipes.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1B2C3D4E5F6010203040514 /* Juice */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D4E5F6010203040515 /* Build configuration list for PBXNativeTarget "Juice" */;
+			buildPhases = (
+				A1B2C3D4E5F6010203040516 /* Sources */,
+				A1B2C3D4E5F6010203040518 /* Resources */,
+				C166BB9B2F2D91FC0041147B /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				C179E55F2F25E43D002E8158 /* Components */,
+				C179E5602F25E460002E8158 /* Views */,
+				C179E5612F25E46A002E8158 /* Models */,
+				C1A8B0D52F2851A700921C70 /* Extensions */,
+				C1A8B0D82F28539800921C70 /* Services */,
+			);
+			name = Juice;
+			productName = JuiceSwift;
+			productReference = A1B2C3D4E5F601020304050E /* Juice.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1B2C3D4E5F6010203040519 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					A1B2C3D4E5F6010203040514 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1B2C3D4E5F601020304051A /* Build configuration list for PBXProject "Juice" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1B2C3D4E5F6010203040513;
+			preferredProjectObjectVersion = 90;
+			productRefGroup = A1B2C3D4E5F6010203040512 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1B2C3D4E5F6010203040514 /* Juice */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1B2C3D4E5F6010203040518 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				A1B2C3D4E5F601020304050B /* Assets.xcassets in Resources */,
+				C179E5632F260111002E8158 /* cask_apps.json in Resources */,
+				C143485B2F26ED51009AA717 /* Juice.icon in Resources */,
+				C153AD242F29A17B00E50AF1 /* app_aliases.json in Resources */,
+				C179E5672F260111002E8158 /* recipes.json in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C3D4E5F6010203040516 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				A1B2C3D4E5F6010203040501 /* Juice.swift in Sources */,
+				A1B2C3D4E5F6010203040503 /* ContentView.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1B2C3D4E5F601020304051B /* Debug configuration for PBXNativeTarget "Juice" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = Juice;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = JuiceSwift/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Juice;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.Juice;
+				PRODUCT_NAME = Juice;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F601020304051C /* Release configuration for PBXNativeTarget "Juice" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = Juice;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = JuiceSwift/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Juice;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.Juice;
+				PRODUCT_NAME = Juice;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A1B2C3D4E5F601020304051D /* Debug configuration for PBXProject "Juice" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F601020304051E /* Release configuration for PBXProject "Juice" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1B2C3D4E5F6010203040515 /* Build configuration list for PBXNativeTarget "Juice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F601020304051B /* Debug configuration for PBXNativeTarget "Juice" */,
+				A1B2C3D4E5F601020304051C /* Release configuration for PBXNativeTarget "Juice" */,
+			);
+			defaultConfigurationName = Debug;
+		};
+		A1B2C3D4E5F601020304051A /* Build configuration list for PBXProject "Juice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F601020304051D /* Debug configuration for PBXProject "Juice" */,
+				A1B2C3D4E5F601020304051E /* Release configuration for PBXProject "Juice" */,
+			);
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1B2C3D4E5F6010203040519 /* Project object */;
+}
