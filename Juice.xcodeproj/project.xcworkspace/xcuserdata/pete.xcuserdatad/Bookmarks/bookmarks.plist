@@ -10,15 +10,15 @@
 				<key>location-parameters</key>
 				<dict>
 					<key>EndingColumnNumber</key>
-					<string>31</string>
+					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>32</string>
+					<string>34</string>
 					<key>StartingColumnNumber</key>
-					<string>17</string>
+					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>32</string>
+					<string>33</string>
 					<key>Timestamp</key>
-					<string>791244633.198442</string>
+					<string>791694131.257574</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -34,19 +34,65 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>bootstrapApp()</string>
+				<string>    private func bootstrapApp() async {
+</string>
 				<key>leading</key>
 				<string>
     @MainActor
-    private func </string>
+</string>
 				<key>trailing</key>
-				<string> async {
-        //let _ = await UEMService.instance.getOrgGroupUuid()
+				<string>        //let _ = await UEMService.instance.getOrgGroupUuid()
         //let allApps: [UemApplication?] = await UEMService.instance.getAllApps()
+		//printAsJSON(allApps)
 </string>
 			</dict>
 			<key>title</key>
 			<string>Bootstrap</string>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>310</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>309</string>
+					<key>Timestamp</key>
+					<string>791772016.548351</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>JuiceSwift/Components/InspectorControl.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>			}
+</string>
+				<key>leading</key>
+				<string>					.offset(x: 4, y: badgeOffset)
+					.allowsHitTesting(false)
+</string>
+				<key>trailing</key>
+				<string>		}
+	}
+
+</string>
+			</dict>
 			<key>type</key>
 			<string>bookmark</string>
 		</dict>

@@ -477,48 +477,30 @@ private struct GlassSegmentedControl<Tag: Hashable>: View {
                 GlassEffectContainer {
 					shape
 						.fill(Color.clear)
-						.glassEffect(.clear, in: shape)
+						.glassEffect(.regular, in: shape)
 				}
-				.opacity(glassOpacity)
             } else {
                 shape.fill(.ultraThinMaterial)
-                    .opacity(glassOpacity)
             }
-            shape
-                .fill(
-					LinearGradient(
-						colors: [
-							Color.white.opacity(0.55),
-							Color.white.opacity(0.2)
-						],
-						startPoint: .topLeading,
-						endPoint: .bottomTrailing
-					)
-				)
 			shape
-				.fill(LinearGradient.juice)
-				.opacity(0.14)
-			shape
-				.fill(
-					LinearGradient(
-						colors: [
-							Color.white.opacity(0.32),
-							Color.white.opacity(0.0)
-						],
-						startPoint: .top,
-						endPoint: .bottom
-					)
-				)
-				.scaleEffect(x: 1, y: 0.68, anchor: .top)
-			shape
-				.strokeBorder(Color.white.opacity(0.38), lineWidth: 0.6)
-				.opacity(0.9)
-				.scaleEffect(x: 1, y: 0.22, anchor: .top)
+				.fill(Color.white)
+				.opacity(0.05)
         }
+		.glassPopHighlight(usesColorGradient: false)
         .overlay(
-            shape.strokeBorder(Color.white.opacity(0.18), lineWidth: 0.9)
+			shape.strokeBorder(
+				LinearGradient(
+					colors: [
+						Color.white.opacity(0.26),
+						Color.white.opacity(0.08)
+					],
+					startPoint: .topLeading,
+					endPoint: .bottomTrailing
+				),
+				lineWidth: 0.8
+			)
         )
-        .shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
+        .shadow(color: Color.black.opacity(0.10), radius: 2, x: 0, y: 1)
 		.scaleEffect(morphPulse ? 1.06 : 1)
 		.animation(.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.22), value: morphPulse)
     }
@@ -551,7 +533,7 @@ private struct SegmentedActionButton: View {
 
 	var body: some View {
 		let shape = Capsule(style: .continuous)
-		let hoverOpacity: CGFloat = isPressed ? 0.12 : (isHovered ? 0.08 : 0)
+		let hoverOpacity: CGFloat = isPressed ? 0.06 : (isHovered ? 0.05 : 0.03)
 
 		return Button {
 			if !isDisabled {
@@ -572,23 +554,31 @@ private struct SegmentedActionButton: View {
 					GlassEffectContainer {
 						shape
 							.fill(Color.clear)
-							.glassEffect(.clear, in: shape)
+							.glassEffect(.regular, in: shape)
 					}
-					.opacity(glassOpacity)
 				} else {
 					shape.fill(.ultraThinMaterial)
-						.opacity(glassOpacity)
 				}
-				if hoverOpacity > 0 {
-					shape
-						.fill(Color.white.opacity(hoverOpacity))
-				}
+				shape
+					.fill(Color.white)
+					.opacity(hoverOpacity)
 			}
 		}
 		.overlay(
-			shape.strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
+			shape.strokeBorder(
+				LinearGradient(
+					colors: [
+						Color.white.opacity(isPressed ? 0.16 : (isHovered ? 0.2 : 0.22)),
+						Color.white.opacity(0.08)
+					],
+					startPoint: .topLeading,
+					endPoint: .bottomTrailing
+				),
+				lineWidth: 0.8
+			)
 		)
-		.shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
+		.glassPopHighlight(usesColorGradient: false)
+		.shadow(color: Color.black.opacity(0.10), radius: 2, x: 0, y: 1)
 		.opacity(isDisabled ? 0.45 : 1)
 		.onHover { hovering in
 			isHovered = hovering

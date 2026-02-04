@@ -7,33 +7,33 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "B79CBC98-5D57-4B06-A92E-A0A93FF540B4"
+            uuid = "684A976C-0DB3-4BB4-BD89-7A7BC72E00F9"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JuiceSwift/Views/SearchView.swift"
+            filePath = "JuiceSwift/Components/ExpandableMenu.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "135"
-            endingLineNumber = "135"
-            landmarkName = "leftPanel(panelMinHeight:panelMinWidth:)"
+            startingLineNumber = "261"
+            endingLineNumber = "261"
+            landmarkName = "stopMonitoring()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "20A677A8-D105-4164-8940-7FAE56A342E5"
+            uuid = "AA7F45C4-63F7-4454-A96C-589A3304C9E7"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "JuiceSwift/Views/SearchView.swift"
+            filePath = "JuiceSwift/Components/AppDetailContent.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "151"
-            endingLineNumber = "151"
-            landmarkName = "leftPanel(panelMinHeight:panelMinWidth:)"
-            landmarkType = "7">
+            startingLineNumber = "208"
+            endingLineNumber = "208"
+            landmarkName = "header"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

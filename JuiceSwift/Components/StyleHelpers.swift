@@ -199,34 +199,34 @@ private struct JuiceGlassButtonBody: View {
                 }
                 .overlay {
                     // Tint overlay
-                    circle
-                        .fill(Color.white)
-                        .opacity(configuration.isPressed ? 0.04 : (isHovered ? 0.03 : 0.015))
-                        .opacity(isHovered ? 1.0 : 0.9)
+//                    circle
+//                        .fill(Color.white)
+//                        .opacity(configuration.isPressed ? 0.04 : (isHovered ? 0.03 : 0.015))
+//                        .opacity(isHovered ? 1.0 : 0.9)
                 }
-				.overlay {
-					glassHighlightOverlay(shape: circle, isPressed: configuration.isPressed, usesColorGradient: usesColorGradient)
-						.opacity(isHovered ? 1.0 : 0.85)
-				}
-                .overlay {
-                    // Border overlay
-                    let highlight = colorScheme == .dark ? 0.22 : 0.28
-                    let topOpacity = configuration.isPressed ? highlight * 0.6 : (isHovered ? highlight * 0.9 : highlight)
-                    ZStack {
-                        circle.strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(topOpacity),
-                                    Color.white.opacity(0.08)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 0.8
-                        )
-                    }
-                    .opacity(isHovered ? 1.0 : 0.85)
-                }
+//				.overlay {
+//					glassHighlightOverlay(shape: circle, isPressed: configuration.isPressed, usesColorGradient: usesColorGradient)
+//						.opacity(isHovered ? 1.0 : 0.85)
+//				}
+//                .overlay {
+//                    // Border overlay
+//                    let highlight = colorScheme == .dark ? 0.22 : 0.28
+//                    let topOpacity = configuration.isPressed ? highlight * 0.6 : (isHovered ? highlight * 0.9 : highlight)
+//                    ZStack {
+//                        circle.strokeBorder(
+//                            LinearGradient(
+//                                colors: [
+//                                    Color.white.opacity(topOpacity),
+//                                    Color.white.opacity(0.08)
+//                                ],
+//                                startPoint: .topLeading,
+//                                endPoint: .bottomTrailing
+//                            ),
+//                            lineWidth: 0.8
+//                        )
+//                    }
+//                    .opacity(isHovered ? 1.0 : 0.85)
+//                }
                 .shadow(color: shadowColor(isPressed: configuration.isPressed), radius: (isHovered ? 1.5 : 1), x: 0, y: (isHovered ? 0.8 : 0.5))
                 .opacity(isEnabled ? 1 : 0.45)
                 .onHover { hovering in

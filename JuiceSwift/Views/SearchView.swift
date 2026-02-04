@@ -31,8 +31,9 @@ struct SuggestionRowFrameKey: PreferenceKey {
 struct SearchView: View {
 	let model: PageViewData
     @EnvironmentObject private var catalog: LocalCatalog
+	@EnvironmentObject private var inspector: InspectorCoordinator
     @State private var searchText = ""
-    @State private var rightTab: QueuePanel<AnyView, AnyView>.Tab = .queue
+    @State private var rightTab: QueuePanelContent<AnyView, AnyView>.Tab = .queue
     @State private var isSearchResultVisible: Bool = false
     @State private var showSuggestions = false
     @FocusState private var isSearchFocused: Bool
@@ -44,13 +45,14 @@ struct SearchView: View {
 	@State private var keyMonitor: Any?
     @State private var queueItems: [CaskApplication] = []
     @State private var resultsItems: [CaskApplication] = []
-    @State private var queueNotice: QueuePanel<AnyView, AnyView>.Notice?
+    @State private var queueNotice: QueuePanelContent<AnyView, AnyView>.Notice?
     @State private var confirmationVisible = false
-    @State private var confirmationMode: ConfirmationDialog<CaskApplication, AnyView>.Mode = .upload
+    @State private var confirmationMode: ConfirmationActionMode = .upload
 	@StateObject private var focusObserver = WindowFocusObserver()
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
 	private let panelGlassOpacity: CGFloat = 1.0
+	@State private var panelMinHeightCache: CGFloat = 0
 
 	private var glassBaseOpacity: CGFloat {
 		focusObserver.isFocused ? 0.6 : 0.3
@@ -60,26 +62,44 @@ struct SearchView: View {
 		GeometryReader { proxy in
 			let availableHeight = max(0, proxy.size.height - bottomBarHeight)
 			let panelMinHeight = min(basePanelMinHeight, availableHeight)
-			let panelMinWidth = 630
-			VStack(alignment: .leading) {
-				HStack(alignment: .top) {
-					leftPanel(
-						panelMinHeight: panelMinHeight,
-						panelMinWidth: CGFloat(panelMinWidth)
-					)
-					Color.clear.frame(width: 24)
-					queuePanelView(panelMinHeight: panelMinHeight)
-				}
-				.frame(maxWidth: .infinity, alignment: .topLeading)
-				.padding(.horizontal, 40)
-				.padding(.vertical, 0)
-
-				bottomActions
-					.frame(alignment: .top)
+//			let panelMinWidth = 630
+			let panelMinWidth = 400
+			ZStack(alignment: .bottomTrailing) {
+				VStack(alignment: .leading) {
+					HStack(alignment: .top) {
+						leftPanel(
+							panelMinHeight: panelMinHeight,
+							panelMinWidth: CGFloat(panelMinWidth)
+						)
+					}
+					.frame(maxWidth: .infinity, alignment: .topLeading)
 					.padding(.horizontal, 40)
-					.padding(.top, 20)
-					.padding(.bottom, 24)
+					.padding(.vertical, 0)
+					.contentShape(Rectangle())
+					.onTapGesture {
+						if inspector.isPresented {
+							inspector.hide()
+						}
+					}
+					Spacer(minLength:20)
+				}
+
+				EmptyView()
 			}
+			.onAppear {
+				panelMinHeightCache = panelMinHeight
+			}
+		.onChange(of: panelMinHeight) { _, newValue in
+			panelMinHeightCache = newValue
+			if inspector.isPresented {
+				inspector.show(queuePanelView(panelMinHeight: newValue))
+			}
+		}
+		.onChange(of: inspector.isPresented) { _, isPresented in
+			if isPresented {
+				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+			}
+		}
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 		.ifAvailableMacOS14ContentMarginsElsePadding()
@@ -87,41 +107,17 @@ struct SearchView: View {
 			queueItems = model.queueItems
 			resultsItems = model.searchResults
 		}
-		.onChange(of: confirmationVisible) { _, isVisible in
-			if isVisible {
-				GlassWindowPresenter.shared.present(
-					id: "confirmation-dialog",
-					title: "Confirm",
-					size: CGSize(width: 720, height: 480),
-					content: AnyView(
-						ConfirmationDialog(
-							mode: confirmationMode,
-							items: queueItems,
-							onConfirm: {
-								confirmationVisible = false
-							},
-							onCancel: {
-								confirmationVisible = false
-							}
-						) { item in
-							AnyView(
-								AppDetailListItem(item: item, label: "Version")
-									.padding(.vertical, 4)
-									.padding(.horizontal, 6)
-							)
-						}
-						.frame(minWidth: 720, minHeight: 480)
-					),
-					onClose: {
-						confirmationVisible = false
-					}
-				)
-			} else {
-				GlassWindowPresenter.shared.dismiss(id: "confirmation-dialog")
-			}
-		}
-		.onDisappear {
-			GlassWindowPresenter.shared.dismiss(id: "confirmation-dialog")
+		.sheet(isPresented: $confirmationVisible) {
+			QueueActionSheet(
+				mode: confirmationMode,
+				itemCount: queueItems.count,
+				onConfirm: {
+					confirmationVisible = false
+				},
+				onCancel: {
+					confirmationVisible = false
+				}
+			)
 		}
 	}
 
@@ -129,7 +125,7 @@ struct SearchView: View {
 	private func leftPanel(panelMinHeight: CGFloat, panelMinWidth: CGFloat) -> some View {
 		ZStack(alignment: .topLeading) {
 			VStack(alignment: .leading, spacing: 16) {
-				SectionHeader("Search for Applications", subtitle: "Use the search box below to find applications you wish to download or upload automatically to Workspace ONE.")
+				SectionHeader("Search", subtitle: "Use the search box below to find applications you wish to download or upload automatically to Workspace ONE.")
 				HStack(spacing: 8) {
 					AutoSuggestBox(
 						text: $searchText,
@@ -282,7 +278,7 @@ struct SearchView: View {
 		}
 		.overlayPreferenceValue(AutoSuggestAnchorKey.self) { anchor in
 			GeometryReader { proxy in
-				if showSuggestions, isSearchFocused, let anchor {
+				if showSuggestions, isSearchFocused, !filteredResults.isEmpty, let anchor {
 					let rect = proxy[anchor]
 					let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 					let rowHeight: CGFloat = 52
@@ -373,62 +369,21 @@ struct SearchView: View {
 
 	@ViewBuilder
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
-		QueuePanel(
+		InspectorQueuePanelView(
 			tab: $rightTab,
 			notice: $queueNotice,
-			queueTitle: "Applications Queue",
-			resultsTitle: "Results",
-			queueCountText: "\(queueItems.count) apps added",
-			resultsCountText: "\(resultsItems.count) processed",
-			queueIsEmpty: queueItems.isEmpty,
-			resultsIsEmpty: resultsItems.isEmpty,
-			onQueueAction: {
-				withAnimation(.easeInOut(duration: 0.2)) {
-					queueItems.removeAll()
-				}
-			},
-			onResultsAction: {
-				withAnimation(.easeInOut(duration: 0.2)) {
-					resultsItems.removeAll()
-				}
-			}
-		) {
-			AnyView(LazyVStack(spacing: 8) {
-				ForEach(queueItems) { item in
-					AppDetailListItem(item: item, label: "Version")
-						.transition(.opacity.combined(with: .move(edge: .top)))
-				}
-			})
-		} resultsContent: {
-			AnyView(LazyVStack(spacing: 8) {
-				ForEach(resultsItems) { item in
-					AppDetailListItem(item: item, label: "Version")
-						.transition(.opacity.combined(with: .move(edge: .top)))
-				}
-			})
-		}
-		.frame(alignment: .leading)
-		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
-		.frame(maxWidth: .infinity, alignment: .trailing)
-	}
-
-	private var bottomActions: some View {
-		HStack {
-			Spacer()
-			JuiceButtons.primary("Upload to UEM") {
-				guard !queueItems.isEmpty else { return }
+			queueItems: $queueItems,
+			resultsItems: $resultsItems,
+			panelMinHeight: panelMinHeight,
+			onPrimaryAction: {
 				confirmationMode = .upload
 				confirmationVisible = true
-			}
-			.disabled(queueItems.isEmpty)
-			JuiceButtons.secondary("Download Only", usesColorGradient: false) {
-				guard !queueItems.isEmpty else { return }
+			},
+			onSecondaryAction: {
 				confirmationMode = .download
 				confirmationVisible = true
 			}
-			.disabled(queueItems.isEmpty)
-		}
+		)
 	}
 
     @ViewBuilder
@@ -471,8 +426,13 @@ struct SearchView: View {
             resetSearchUI()
             return
         }
+        let wasEmpty = queueItems.isEmpty
         queueItems.append(selected)
+		inspector.notifyQueueAdded()
         showQueueNotice("Added to queue", isDuplicate: false)
+		if wasEmpty {
+			inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+		}
         resetSearchUI()
     }
 
@@ -608,13 +568,31 @@ struct SearchView: View {
 		return key.lowercased()
 	}
 
-	
-	
-	
-	
 }
+
 #Preview {
+	
     SearchView(model: .sample)
         .environmentObject(LocalCatalog())
-        .frame(width: 1100, height: 500)
+		.environmentObject(InspectorCoordinator())
+		.frame(width: 700, height: 400)
+		.background(){
+			JuiceGradient()
+				.frame(maxWidth: .infinity)
+				.frame(height: 500)
+				.mask(
+					LinearGradient(
+						stops: [
+							.init(color: Color.white, location: 0.0),
+							.init(color: Color.white, location: 0.55),
+							.init(color: Color.white.opacity(0.7), location: 0.7),
+							.init(color: Color.white.opacity(0.3), location: 0.82),
+							.init(color: Color.white.opacity(0.0), location: 1.0)
+						],
+						startPoint: .top,
+						endPoint: .bottom
+					)
+				)
+				.ignoresSafeArea(edges: .top)
+		}
 }

@@ -2,7 +2,8 @@ import SwiftUI
 
 struct UpdatesView: View {
 	let model: PageViewData
-	@State private var rightTab: QueuePanel<AnyView, AnyView>.Tab = .queue
+	@EnvironmentObject private var inspector: InspectorCoordinator
+	@State private var rightTab: QueuePanelContent<AnyView, AnyView>.Tab = .queue
 	@State private var queueItems: [CaskApplication] = []
 	@State private var resultsItems: [CaskApplication] = []
 	@State private var uemApps: [UemApplication] = []
@@ -10,11 +11,14 @@ struct UpdatesView: View {
 	@State private var showAllUemApps = false
 	@State private var selectedApp: UemApplication?
 	@State private var selectedAppKeys: Set<String> = []
-	@State private var queueNotice: QueuePanel<AnyView, AnyView>.Notice?
+	@State private var queueNotice: QueuePanelContent<AnyView, AnyView>.Notice?
+	@State private var confirmationVisible = false
+	@State private var confirmationMode: ConfirmationActionMode = .upload
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
 	private let panelGlassOpacity: CGFloat = 0.95
 	@StateObject private var focusObserver = WindowFocusObserver()
+	@State private var panelMinHeightCache: CGFloat = 0
 
 	private var glassBaseOpacity: CGFloat {
 		focusObserver.isFocused ? 0.6 : 0.3
@@ -24,57 +28,57 @@ struct UpdatesView: View {
 		GeometryReader { proxy in
 			let availableHeight = max(0, proxy.size.height - bottomBarHeight)
 			let panelMinHeight = min(basePanelMinHeight, availableHeight)
-			let panelMinWidth = 630
-			ZStack {
+			let panelMinWidth = 550
+			ZStack(alignment: .bottomTrailing) {
 				VStack(alignment: .leading) {
 					HStack(alignment: .top) {
 						leftPanel(
 							panelMinHeight: panelMinHeight,
 							panelMinWidth: CGFloat(panelMinWidth)
 						)
-						Color.clear.frame(width: 24)
-						queuePanelView(panelMinHeight: panelMinHeight)
 					}
 					.frame(maxWidth: .infinity, alignment: .topLeading)
 					.padding(.horizontal, 40)
 					.padding(.vertical, 0)
+					.contentShape(Rectangle())
+					.onTapGesture {
+						if inspector.isPresented {
+							selectedApp = nil
+							inspector.hide()
+						}
+					}
+					Spacer(minLength: 20)
+				}
 
-					bottomActions
-						.padding(.horizontal, 40)
-						.padding(.top, 20)
-						.padding(.bottom, 24)
-						.frame(alignment: .top)
+				EmptyView()
 			}
+			.onAppear {
+				panelMinHeightCache = panelMinHeight
+			}
+			.onChange(of: panelMinHeight) { _, newValue in
+				panelMinHeightCache = newValue
+				if inspector.isPresented, selectedApp == nil {
+					inspector.show(queuePanelView(panelMinHeight: newValue))
+				}
+			}
+			.onChange(of: queueItems.count) { oldValue, newValue in
+				guard oldValue == 0, newValue > 0 else { return }
+				guard !inspector.isPresented, selectedApp == nil else { return }
+				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+			}
+			.onChange(of: inspector.isPresented) { _, isPresented in
+				if isPresented, selectedApp == nil {
+					inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+				} else if !isPresented {
+					selectedApp = nil
+				}
 			}
 		}
 		.onChange(of: selectedApp?.id) { _, _ in
-			if let app = selectedApp {
-				GlassWindowPresenter.shared.present(
-					id: "app-detail",
-					title: app.applicationName,
-					size: CGSize(width: 760, height: 560),
-					content: AnyView(
-						AppDetailSheet(
-							item: app,
-							onAddToQueue: {
-								addToQueue(app)
-							},
-							onClose: {
-								selectedApp = nil
-							}
-						)
-						.frame(minWidth: 700, minHeight: 520)
-					),
-					onClose: {
-						selectedApp = nil
-					}
-				)
-			} else {
-				GlassWindowPresenter.shared.dismiss(id: "app-detail")
-			}
+			updateInspector()
 		}
 		.onDisappear {
-			GlassWindowPresenter.shared.dismiss(id: "app-detail")
+			inspector.hide()
 		}
 		.frame(
 			maxWidth: .infinity,
@@ -90,6 +94,18 @@ struct UpdatesView: View {
 					uemApps = model.uemApps
 				}
 			}
+		}
+		.sheet(isPresented: $confirmationVisible) {
+			QueueActionSheet(
+				mode: confirmationMode,
+				itemCount: queueItems.count,
+				onConfirm: {
+					confirmationVisible = false
+				},
+				onCancel: {
+					confirmationVisible = false
+				}
+			)
 		}
 	}
 
@@ -110,6 +126,8 @@ struct UpdatesView: View {
 							}
 						withAnimation(.bouncy(duration: 0.35, extraBounce: 0.12)) {
 							uemApps = apps
+							selectedAppKeys.removeAll()
+							selectedApp = nil
 							isQueryingUem = false
 						}
 					}
@@ -150,7 +168,7 @@ struct UpdatesView: View {
 					))
 						.labelStyle(.iconOnly)
 						.toggleStyle(.switch)
-						.controlSize(.large)
+						.controlSize(.regular)
 						.frame(
 							maxWidth: .infinity,
 							alignment: .init(
@@ -167,11 +185,11 @@ struct UpdatesView: View {
 							)
 						)
 				}
-				.frame(minWidth: 580)
+				.frame(minWidth: 550)
 				.frame(
 					maxWidth: .infinity,
 					alignment: .init(
-						horizontal: .leading,
+						horizontal: .center,
 						vertical: .center
 					)
 				)
@@ -198,14 +216,14 @@ struct UpdatesView: View {
 					alignment: .center
 				)
 			} else if uemApps.count > 0 {
-				ZStack(alignment: .bottomTrailing) {
+				ZStack(alignment: .bottom) {
 					ScrollView {
 						LazyVGrid(
 							columns: [
 								GridItem(.flexible(), spacing: 5),
 								GridItem(.flexible(), spacing: 5),
 							],
-							alignment: .leading,
+							alignment: .center,
 							spacing: 4
 						) {
 							let updates = uemApps.filter {
@@ -240,7 +258,7 @@ struct UpdatesView: View {
 					.background(Color.clear)
 
 					if !selectedAppKeys.isEmpty {
-						JuiceButtons.secondary("Add Selected (\(selectedAppKeys.count))") {
+						JuiceButtons.primary("Add Selected (\(selectedAppKeys.count))") {
 							addSelectedToQueue()
 						}
 						.padding(.trailing, 20)
@@ -251,7 +269,7 @@ struct UpdatesView: View {
 				}
 				.background(Color.clear)
 				.frame(maxHeight: 500)
-				.frame(minWidth: 580)
+				.frame(minWidth: 550)
 
 			}
 
@@ -291,64 +309,47 @@ struct UpdatesView: View {
 
 	@ViewBuilder
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
-		QueuePanel(
+		InspectorUpdatesQueuePanelView(
 			tab: $rightTab,
 			notice: $queueNotice,
-			queueTitle: "Updates Queue",
-			resultsTitle: "Results",
-			queueCountText: "\(queueItems.count) selected",
-			resultsCountText: "\(resultsItems.count) processed",
-			queueIsEmpty: queueItems.isEmpty,
-			resultsIsEmpty: resultsItems.isEmpty,
-			onQueueAction: {
-				withAnimation(.easeInOut(duration: 0.2)) {
-					queueItems.removeAll()
-					selectedAppKeys.removeAll()
-				}
+			queueItems: $queueItems,
+			resultsItems: $resultsItems,
+			selectedAppKeys: $selectedAppKeys,
+			panelMinHeight: panelMinHeight,
+			onPrimaryAction: {
+				confirmationMode = .upload
+				confirmationVisible = true
 			},
-			onResultsAction: {
-				withAnimation(.easeInOut(duration: 0.2)) {
-					resultsItems.removeAll()
-				}
+			onSecondaryAction: {
+				confirmationMode = .download
+				confirmationVisible = true
 			}
-		) {
-			AnyView(
-				LazyVStack(spacing: 8) {
-					ForEach(queueItems) { item in
-						AppDetailListItem(
-							item: item,
-							label: "New Version"
-						)
-						.transition(.opacity.combined(with: .move(edge: .top)))
-					}
-				}
-			)
-		} resultsContent: {
-			AnyView(
-				LazyVStack(spacing: 8) {
-					ForEach(resultsItems) { item in
-						AppDetailListItem(
-							item: item,
-							label: "New Version"
-						)
-						.transition(.opacity.combined(with: .move(edge: .top)))
-					}
-				}
-			)
-		}
-		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
-		.frame(maxWidth: .infinity, alignment: .trailing)
+		)
 	}
 
-	private var bottomActions: some View {
-		HStack {
-			Spacer()
-			JuiceButtons.primary("Upload to UEM") {}
-				.disabled(queueItems.isEmpty)
-			JuiceButtons.secondary("Download Only", usesColorGradient: false) {}
-				.disabled(queueItems.isEmpty)
+	private func updateInspector() {
+		guard let app = selectedApp else {
+			if inspector.isPresented {
+				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+			}
+			return
 		}
+		inspector.show(
+			AppDetailContent(
+				item: app,
+				onAddToQueue: {
+					addToQueue(app)
+					selectedApp = nil
+					inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+				},
+				onClose: {
+					selectedApp = nil
+					inspector
+						.hide()
+				}
+			)
+			.padding(-20)
+		)
 	}
 }
 
@@ -373,6 +374,7 @@ private extension UpdatesView {
 			return
 		}
 		queueItems.append(queueItem(from: app))
+		inspector.notifyQueueAdded()
 		uemApps.removeAll { appKey($0) == key }
 		selectedAppKeys.remove(key)
 		if showNotice {
@@ -432,6 +434,7 @@ private extension UpdatesView {
 		queueNotice = .init(message: message, isDuplicate: isDuplicate)
 	}
 }
+
 
 private struct AnimatedAppCard: View {
     let app: UemApplication
@@ -547,5 +550,25 @@ private struct GlassSwitchToggleStyle: ToggleStyle {
 
 #Preview {
 	UpdatesView(model: .sample)
-		.frame(width: 1200, height: 720)
+		.environmentObject(InspectorCoordinator())
+		.frame(width: 700, height: 400)
+		.background(){
+			JuiceGradient()
+				.frame(maxWidth: .infinity)
+				.frame(height: 500)
+				.mask(
+					LinearGradient(
+						stops: [
+							.init(color: Color.white, location: 0.0),
+							.init(color: Color.white, location: 0.55),
+							.init(color: Color.white.opacity(0.7), location: 0.7),
+							.init(color: Color.white.opacity(0.3), location: 0.82),
+							.init(color: Color.white.opacity(0.0), location: 1.0)
+						],
+						startPoint: .top,
+						endPoint: .bottom
+					)
+				)
+				.ignoresSafeArea(edges: .top)
+		}
 }

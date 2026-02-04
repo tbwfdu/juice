@@ -62,8 +62,8 @@ struct AppDetailCard: View {
 	}
 
 	private var content: some View {
-		VStack(alignment: .leading, spacing: 12) {
-			HStack(alignment: .top, spacing: 16) {
+		VStack(alignment: .leading, spacing: 8) {
+			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
 					IconByFiletype(
 						applicationFileName: item.applicationFileName
@@ -188,10 +188,17 @@ struct AppDetailCard: View {
 			if #available(macOS 26.0, iOS 26.0, *) {
 				GlassEffectContainer {
 					content
-						.padding(.horizontal, 16)
-						.padding(.vertical, 12)
-						.glassEffect(.regular, in: shape)
+						.padding(.horizontal, 10)
+						.padding(.vertical, 15)
+						.glassEffect(.clear, in: shape)
 				}
+				.background(
+					shape.fill(Color.white.opacity(0.8))
+				)
+				.overlay(
+					shape.fill(Color.white.opacity(0.0))
+				)
+				.opacity(1)
 				.shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
 				.clipShape(shape)
 				.overlay(
@@ -238,7 +245,7 @@ struct AppDetailCard: View {
 					}
 			}
 		}
-		.frame(maxWidth: 300)
+		.frame(maxWidth: 280)
 		.contentShape(shape)
 		.gesture(
 			TapGesture().onEnded {
@@ -367,6 +374,40 @@ extension View {
 		updatedApplicationGuid: nil,
 		updatedApplication: nil
 	)
-
-	AppDetailCard(item: exampleAppItem).frame(width: 300)
+	let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+	ZStack(){
+		if #available(macOS 26.0, iOS 26.0, *) {
+			GlassEffectContainer {
+				shape
+					.fill(Color.clear)
+					.glassEffect(.regular, in: shape)
+			}
+			.overlay {
+				shape
+					.fill(Color.white.opacity(0))
+					.opacity(1)
+			}
+			AppDetailCard(item: exampleAppItem)
+		}
+	}
+	.frame(width: 300)
+		.background(){
+			JuiceGradient()
+				.frame(maxWidth: .infinity)
+				.frame(height: 500)
+				.mask(
+					LinearGradient(
+						stops: [
+							.init(color: Color.white, location: 0.0),
+							.init(color: Color.white, location: 0.55),
+							.init(color: Color.white.opacity(0.7), location: 0.7),
+							.init(color: Color.white.opacity(0.3), location: 0.82),
+							.init(color: Color.white.opacity(0.0), location: 1.0)
+						],
+						startPoint: .top,
+						endPoint: .bottom
+					)
+				)
+				.ignoresSafeArea(edges: .top)
+		}
 }

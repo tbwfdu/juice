@@ -45,6 +45,7 @@ struct NavigationMenu: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(Color.clear)
                     .onHover { hovering in
                         hoveredItem = hovering ? item : (hoveredItem == item ? nil : hoveredItem)
                     }
@@ -52,6 +53,7 @@ struct NavigationMenu: View {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+            .background(Color.clear)
             .tint(Color(nsColor: .controlAccentColor))
 
             Spacer(minLength: 0)
@@ -84,6 +86,7 @@ struct NavigationMenu: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
                 .onHover { hovering in
                     hoveredItem = hovering ? .settings : (hoveredItem == .settings ? nil : hoveredItem)
                 }
@@ -91,11 +94,14 @@ struct NavigationMenu: View {
             .listStyle(.sidebar)
             .scrollDisabled(true)
             .scrollContentBackground(.hidden)
+            .background(Color.clear)
             .frame(height: 60)
             .padding(.bottom, 8)
         }
-        .frame(minWidth: 280)
-		.background(.ultraThinMaterial)
+        .frame(minWidth: 220)
+		.background {
+			Color.clear
+		}
         .environment(\.controlActiveState, .active)
         //.background(Color(nsColor: .windowBackgroundColor))
     }

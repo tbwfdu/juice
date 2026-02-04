@@ -23,8 +23,8 @@ struct AutoSuggestBox<T: Identifiable, ItemView: View>: View {
 		VStack(spacing: 0) {
 			let isActive = isEditing && isFocused.wrappedValue
 			let shape = RoundedRectangle(cornerRadius: isActive ? 20 : 14, style: .continuous)
-			let inputVerticalPadding: CGFloat = isActive ? 6 : 4
-			let containerVerticalPadding: CGFloat = isActive ? 9 : 6
+			let inputVerticalPadding: CGFloat = 5
+			let containerVerticalPadding: CGFloat = 8
 			// Input Field
 			HStack {
 				Image(systemName: "magnifyingglass")
@@ -42,10 +42,11 @@ struct AutoSuggestBox<T: Identifiable, ItemView: View>: View {
 						onCommit()
 					}
 				)
-					.font(.system(size: isActive ? 16 : 13, weight: .regular))
+					.font(.system(size: 14, weight: .regular))
 					.textFieldStyle(.plain)
 					.padding(.vertical, inputVerticalPadding)
 					.padding(.horizontal, 12)
+					.frame(height: 22, alignment: .center)
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.focused(isFocused)
 			}
@@ -77,7 +78,6 @@ struct AutoSuggestBox<T: Identifiable, ItemView: View>: View {
 				y: isActive ? 3 : 0
 			)
 			.opacity(isActive ? 1 : 0.6)
-			.scaleEffect(isActive ? 1.0 : 0.985, anchor: .center)
 			.scaleEffect(isHovered && !isActive ? 1.01 : 1)
 			.animation(.easeInOut(duration: 0.2), value: isActive)
 			.contentShape(shape)

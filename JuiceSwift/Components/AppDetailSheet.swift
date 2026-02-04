@@ -21,91 +21,94 @@ struct AppDetailSheet: View {
 
 	var body: some View {
 		let glassBaseOpacity = focusObserver.isFocused ? 0.9 : 0.25
-		GeometryReader { proxy in
-			let width = max(0, proxy.size.width - 40)
-			let height = max(0, proxy.size.height - 40)
-			let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
-			VStack(alignment: .leading, spacing: 20) {
-				header
-				Divider()
-				ScrollView {
-					VStack(alignment: .leading, spacing: 18) {
-						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
-							detailGrid(rows: overviewRows)
-						}
-						.disclosureGroupStyle(DetailSectionDisclosureStyle())
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
+                        detailGrid(rows: overviewRows)
+                    }
+                    .disclosureGroupStyle(DetailSectionDisclosureStyle())
 
-						if !countRows.isEmpty {
-							DisclosureGroup("Counts", isExpanded: $countsExpanded) {
-								detailGrid(rows: countRows)
-							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
-						}
+                    if !countRows.isEmpty {
+                        DisclosureGroup("Counts", isExpanded: $countsExpanded) {
+                            detailGrid(rows: countRows)
+                        }
+                        .disclosureGroupStyle(DetailSectionDisclosureStyle())
+                    }
 
-						if !smartGroupNames.isEmpty {
-							DisclosureGroup("Smart Groups", isExpanded: $smartGroupsExpanded) {
-								FlowLayout(spacing: 8, rowSpacing: 8) {
-									ForEach(smartGroupNames, id: \.self) { name in
-										Pill(name, color: .blue)
-									}
-								}
-							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
-						}
+                    if !smartGroupNames.isEmpty {
+                        DisclosureGroup("Smart Groups", isExpanded: $smartGroupsExpanded) {
+                            FlowLayout(spacing: 8, rowSpacing: 8) {
+                                ForEach(smartGroupNames, id: \.self) { name in
+                                    Pill(name, color: .blue)
+                                }
+                            }
+                        }
+                        .disclosureGroupStyle(DetailSectionDisclosureStyle())
+                    }
 
-						if let matchedApp = item.updatedApplication {
-							DisclosureGroup("Matched Catalog App", isExpanded: $matchedExpanded) {
-								VStack(alignment: .leading, spacing: 10) {
-									Text(matchedApp.name.first ?? matchedApp.token)
-										.font(.system(.headline, weight: .semibold))
-									matchedCatalogDetails(for: matchedApp)
-								}
-							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
-						}
-					}
-					.padding(.top, 4)
-					.padding(.trailing, 22)
-				}
-				.padding(.trailing, -22)
-				.frame(maxHeight: .infinity, alignment: .top)
-				.layoutPriority(1)
+                    if let matchedApp = item.updatedApplication {
+                        DisclosureGroup("Matched Catalog App", isExpanded: $matchedExpanded) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(matchedApp.name.first ?? matchedApp.token)
+                                    .font(.system(.headline, weight: .semibold))
+                                matchedCatalogDetails(for: matchedApp)
+                            }
+                        }
+                        .disclosureGroupStyle(DetailSectionDisclosureStyle())
+                    }
+                }
+                .padding(.top, 4)
+                .padding(.trailing, 22)
+            }
+            .padding(.trailing, -22)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .layoutPriority(1)
 
-				HStack {
-					Spacer()
-					JuiceButtons.secondary("Close") {
-						onClose?()
-						dismiss()
-					}
-					JuiceButtons.primary("Add to Queue") {
-						onAddToQueue?()
+			HStack {
+				Spacer()
+				JuiceButtons.secondary("Close") {
+					if let onClose {
+						onClose()
+					} else {
 						dismiss()
 					}
 				}
-			}
-			.padding(24)
-			.frame(width: width, height: height, alignment: .topLeading)
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.background {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					ZStack {
-						shape.fill(Color.white.opacity(glassBaseOpacity))
-						GlassEffectContainer {
-							shape
-								.fill(Color.white)
-								.glassEffect(.regular, in: shape)
-						}
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-				}
-			}
-			.background(WindowFocusReader { focusObserver.attach($0) })
-			.clipShape(shape)
-			.overlay(shape.strokeBorder(.white.opacity(0.12)))
-			.shadow(color: Color.black.opacity(0.16), radius: 6, x: 0, y: 4)
-		}
-		.frame(minWidth: 700, minHeight: 520)
+				JuiceButtons.primary("Add to Queue") {
+					onAddToQueue?()
+					dismiss()
+                }
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+            if #available(macOS 26.0, iOS 26.0, *) {
+                ZStack {
+                    shape.fill(Color.white.opacity(glassBaseOpacity))
+                    GlassEffectContainer {
+                        shape
+                            .fill(Color.white)
+                            .glassEffect(.regular, in: shape)
+                    }
+                }
+            } else {
+                shape.fill(.ultraThinMaterial)
+            }
+        }
+        .background(WindowFocusReader { focusObserver.attach($0) })
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(.white.opacity(0.12)))
+        .shadow(color: Color.black.opacity(0.16), radius: 6, x: 0, y: 4)
+        .padding(20)
+        .frame(minWidth: 400, minHeight: 520)
+		.background(Color.clear)
+		#if os(macOS)
+		.presentationBackground(.clear)
+		#endif
 	}
 
 	private var header: some View {
@@ -205,7 +208,7 @@ struct AppDetailSheet: View {
 					Text(row.value)
 						.font(.system(size: 12, weight: .medium))
 						.foregroundStyle(.primary)
-						.lineLimit(1)
+						// Removed lineLimit(1)
 						.frame(maxWidth: .infinity, alignment: .leading)
 				}
 				.padding(.vertical, 6)
@@ -259,7 +262,7 @@ struct AppDetailSheet: View {
 						Text(row.value)
 							.font(.system(size: 12, weight: .medium))
 							.foregroundStyle(.primary)
-							.lineLimit(2)
+							// Removed lineLimit(2)
 							.frame(maxWidth: .infinity, alignment: .leading)
 					}
 				}

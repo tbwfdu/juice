@@ -8,7 +8,7 @@ struct Juice: App {
     @StateObject private var catalog = LocalCatalog()
     @State private var hasBootstrapped = false
 	
-	let logPrefix = "JuiceApp"
+	let logPrefix = "Juice"
 	let logger = Logger(
 		subsystem: Bundle.main.bundleIdentifier ?? "Juice",
 		category: "OnLoaded"
@@ -17,7 +17,8 @@ struct Juice: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 1150, minHeight: 600)
+                //.frame(minWidth: 1150, minHeight: 600)
+				.frame(minWidth: 650, minHeight: 600)
                 .background(WindowConfigurator())
                 .environmentObject(catalog)
                 .task {

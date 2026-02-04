@@ -6,8 +6,10 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var isHoveringSidebar = false
     @ObservedObject private var glassPresenter = GlassWindowPresenter.shared
+	@StateObject private var inspector = InspectorCoordinator()
+    @State private var inspectorWidth: CGFloat = 400
 
-    init(initialSelection: NavigationItem? = .landing) {
+    init(initialSelection: NavigationItem? = .search) {
         _selection = State(initialValue: initialSelection)
     }
 
@@ -17,7 +19,9 @@ struct ContentView: View {
                 .onHover { hovering in isHoveringSidebar = hovering }
                 .onChange(of: selection) { _, _ in
                     columnVisibility = .detailOnly
+					inspector.hide()
                 }
+				
         } detail: {
             ZStack(alignment: .top) {
                 WindowGlassBackground()
@@ -59,12 +63,41 @@ struct ContentView: View {
                     GradientHeaderBar(title: "Juice", backgroundStyle: useGradientBackground ? .clear : .gradient)
                         .zIndex(1)
                 }
+                
+                // Floating Inspector Control
+                if currentSelection != .landing && currentSelection != .settings {
+					
+                    let inspectorOffset: CGFloat = inspector.isPresented ? (inspectorWidth - 5) : 0
+                    HStack {
+                        Spacer()
+                        InspectorControl(inspector: inspector, columnVisibility: $columnVisibility)
+                            .padding(.top, 8)
+                            .padding(.trailing, 16 + inspectorOffset)
+                    }
+                    .zIndex(99)
+                }
+
                 if glassPresenter.isPresenting {
                     WindowBlurOverlay()
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .zIndex(2)
                 }
+
+                InspectorOverlayView(
+                    content: inspector.content,
+                    hasContent: inspector.hasContent,
+                    isPresented: inspector.isPresented,
+                    widthRange: 400...500,
+                    onWidthChange: { newWidth in
+                        inspectorWidth = newWidth
+                    },
+					onDismiss: {
+						guard !inspector.isPinned else { return }
+						inspector.hide(resetContent: false)
+					}
+                )
+                .zIndex(4)
             }
             .contentShape(Rectangle())
             .onTapGesture {
@@ -73,12 +106,18 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea()
+            .ignoresSafeArea(edges: [.top, .leading, .bottom])
+        }
+        .onChange(of: columnVisibility) { _, newValue in
+            if newValue == .all {
+                inspector.hide()
+            }
         }
         .navigationSplitViewStyle(.balanced)
         .toolbarBackground(.hidden, for: .windowToolbar)
-        .navigationSplitViewColumnWidth(min: 250, ideal: 280, max: 320)
-    }
+        .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 350)
+        .environmentObject(inspector)
+	}
 
     @ViewBuilder
     private var detailView: some View {
@@ -95,6 +134,7 @@ struct ContentView: View {
             SettingsView(model: model)
         }
     }
+
 }
 
 struct JuiceGradient: View {
@@ -103,77 +143,122 @@ struct JuiceGradient: View {
     }
 }
 
-@available(macOS 26.0, *)
-struct ExpandableMenu: View {
-    @State private var isExpanded = false
-    @Namespace private var namespace
+private struct InspectorOverlayView: View {
+    let content: AnyView
+    let hasContent: Bool
+    let isPresented: Bool
+    let widthRange: ClosedRange<CGFloat>
+    let onWidthChange: (CGFloat) -> Void
+	let onDismiss: () -> Void
+    @State private var measuredWidth: CGFloat = 0
 
     var body: some View {
-        GlassEffectContainer(spacing: 20) {
-            HStack(spacing: 16) {
-                if isExpanded {
-                    Button("Camera", systemImage: "camera") { }
-                        .glassEffect(.regular.interactive())
-                        .glassEffectID("camera", in: namespace)
+        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+        let paddedWidth = measuredWidth > 0 ? (measuredWidth + 40) : widthRange.lowerBound
+        let clampedWidth = max(widthRange.lowerBound, min(widthRange.upperBound, paddedWidth))
+        let hiddenOffset = clampedWidth + 40
 
-                    Button("Photos", systemImage: "photo") { }
-                        .glassEffect(.regular.interactive())
-                        .glassEffectID("photos", in: namespace)
-                }
+		ZStack(alignment: .topTrailing) {
+			if isPresented {
+				Color.clear
+					.contentShape(Rectangle())
+					.ignoresSafeArea()
+					.onTapGesture {
+						onDismiss()
+					}
+					.allowsHitTesting(true)
+			}
 
-                Button {
-                    withAnimation(.bouncy) {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    Image(systemName: isExpanded ? "xmark" : "plus")
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.glassProminent)
-                .buttonBorderShape(.circle)
-                .glassEffectID("toggle", in: namespace)
-            }
-        }
+			VStack(alignment: .leading, spacing: 0) {
+				if hasContent {
+					content
+						.background(
+							GeometryReader { proxy in
+								Color.clear
+									.preference(key: InspectorContentWidthKey.self, value: proxy.size.width)
+							}
+						)
+				} else {
+					VStack(alignment: .leading, spacing: 6) {
+						Text("Inspector")
+							.font(.system(size: 16, weight: .semibold))
+						Text("Select an item to see details.")
+							.font(.system(size: 12, weight: .medium))
+							.foregroundStyle(.secondary)
+					}
+					.padding(.top, 6)
+				}
+			}
+			.padding(20)
+			.frame(width: clampedWidth)
+			.frame(maxHeight: .infinity, alignment: .top)
+			.background {
+				if #available(macOS 26.0, iOS 26.0, *) {
+					ZStack {
+						shape
+							.fill(Color(red: 1.0, green: 0.965, blue: 0.93).opacity(0.2))
+						GlassEffectContainer {
+							shape
+								.fill(Color.clear)
+								.glassEffect(.regular, in: shape)
+						}
+					}
+				} else {
+					shape.fill(.ultraThinMaterial)
+						.opacity(0.7)
+				}
+			}
+			.clipShape(shape)
+			.overlay(shape.strokeBorder(.white.opacity(0.12)))
+			.overlay(
+				ZStack {
+					RadialGradient(
+						colors: [Color.white.opacity(0.35), .clear],
+						center: .topLeading,
+						startRadius: 0,
+						endRadius: 10
+					)
+					RadialGradient(
+						colors: [Color.white.opacity(0.26), .clear],
+						center: .bottomTrailing,
+						startRadius: 0,
+						endRadius: 10
+					)
+				}
+				.clipShape(shape)
+				.blendMode(.screen)
+				.allowsHitTesting(false)
+			)
+			.shadow(color: Color.black.opacity(0.14), radius: 12, x: 0, y: 8)
+			.padding(.top, 8)
+			.padding(.trailing, 8)
+			.padding(.bottom, 8)
+			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+			.opacity(isPresented ? 1 : 0)
+			.offset(x: isPresented ? 0 : hiddenOffset)
+			.allowsHitTesting(isPresented)
+			.animation(.easeInOut(duration: 0.25), value: isPresented)
+			.onTapGesture {
+				// Consume taps inside the panel so they don't dismiss it.
+			}
+		}
+		.onPreferenceChange(InspectorContentWidthKey.self) { newWidth in
+			guard newWidth > 0 else { return }
+			if newWidth != measuredWidth {
+				measuredWidth = newWidth
+			}
+			let nextWidth = max(widthRange.lowerBound, min(widthRange.upperBound, newWidth + 40))
+			onWidthChange(nextWidth)
+		}
     }
 }
 
-// Fallback for earlier macOS versions where GlassEffectContainer is unavailable
-struct ExpandableMenu_PrebigSurFallback: View {
-    @State private var isExpanded = false
-
-    var body: some View {
-        HStack(spacing: 16) {
-            if isExpanded {
-                Button("Camera", systemImage: "camera") { }
-                Button("Photos", systemImage: "photo") { }
-            }
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                Image(systemName: isExpanded ? "xmark" : "plus")
-                    .frame(width: 44, height: 44)
-            }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-        }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
-    }
-}
-
-// Typealias to expose a single name `ExpandableMenu` across OS versions
-@available(macOS, introduced: 13)
-struct ExpandableMenu_AvailabilityAdapter: View {
-    var body: some View {
-        if #available(macOS 26.0, *) {
-            ExpandableMenu()
-        } else {
-            ExpandableMenu_PrebigSurFallback()
+private struct InspectorContentWidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 {
+            value = next
         }
     }
 }
@@ -200,56 +285,34 @@ struct PlaceholderView: View {
     }
 }
 
+
+
 #Preview("Landing") {
 	
     ContentView(initialSelection: .landing)
         .environmentObject(LocalCatalog(/* init with preview-safe data if needed */))
-        .frame(width: 900, height: 600)
+        .frame(width: 1200, height: 700)
 }
 #Preview("Search") {
     ContentView(initialSelection: .search)
         .environmentObject(LocalCatalog(/* init with preview-safe data if needed */))
-        .frame(width: 900, height: 600)
+        .frame(width: 1200, height: 700)
 }
 
 #Preview("Updates") {
     ContentView(initialSelection: .updates)
         .environmentObject(LocalCatalog(/* init with preview-safe data if needed */))
-        .frame(width: 900, height: 600)
+        .frame(width: 1200, height: 700)
 }
 
 #Preview("Import Apps") {
     ContentView(initialSelection: .importApps)
         .environmentObject(LocalCatalog(/* init with preview-safe data if needed */))
-        .frame(width: 900, height: 600)
+        .frame(width: 1200, height: 700)
 }
 
 #Preview("Settings") {
     ContentView(initialSelection: .settings)
         .environmentObject(LocalCatalog(/* init with preview-safe data if needed */))
-        .frame(width: 900, height: 600)
+        .frame(width: 1200, height: 700)
 }
-
-#Preview("Expandable Menu") {
-    if #available(macOS 26.0, *) {
-        ExpandableMenu()
-    } else {
-        ExpandableMenu_PrebigSurFallback()
-    }
-}
-
-#Preview("Expandable Menu over Gradient") {
-	ZStack {
-		JuiceGradient()
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.ignoresSafeArea()
-
-		if #available(macOS 26.0, *) {
-			ExpandableMenu()
-		} else {
-			ExpandableMenu_PrebigSurFallback()
-		}
-	}
-	.frame(width: 600, height: 300)
-}
-

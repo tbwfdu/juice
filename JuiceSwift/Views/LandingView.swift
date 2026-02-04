@@ -66,7 +66,7 @@ struct LandingView: View {
         }
         .padding(.top, 40)
         .padding(.bottom, 3)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: 450)
         .frame(height: 240, alignment: .top)
     }
 }

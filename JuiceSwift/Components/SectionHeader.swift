@@ -18,7 +18,8 @@ struct SectionHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 24, weight: .semibold))
+                //.font(.system(size: 24, weight: .semibold))
+				.font(.largeTitle.weight(.semibold))
             if let subtitle {
                 Text(subtitle)
                     .font(.system(size: 12, weight: .medium))

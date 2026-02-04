@@ -1,27 +1,7 @@
 import SwiftUI
 
 struct ConfirmationDialog<Item: Identifiable, RowContent: View>: View {
-    enum Mode {
-        case upload
-        case download
-        case uploadOnly
-
-        var verb: String {
-            switch self {
-            case .upload, .uploadOnly: return "upload"
-            case .download: return "download"
-            }
-        }
-
-        var destinationText: String {
-            switch self {
-            case .upload, .uploadOnly: return "to Workspace ONE."
-            case .download: return "to your local device."
-            }
-        }
-    }
-
-    let mode: Mode
+    let mode: ConfirmationActionMode
     let items: [Item]
     let uploadOnlyItems: [Item]
     let title: String
@@ -33,7 +13,7 @@ struct ConfirmationDialog<Item: Identifiable, RowContent: View>: View {
 	@StateObject private var focusObserver = WindowFocusObserver()
 
     init(
-        mode: Mode,
+        mode: ConfirmationActionMode,
         items: [Item],
         uploadOnlyItems: [Item] = [],
         title: String = "Ready to Proceed?",

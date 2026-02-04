@@ -19,14 +19,14 @@ public struct Pill: View {
     public var body: some View {
         let shape = Capsule(style: .continuous)
         Text(value)
-            .foregroundStyle(color ?? .accentColor).opacity(0.6)
+            .foregroundStyle(color ?? .accentColor).opacity(0.8)
             .font(.system(.footnote, weight: .semibold))
             .padding(.vertical, 2)
             .padding(.horizontal, 6)
             .background {
                 if #available(macOS 26.0, iOS 26.0, *) {
                     shape
-                        .fill(color ?? .accentColor).opacity(0.1)
+                        .fill(color ?? .accentColor).opacity(0.2)
                         .glassEffect(.regular, in: shape)
                 } else {
                     shape
@@ -37,8 +37,8 @@ public struct Pill: View {
                 shape.strokeBorder(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.35),
-                            Color.white.opacity(0.12),
+                            (color ?? .accentColor).opacity(0.35),
+							(color ?? .accentColor).opacity(0.12),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
