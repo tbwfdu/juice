@@ -62,6 +62,11 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		C197FDD42F38828700D46D4D /* Juice_iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Juice_iOS;
+			sourceTree = "<group>";
+		};
 		C1A8B0D52F2851A700921C70 /* Extensions */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Extensions;
@@ -105,6 +110,7 @@
 			children = (
 				A1B2C3D4E5F6010203040511 /* JuiceSwift */,
 				C166BB882F2D91FC0041147B /* Juice-Widgets */,
+				C197FDD42F38828700D46D4D /* Juice_iOS */,
 				C166BB832F2D91FB0041147B /* Frameworks */,
 				A1B2C3D4E5F6010203040512 /* Products */,
 				C143485A2F26ED51009AA717 /* Juice.icon */,
@@ -228,6 +234,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.Juice;
 				PRODUCT_NAME = Juice;
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 			};
@@ -247,6 +255,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.Juice;
 				PRODUCT_NAME = Juice;
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
 			};

@@ -69,107 +69,113 @@ struct GradientHeaderBar: View {
 struct NavigationMenu: View {
     @Binding var selection: NavigationItem?
     @State private var hoveredItem: NavigationItem?
+	@Environment(\.colorScheme) private var colorScheme
+	@StateObject private var focusObserver = WindowFocusObserver()
+
+	private var glassState: GlassStateContext {
+		GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: focusObserver.isFocused
+		)
+	}
 
     var body: some View {
-        VStack(spacing: 0) {
-            List {
-                ForEach(NavigationItem.mainCases) { item in
-                    Button {
-                        selection = item
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: item.systemImage)
-								.font(.system(size: 16, weight: .regular))
-                            Text(item.title)
-								.font(.system(size: 14, weight: .regular))
-                            Spacer(minLength: 0)
-//                            if item == .updates && updatesCount > 0 {
-//                                Text("\(updatesCount)")
-//                                    .font(.system(size: 11, weight: .bold))
-//                                    .foregroundStyle(.white)
-//                                    .padding(.vertical, 2)
-//                                    .padding(.horizontal, 6)
-//                                    .background(
-//                                        Capsule().fill(Color.red)
-//                                    )
-//                            }
-                        }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 10)
-                        .foregroundStyle(
-                            selection == item
-                            ? Color(nsColor: .alternateSelectedControlTextColor)
-                            : Color.primary
-                        )
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(
-                                    selection == item
-                                    ? Color(nsColor: .controlAccentColor).opacity(1)
-                                    : (hoveredItem == item ? Color(nsColor: .controlColor).opacity(0.35) : Color.clear)
-                                )
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
-                    .onHover { hovering in
-                        hoveredItem = hovering ? item : (hoveredItem == item ? nil : hoveredItem)
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
-            .tint(Color(nsColor: .controlAccentColor))
+		let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+		return VStack(spacing: 0) {
+			VStack(alignment: .leading, spacing: 6) {
+				ForEach(NavigationItem.mainCases) { item in
+					navItemButton(item)
+				}
+			}
 
-            Spacer(minLength: 0)
+			Spacer(minLength: 0)
 
-            List {
-                Button {
-                    selection = .settings
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: NavigationItem.settings.systemImage)
-                            .font(.system(size: 16, weight: .regular))
-                        Text(NavigationItem.settings.title)
-							.font(.system(size: 14, weight: .regular))
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 10)
-                    .foregroundStyle(
-                        selection == .settings
-                        ? Color(nsColor: .alternateSelectedControlTextColor)
-                        : Color.primary
-                    )
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(
-                                selection == .settings
-                                ? Color(nsColor: .controlAccentColor).opacity(0.35)
-                                : (hoveredItem == .settings ? Color(nsColor: .controlColor).opacity(0.35) : Color.clear)
-                            )
-                    )
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .onHover { hovering in
-                    hoveredItem = hovering ? .settings : (hoveredItem == .settings ? nil : hoveredItem)
-                }
-            }
-            .listStyle(.sidebar)
-            .scrollDisabled(true)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
-            .frame(height: 60)
-            .padding(.bottom, 8)
-        }
-        .frame(minWidth: 220)
+			navItemButton(.settings)
+		}
+		.padding(16)
+		.frame(minWidth: 220, idealWidth: 280, maxWidth: 350)
+		.frame(maxHeight: .infinity, alignment: .top)
 		.background {
 			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+					fillOpacity: 0.40,
+					surfaceOpacity: 0.90
+				)
+			}
+			.clipShape(shape)
+			.glassCompatBorder(in: shape, context: glassState, role: .standard)
+			.overlay(
+				ZStack {
+					RadialGradient(
+						colors: [GlassThemeTokens.textPrimary(for: glassState).opacity(0.35), .clear],
+						center: .topLeading,
+						startRadius: 0,
+						endRadius: 10
+					)
+					RadialGradient(
+						colors: [GlassThemeTokens.textPrimary(for: glassState).opacity(0.26), .clear],
+						center: .bottomTrailing,
+						startRadius: 0,
+						endRadius: 10
+					)
+				}
+				.clipShape(shape)
+				.blendMode(.screen)
+				.allowsHitTesting(false)
+			)
+			.glassCompatShadow(context: glassState, elevation: .panel)
+			.background(WindowFocusReader { focusObserver.attach($0) })
 		}
-        .environment(\.controlActiveState, .active)
-        //.background(Color(nsColor: .windowBackgroundColor))
+
+	@ViewBuilder
+	private func navItemButton(_ item: NavigationItem) -> some View {
+		let isSelected = selection == item
+		let rowShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+		#if os(macOS)
+		let selectedForeground = Color(nsColor: .alternateSelectedControlTextColor)
+		let selectedBackground = Color(nsColor: .controlAccentColor)
+		let hoveredBackground = Color(nsColor: .controlColor).opacity(0.22)
+		#else
+		let selectedForeground = GlassThemeTokens.textPrimary(for: glassState)
+		let selectedBackground = GlassThemeTokens.selectedChipFill(for: glassState)
+		let hoveredBackground = GlassThemeTokens.overlayColor(for: glassState, role: .hover)
+		#endif
+		let hoverForeground = GlassThemeTokens.textPrimary(for: glassState).opacity(0.78)
+		let iconForeground: Color = isSelected ? selectedForeground : (hoveredItem == item ? hoverForeground : .primary)
+		let textForeground: Color = isSelected ? selectedForeground : (hoveredItem == item ? hoverForeground : .primary)
+		Button {
+			selection = item
+		} label: {
+			HStack(spacing: 10) {
+				Image(systemName: item.systemImage)
+					.font(.system(size: 16, weight: .regular))
+					.foregroundStyle(iconForeground)
+				Text(item.title)
+					.font(.system(size: 14, weight: .regular))
+					.foregroundStyle(textForeground)
+				Spacer(minLength: 0)
+			}
+			.padding(.vertical, 10)
+			.padding(.horizontal, 10)
+			.background(
+					rowShape
+						.fill(
+							isSelected
+								? selectedBackground
+								: (hoveredItem == item
+									? hoveredBackground
+									: .clear)
+						)
+				)
+		}
+		.buttonStyle(.plain)
+		.onHover { hovering in
+			hoveredItem = hovering ? item : (hoveredItem == item ? nil : hoveredItem)
+		}
     }
 }
 

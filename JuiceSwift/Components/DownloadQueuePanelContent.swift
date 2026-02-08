@@ -30,20 +30,22 @@ struct DownloadQueuePanelContent: View {
 			? AnyView(
 					HStack {
 						Spacer()
-						if showCancelButton {
-							Button("Cancel") {
-								showCancelConfirmation = true
+							if showCancelButton {
+								Button("Cancel") {
+									showCancelConfirmation = true
+								}
+								.nativeActionButtonStyle(.secondary, controlSize: .small)
+								.buttonBorderShape(.capsule)
 							}
-							.nativeActionButtonStyle(.secondary, controlSize: .small)
-						}
-						if showContinueButton {
-							Button("Continue") {
-								model.startUploadAfterEdits()
+							if showContinueButton {
+								Button("Continue") {
+									model.startUploadAfterEdits()
+								}
+								.nativeActionButtonStyle(.primary, controlSize: .small)
+								.buttonBorderShape(.capsule)
 							}
-							.nativeActionButtonStyle(.primary, controlSize: .small)
 						}
-					}
-			)
+				)
 			: nil
 		QueuePanelContent(
 			tab: $tab,

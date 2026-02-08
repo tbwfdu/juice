@@ -211,11 +211,7 @@ struct MetadataEditSheet: View {
 						.foregroundStyle(.secondary)
 				}
 			}
-			}
-			.background(
-				RoundedRectangle(cornerRadius: 10, style: .continuous)
-					.fill(GlassThemeTokens.overlayColor(for: glassState, role: .subtle))
-			)
+		}
 	}
 
 	private var recipePicker: some View {
@@ -246,19 +242,20 @@ struct MetadataEditSheet: View {
 					.labelsHidden()
 				}
 					.padding(8)
-					.background(
+					.overlay(
 						RoundedRectangle(cornerRadius: 8, style: .continuous)
-							.fill(
-								GlassThemeTokens.overlayColor(
+							.strokeBorder(
+								GlassThemeTokens.borderColor(
 									for: glassState,
-									role: .subtle
-								)
+									role: .standard
+								),
+								lineWidth: 0.6
 							)
 					)
 				}
 			}
-		.padding(.horizontal, 10)
-	}
+			.padding(.horizontal, 10)
+		}
 
 	private var scriptsSection: some View {
 		DisclosureGroup(isExpanded: $scriptsExpanded) {
@@ -280,19 +277,15 @@ struct MetadataEditSheet: View {
 			}
 				.padding(.horizontal, 10)
 				.padding(.top, 10)
-		} label: {
-			VStack(alignment: .leading, spacing: 2) {
-				Text("Add/Edit Scripts")
+			} label: {
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Add/Edit Scripts")
 					.font(.system(size: 13, weight: .semibold))
 				Text("Expand to add or edit scripts")
 					.font(.system(size: 11))
-					.foregroundStyle(.secondary)
+						.foregroundStyle(.secondary)
+				}
 			}
-		}
-			.background(
-				RoundedRectangle(cornerRadius: 10, style: .continuous)
-					.fill(GlassThemeTokens.overlayColor(for: glassState, role: .subtle))
-			)
 	}
 
 	private var footer: some View {
@@ -358,6 +351,8 @@ struct MetadataEditSheet: View {
 				TextEditor(text: text)
 					.font(.system(.caption, design: .monospaced))
 					.frame(minHeight: 80)
+					.scrollContentBackground(.hidden)
+					.background(Color.clear)
 					.overlay(
 						RoundedRectangle(cornerRadius: 8, style: .continuous)
 							.strokeBorder(

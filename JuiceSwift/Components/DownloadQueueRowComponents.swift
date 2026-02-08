@@ -81,10 +81,20 @@ struct DownloadReviewRow: View {
 					}
 				}
 					Spacer()
-					Button("Edit") {
-						onEdit()
+					if #available(macOS 26.0, iOS 26.0, *) {
+						Button("Edit") {
+							onEdit()
+						}
+						.buttonStyle(.glass)
+						.controlSize(.small)
+						.buttonBorderShape(.capsule)
+					} else {
+						Button("Edit") {
+							onEdit()
+						}
+						.nativeActionButtonStyle(.secondary, controlSize: .small)
+						.buttonBorderShape(.capsule)
 					}
-					.nativeActionButtonStyle(.secondary, controlSize: .small)
 				}
 			}
 		.padding(8)

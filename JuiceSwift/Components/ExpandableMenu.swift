@@ -244,9 +244,9 @@ private final class WindowClickMonitorView: NSView {
 	private func startMonitoring() {
 		stopMonitoring()
 		guard window != nil else { return }
-		monitor = NSEvent.addLocalMonitorForEvents(matching: [
-			.leftMouseDown, .rightMouseDown,
-		]) { [weak self] event in
+			monitor = NSEvent.addLocalMonitorForEvents(matching: [
+				.leftMouseUp, .rightMouseUp,
+			]) { [weak self] event in
 			guard let self else { return event }
 			guard self.isExpanded, let window = self.window,
 				event.window === window
