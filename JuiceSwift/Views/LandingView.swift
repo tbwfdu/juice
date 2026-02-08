@@ -1,5 +1,7 @@
 import SwiftUI
 
+// Landing page / dashboard summary.
+// Shows high-level catalog counts and branding.
 struct LandingView: View {
     let model: PageViewData
     @EnvironmentObject private var catalog: LocalCatalog
@@ -13,9 +15,11 @@ struct LandingView: View {
     var body: some View {
         ZStack(alignment: .top) {
             VStack(spacing: 0) {
+				// Brand header block.
                 header
 					.padding(.top, -150)
 //                ScrollView {
+				// Quick stats strip.
                     HStack(spacing: 24) {
                         StatCard(title: "Apps", value: "\(catalog.caskApps.count)")
                         StatCard(title: "Recipes", value: "\(catalog.recipes.count)")
@@ -48,7 +52,7 @@ struct LandingView: View {
                     .font(
                         .system(size: 96, weight: .bold, design: .default)
                     )
-                    .tracking(-3)
+                    
                     .foregroundStyle(.primary)
                 Image("JuiceLogo")
                     .resizable()

@@ -18,7 +18,7 @@ struct Juice: App {
         WindowGroup {
             ContentView()
                 //.frame(minWidth: 1150, minHeight: 600)
-				.frame(minWidth: 650, minHeight: 600)
+				.frame(minWidth: 700, minHeight: 600)
                 .background(WindowConfigurator())
                 .environmentObject(catalog)
                 .task {
@@ -32,11 +32,11 @@ struct Juice: App {
 
     @MainActor
     private func bootstrapApp() async {
-        //let _ = await UEMService.instance.getOrgGroupUuid()
-        //let allApps: [UemApplication?] = await UEMService.instance.getAllApps()
-		//printAsJSON(allApps)
+		let settings = SettingsStore().load()
+		await Runtime.Config.applySettings(settings)
     }
 }
+
 
 struct WindowConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
@@ -99,27 +99,62 @@ struct WindowConfigurator: NSViewRepresentable {
 
 actor Runtime {
 
-	private let environment1 = UemEnvironment(
-		id: UUID(),
-		friendlyName: "CN1831 UAT",
-		uemUrl: "https://as1831.awmdm.com",
-		clientId: "004650ae8aaf4ac69967fe8c03d6aab6",
-		clientSecret: "C7EC752B0774BF0658E441B0A0968FF9",
-		oauthRegion: "https://uat.uemauth.workspaceone.com",
-		orgGroupName: "DropbearLabs - UAT",
-		orgGroupId: "1418",
-		orgGroupUuid: "94e8fd6d-cb42-4692-bde0-3cbb9249ee6a"
-	)
-
-	let environments: [UemEnvironment]
-	let activeEnvironment: UemEnvironment
+	private let fallbackEnvironment = UemEnvironment()
+	private(set) var environments: [UemEnvironment]
+	private(set) var activeEnvironment: UemEnvironment
+	private(set) var activeEnvironmentUuid: String?
 
 	// Expose a Singleton like instance here
 	static let Config = Runtime()
 
 	private init() {
-		self.environments = [environment1]
-		self.activeEnvironment = environment1
+		self.environments = [fallbackEnvironment]
+		self.activeEnvironment = fallbackEnvironment
+		self.activeEnvironmentUuid = nil
+	}
+
+	func applySettings(_ settings: SettingsStore.SettingsState) {
+		let incoming = settings.uemEnvironments.isEmpty ? [fallbackEnvironment] : settings.uemEnvironments
+		self.environments = incoming
+		self.activeEnvironmentUuid = settings.activeEnvironmentUuid
+		self.activeEnvironment = resolveActiveEnvironment(
+			environments: incoming,
+			activeUuid: settings.activeEnvironmentUuid
+		)
+	}
+
+	func updateActiveEnvironment(uuid: String?) {
+		self.activeEnvironmentUuid = uuid
+		self.activeEnvironment = resolveActiveEnvironment(
+			environments: environments,
+			activeUuid: uuid
+		)
+	}
+
+	func updateEnvironments(_ updated: [UemEnvironment], activeUuid: String?) {
+		let incoming = updated.isEmpty ? [fallbackEnvironment] : updated
+		self.environments = incoming
+		self.activeEnvironmentUuid = activeUuid
+		self.activeEnvironment = resolveActiveEnvironment(
+			environments: incoming,
+			activeUuid: activeUuid
+		)
+	}
+
+	func currentActiveEnvironment() async -> UemEnvironment {
+		activeEnvironment
+	}
+
+	private func resolveActiveEnvironment(
+		environments: [UemEnvironment],
+		activeUuid: String?
+	) -> UemEnvironment {
+		guard let activeUuid, !activeUuid.isEmpty else {
+			return environments.first ?? fallbackEnvironment
+		}
+		return environments.first(where: { $0.orgGroupUuid == activeUuid })
+			?? environments.first
+			?? fallbackEnvironment
 	}
 
 	//Not used but good to refer back to:

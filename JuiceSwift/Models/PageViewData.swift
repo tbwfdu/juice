@@ -14,8 +14,8 @@ struct PageViewData {
 	let queueItems: [CaskApplication]
 	let searchResults: [CaskApplication]
 	let updateItems: [CaskApplication]
-	let importItems: [ImportItem]
-	let importResults: [ImportItem]
+	let importItems: [ImportedApplication]
+	let importResults: [ImportedApplication]
 	let sampleSearchResult: CaskApplication
 	let settings: JuiceConfig
 	let uemApps: [UemApplication]
@@ -74,37 +74,69 @@ struct PageViewData {
 		],
 		updateItems: [],
 		importItems: [
-			ImportItem(
-				title: "Jamf Pro.pkg",
-				subtitle: "Queued for upload",
-				size: "114 MB",
-				iconName: "shippingbox"
+			ImportedApplication(
+				fileName: "Jamf Pro.pkg",
+				fileExtension: ".pkg",
+				fullFilePath: "/Users/pete/Imports/Jamf Pro.pkg",
+				hasMetadata: true,
+				munkiMetadata: MunkiMetadata(
+					installerFile: "/Users/pete/Imports/output/Jamf Pro.pkg",
+					installerPlist: "/Users/pete/Imports/output/Jamf Pro.plist",
+					iconFile: "/Users/pete/Imports/output/Jamf Pro.png"
+				),
+				macApplication: CaskApplication(
+					token: "jamf-pro",
+					fullToken: "jamf-pro",
+					name: ["Jamf Pro"],
+					desc: "Device management suite",
+					url: "https://example.com/jamf-pro.pkg",
+					version: "11.0.0"
+				)
 			),
-			ImportItem(
-				title: "Notion.dmg",
-				subtitle: "Waiting for metadata",
-				size: "136 MB",
-				iconName: "doc.richtext"
+			ImportedApplication(
+				fileName: "Notion.dmg",
+				fileExtension: ".dmg",
+				fullFilePath: "/Users/pete/Imports/Notion.dmg",
+				hasMetadata: false,
+				munkiMetadata: nil,
+				macApplication: nil
 			),
-			ImportItem(
-				title: "Chef Tools.zip",
-				subtitle: "Unpacked",
-				size: "42 MB",
-				iconName: "archivebox"
+			ImportedApplication(
+				fileName: "Chef Tools.zip",
+				fileExtension: ".zip",
+				fullFilePath: "/Users/pete/Imports/Chef Tools.zip",
+				hasMetadata: false,
+				munkiMetadata: nil,
+				macApplication: nil
 			),
 		],
 		importResults: [
-			ImportItem(
-				title: "Xcode.pkg",
-				subtitle: "Uploaded",
-				size: "12.4 GB",
-				iconName: "hammer"
+			ImportedApplication(
+				fileName: "Xcode.pkg",
+				fileExtension: ".pkg",
+				fullFilePath: "/Users/pete/Imports/Xcode.pkg",
+				hasMetadata: true,
+				munkiMetadata: MunkiMetadata(
+					installerFile: "/Users/pete/Imports/output/Xcode.pkg",
+					installerPlist: "/Users/pete/Imports/output/Xcode.plist",
+					iconFile: "/Users/pete/Imports/output/Xcode.png"
+				),
+				macApplication: CaskApplication(
+					token: "xcode",
+					fullToken: "xcode",
+					name: ["Xcode"],
+					desc: "Apple developer tools",
+					url: "https://example.com/xcode.pkg",
+					version: "16.2"
+				)
 			),
-			ImportItem(
-				title: "Adobe CC.dmg",
-				subtitle: "Validated",
-				size: "4.8 GB",
-				iconName: "scribble"
+			ImportedApplication(
+				fileName: "Adobe CC.dmg",
+				fileExtension: ".dmg",
+				fullFilePath: "/Users/pete/Imports/Adobe CC.dmg",
+				hasMetadata: false,
+				munkiMetadata: nil,
+				macApplication: nil
 			),
 		],
 		sampleSearchResult: CaskApplication(
@@ -117,10 +149,29 @@ struct PageViewData {
 			matchingRecipeId: "horizon-client"
 		),
 		settings: JuiceConfig(
-			uemUrl: "https://uem.example.com",
-			clientId: "uem-client-id",
-			orgGroupId: "1234",
-			orgGroupUuid: "abcd-1234-efgh-5678",
+			uemEnvironments: [
+				UemEnvironment(
+					friendlyName: "Primary Tenant",
+					uemUrl: "https://uem.example.com",
+					clientId: "uem-client-id",
+					clientSecret: "client-secret",
+					oauthRegion: "Americas",
+					orgGroupName: "Global Org Group",
+					orgGroupId: "1234",
+					orgGroupUuid: "abcd-1234-efgh-5678"
+				),
+				UemEnvironment(
+					friendlyName: "Secondary Tenant",
+					uemUrl: "https://uem-secondary.example.com",
+					clientId: "secondary-client-id",
+					clientSecret: "secondary-secret",
+					oauthRegion: "EMEA",
+					orgGroupName: "Engineering",
+					orgGroupId: "5678",
+					orgGroupUuid: "wxyz-9876-zyxw-4321"
+				),
+			],
+			activeEnvironmentUuid: "abcd-1234-efgh-5678",
 			databaseVersion: "2024.02",
 			appVersion: "1.0.0"
 		),
@@ -286,10 +337,19 @@ struct PageViewData {
 			matchingRecipeId: "horizon-client"
 		),
 		settings: JuiceConfig(
-			uemUrl: "https://uem.example.com",
-			clientId: "uem-client-id",
-			orgGroupId: "1234",
-			orgGroupUuid: "abcd-1234-efgh-5678",
+			uemEnvironments: [
+				UemEnvironment(
+					friendlyName: "Primary Tenant",
+					uemUrl: "https://uem.example.com",
+					clientId: "uem-client-id",
+					clientSecret: "client-secret",
+					oauthRegion: "Americas",
+					orgGroupName: "Global Org Group",
+					orgGroupId: "1234",
+					orgGroupUuid: "abcd-1234-efgh-5678"
+				),
+			],
+			activeEnvironmentUuid: "abcd-1234-efgh-5678",
 			databaseVersion: "2024.02",
 			appVersion: "1.0.0"
 		),
@@ -333,11 +393,8 @@ private func decodeCaskApplication(from json: String) -> CaskApplication {
 }
 
 struct JuiceConfig {
-
-	let uemUrl: String
-	let clientId: String
-	let orgGroupId: String
-	let orgGroupUuid: String
+	let uemEnvironments: [UemEnvironment]
+	let activeEnvironmentUuid: String?
 	let databaseVersion: String
 	let appVersion: String
 }

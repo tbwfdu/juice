@@ -35,7 +35,8 @@ actor UEMService {
             _ = await AuthService.instance.authenticate()
         }
 
-		guard let baseURL = URL(string: Runtime.Config.activeEnvironment.uemUrl)
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 		else { return nil }
 		guard
 			let url = URL(
@@ -97,13 +98,14 @@ actor UEMService {
 		if !isValid {
 			_ = await AuthService.instance.authenticate()
 		}
-		guard let baseURL = URL(string: Runtime.Config.activeEnvironment.uemUrl)
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 
 		else { return nil }
 
 		let orgGroupId =
 			(id?.isEmpty == false)
-			? id! : Runtime.Config.activeEnvironment.orgGroupId
+			? id! : activeEnvironment.orgGroupId
 		guard !orgGroupId.isEmpty else { return nil }
 
 		guard
@@ -168,13 +170,14 @@ actor UEMService {
 		}
 	}
 
-	func getAllApps() async -> [UemApplication?] {
+	func getAllApps(includeVersionChecks: Bool = true) async -> [UemApplication?] {
 		let token = await AuthService.instance.accessToken
 		let isValid = (token?.isEmpty == false)
 		if !isValid {
 			_ = await AuthService.instance.authenticate()
 		}
-		guard let baseURL = URL(string: Runtime.Config.activeEnvironment.uemUrl)
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 		else { return [] }
 		guard
 			let url = URL(
@@ -222,6 +225,8 @@ actor UEMService {
 				[UemApplication].self,
 				from: applicationsData
 			)
+			if !includeVersionChecks { return decoded }
+
 			let updatedApps: [UemApplication] = await withTaskGroup(
 				of: (Int, UemApplication).self
 			) { group in
@@ -257,38 +262,117 @@ actor UEMService {
 		var appName = ""
 		var appFilename = ""
 		var appVersion = ""
+		var actualFileVersion = ""
+		var bundleIdCandidates: [String] = []
 
 		if let sd = successfulDownload {
-			appName = sd.parsedMetadata?.name ?? ""
+			appName = sd.parsedMetadata?.name
+				?? sd.parsedMetadata?.display_name
+				?? ""
 			appFilename = sd.fileName
-			appVersion = sd.parsedMetadata?.version ?? ""
+			actualFileVersion = sd.parsedMetadata?.version
+				?? sd.parsedMetadata?.installs?.first?.cfBundleShortVersionString
+				?? sd.parsedMetadata?.installs?.first?.cfBundleVersion
+				?? ""
+			appVersion = buildUemAppVersion(from: actualFileVersion)
+			if let cfBundleId = sd.parsedMetadata?.installs?.first?.cfBundleIdentifier,
+			   !cfBundleId.isEmpty {
+				bundleIdCandidates.append(cfBundleId)
+			}
 		}
 
 		if let ia = importedApplication {
-			appName = ia.parsedMetadata?.name ?? ""
+			appName = ia.parsedMetadata?.name
+				?? ia.parsedMetadata?.display_name
+				?? ""
 			appFilename = ia.fileName
-			appVersion = ia.parsedMetadata?.version ?? ""
+			actualFileVersion = ia.parsedMetadata?.version
+				?? ia.parsedMetadata?.installs?.first?.cfBundleShortVersionString
+				?? ia.parsedMetadata?.installs?.first?.cfBundleVersion
+				?? ""
+			appVersion = buildUemAppVersion(from: actualFileVersion)
+			if let cfBundleId = ia.parsedMetadata?.installs?.first?.cfBundleIdentifier,
+			   !cfBundleId.isEmpty {
+				bundleIdCandidates.append(cfBundleId)
+			}
 		}
 
+		let derivedBundleId = deriveUemBundleId(from: appName)
+		if !derivedBundleId.isEmpty { bundleIdCandidates.append(derivedBundleId) }
+
 		logger.info(
-			"[\(self.logPrefix)] Checking if App Exists in UEM -> name: \(appName, privacy: .public), version: \(appVersion, privacy: .public)"
+			"[\(self.logPrefix)] Checking if App Exists in UEM -> name: \(appName, privacy: .public), bundleId: \(bundleIdCandidates.joined(separator: "|"), privacy: .public), appVersion: \(appVersion, privacy: .public), actualFileVersion: \(actualFileVersion, privacy: .public), fileName: \(appFilename, privacy: .public)"
 		)
 
-		let nameMatch = uemApplications.contains(where: {
-			($0.applicationName) == appName
-		})
-		let filenameMatch = uemApplications.contains(where: {
-			($0.applicationFileName).contains(appFilename)
-		})
-		let versionMatch = uemApplications.contains(where: {
-			($0.actualFileVersion) == appVersion
+		let match = uemApplications.contains(where: { app in
+			let nameMatch = normalizeForCompare(app.applicationName) == normalizeForCompare(appName)
+			let bundleMatch = bundleIdCandidates.contains { candidate in
+				normalizeForCompare(candidate) == normalizeForCompare(app.bundleId)
+			}
+			let appVersionMatch = !appVersion.isEmpty
+				&& normalizeVersion(app.appVersion) == normalizeVersion(appVersion)
+			let actualVersionMatch = !actualFileVersion.isEmpty
+				&& normalizeVersion(app.actualFileVersion) == normalizeVersion(actualFileVersion)
+			let versionMatch = appVersionMatch || actualVersionMatch
+			return nameMatch && bundleMatch && versionMatch
 		})
 
 		logger.debug(
-			"[\(self.logPrefix)] Match Results -> nameMatch: \(nameMatch), versionMatch: \(versionMatch), filenameMatch: \(filenameMatch)"
+			"[\(self.logPrefix)] Match Results -> matched: \(match)"
 		)
 
-		return nameMatch && versionMatch
+		return match
+	}
+
+	private func normalizeForCompare(_ value: String) -> String {
+		value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+	}
+
+	private func normalizeVersion(_ value: String) -> String {
+		value.trimmingCharacters(in: .whitespacesAndNewlines)
+	}
+
+	private func buildUemAppVersion(from actualFileVersion: String) -> String {
+		let trimmed = actualFileVersion.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !trimmed.isEmpty else { return "" }
+		let parts = trimmed.split(separator: ".")
+		if parts.count == 3 {
+			let last = parts.last ?? ""
+			if last == "0" { return trimmed }
+			return "\(trimmed).0"
+		}
+		if parts.count < 3 {
+			let needed = 3 - parts.count
+			let padding = Array(repeating: "0", count: needed).joined(separator: ".")
+			return "\(trimmed).\(padding)"
+		}
+		return trimmed
+	}
+
+	private func deriveUemBundleId(from appName: String) -> String {
+		let trimmed = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !trimmed.isEmpty else { return "" }
+		var result = ""
+		var lastWasHyphen = false
+		for scalar in trimmed.unicodeScalars {
+			if CharacterSet.alphanumerics.contains(scalar) {
+				result.unicodeScalars.append(scalar)
+				lastWasHyphen = false
+			} else if scalar == " " || scalar == "-" || scalar == "_" {
+				if !lastWasHyphen {
+					result.append("-")
+					lastWasHyphen = true
+				}
+			} else {
+				if !lastWasHyphen {
+					result.append("-")
+					lastWasHyphen = true
+				}
+			}
+		}
+		let normalized = result.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+		guard !normalized.isEmpty else { return "" }
+		return "com.ws1.macos.\(normalized)"
 	}
 	
 	func checkForNewerVersion(_ uemApplication: UemApplication) async -> UemApplication {

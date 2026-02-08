@@ -8,6 +8,7 @@ struct DownloadProgress: Codable {
     var isSuccess: Bool = false
     var downloadExists: Bool = false
     var fullFilePath: String? = ""
+    var iconFilePath: String? = nil
     var fileSize: Int64 = 0
     var fileSizeStr: String?
     var currentState: String? = "Waiting..."
@@ -21,6 +22,7 @@ struct DownloadProgress: Codable {
         case isSuccess
         case downloadExists
         case fullFilePath
+        case iconFilePath
         case fileSize
         case fileSizeStr
         case currentState

@@ -1,4 +1,70 @@
+//
+//  GradientHeaderBar.swift
+//  JuiceSwift
+//
+//  Created by Pete Lindley on 25/1/2026.
+//
 import SwiftUI
+
+// Consolidated top-level app chrome primitives.
+// Used by: ContentView and primary page views.
+
+
+struct GradientHeaderBar: View {
+	enum BackgroundStyle {
+		case gradient
+		case clear
+	}
+
+    var title: String = "Juice"
+	var backgroundStyle: BackgroundStyle = .gradient
+
+    var body: some View {
+		VStack(alignment: .leading) {
+			backgroundView
+            Text(title)
+				.font(.system(size: 40, weight: .bold, design: .default))
+				.foregroundStyle(.primary)
+				.padding(.leading, 150)
+				//.padding(5)
+				.tracking(-2)
+				//.frame(height: .infinity, alignment: .trailing)
+        }
+        //.frame(maxWidth: .infinity)
+		.frame(
+			minHeight: 40,
+			maxHeight: 40,
+			//alignment: .init(horizontal: .leading, vertical: .top)
+		)
+		//.padding(.bottom, 20)
+		
+//        .overlay(
+//            Rectangle()
+//                .fill(Color.black.opacity(0.12))
+//                .frame(height: 1),
+//            alignment: .bottom
+//        )
+		//.ignoresSafeArea(edges: .all)
+    }
+
+	@ViewBuilder
+	private var backgroundView: some View {
+		switch backgroundStyle {
+		case .gradient:
+			LinearGradient.juice
+		case .clear:
+			Color.clear
+		}
+	}
+}
+
+#Preview("GradientHeaderBar - Gradient") {
+    GradientHeaderBar(title: "Juice", backgroundStyle: .gradient)
+}
+
+#Preview("GradientHeaderBar - Clear") {
+    GradientHeaderBar(title: "Juice", backgroundStyle: .clear)
+}
 
 struct NavigationMenu: View {
     @Binding var selection: NavigationItem?
@@ -110,4 +176,33 @@ struct NavigationMenu: View {
 #Preview {
     NavigationMenu(selection: .constant(.landing))
         .frame(width: 280)
+}
+//
+//  SectionHeader.swift
+//  JuiceSwift
+//
+//  Created by Pete Lindley on 25/1/2026.
+//
+
+struct SectionHeader: View {
+    let title: String
+    let subtitle: String?
+
+    init(_ title: String, subtitle: String? = nil) {
+        self.title = title
+        self.subtitle = subtitle
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                //.font(.system(size: 24, weight: .semibold))
+				.font(.largeTitle.weight(.semibold))
+            if let subtitle {
+                Text(subtitle)
+					.font(.body)
+					.foregroundStyle(.primary)
+            }
+        }
+    }
 }

@@ -25,7 +25,8 @@ actor AuthService {
 	func authenticate() async -> Bool {
 
 		logger.debug("[\(self.logPrefix)] Requesting Access Token")
-		guard let baseURL = URL(string: Runtime.Config.activeEnvironment.oauthRegion) else {
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard let baseURL = URL(string: activeEnvironment.oauthRegion) else {
 			logger.error("[\(self.logPrefix)] Invalid OAuth region URL")
 			return false
 		}
@@ -43,8 +44,8 @@ actor AuthService {
 
 		let body = [
 			"grant_type=client_credentials",
-			"client_id=\(Runtime.Config.activeEnvironment.clientId)",
-			"client_secret=\(Runtime.Config.activeEnvironment.clientSecret)",
+			"client_id=\(activeEnvironment.clientId)",
+			"client_secret=\(activeEnvironment.clientSecret)",
 		].joined(separator: "&")
 		request.httpBody = body.data(using: .utf8)
 
@@ -71,8 +72,9 @@ actor AuthService {
 	
 	func getOrgGroupDetails() async -> [String: Any]? {
 		_ = await authenticate()
-		guard let baseURL = URL(string: Runtime.Config.activeEnvironment.uemUrl) else { return nil }
-		guard let url = URL(string: "/API/system/groups/\(Runtime.Config.activeEnvironment.orgGroupId)", relativeTo: baseURL) else {
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard let baseURL = URL(string: activeEnvironment.uemUrl) else { return nil }
+		guard let url = URL(string: "/API/system/groups/\(activeEnvironment.orgGroupId)", relativeTo: baseURL) else {
 			return nil
 		}
 
@@ -158,4 +160,3 @@ actor AuthService {
 	}
 
 }
-

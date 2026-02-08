@@ -4,7 +4,13 @@ import SwiftUI
 	import AppKit
 #endif
 
+// Consolidated queue/results inspector panel components.
+// Used by: SearchView, UpdatesView, ImportView, DownloadQueuePanelContent.
+
 struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
+	// MARK: - Inputs & State
+
+	@Environment(\.colorScheme) private var colorScheme
 	enum Tab: Hashable {
 		case queue
 		case results
@@ -38,11 +44,17 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 	private let noticeText = "Added!"
 	// Temporary override so the Results tab can be tested even when empty.
 	private let enableResultsTabWhenEmpty = true
+	private var panelState: GlassStateContext {
+		GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: focusObserver.isFocused
+		)
+	}
 	private var panelGlassOpacity: CGFloat {
-		focusObserver.isFocused ? 0.99 : 0.9
+		GlassThemeTokens.panelSurfaceOpacity(for: panelState)
 	}
 	private var panelGlassBaseOpacity: CGFloat {
-		focusObserver.isFocused ? 0.62 : 0.3
+		GlassThemeTokens.panelBaseTintOpacity(for: panelState)
 	}
 	@StateObject private var focusObserver = WindowFocusObserver()
 
@@ -82,6 +94,8 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 		self.resultsContent = resultsContent
 
 	}
+
+	// MARK: - Body
 
 	var body: some View {
 		let resultsTabEnabled = enableResultsTabWhenEmpty || !resultsIsEmpty
@@ -127,6 +141,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 					.labelsHidden()
 				#endif
 
+				// Shared panel chrome; tab switch swaps inner queue/results content only.
 				panelContainer {
 					ZStack {
 						if tab == .queue {
@@ -187,7 +202,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 			}
 		}
 		.background(WindowFocusReader { focusObserver.attach($0) })
-		.onAppear {
+		.onAppearUnlessPreview {
 			displayNotice = notice
 			if let notice {
 				scheduleNoticeDismiss(for: notice)
@@ -231,7 +246,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 	) -> some View {
 		VStack(alignment: .leading, spacing: 12) {
 			HStack {
-				VStack(alignment: .leading, spacing: 4) {
+				VStack(alignment: .leading, spacing: 0) {
 					Text(title)
 						.font(.title.weight(.semibold))
 					Text(countText)
@@ -241,8 +256,18 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 				Spacer()
 				if #available(macOS 26.0, iOS 26.0, *) {
 					HStack(spacing: 8) {
-						SingleGlassButtonSml(icon: "trash", action: action)
-							.disabled(isActionDisabled)
+						if !actionTitle.isEmpty {
+							Button {
+								action()
+							} label: {
+								Image(
+									systemName: "trash"
+								)
+							}
+							.buttonStyle(.plain)
+							.controlSize(.large)
+							.buttonBorderShape(.circle)
+						}
 						if let isPinned {
 							Button {
 								isPinned.wrappedValue.toggle()
@@ -265,28 +290,39 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 								.easeInOut(duration: 0.18),
 								value: isPinned.wrappedValue
 							)
+							.padding(.top, 2)
 						}
 					}
 				} else {
 					HStack(spacing: 8) {
-						Button(actionTitle, action: action)
-							.buttonStyle(.juiceGlass(.primary))
-							.controlSize(.large)
-							.disabled(isActionDisabled)
-						if let isPinned {
-							Button(action: { isPinned.wrappedValue.toggle() }) {
-								Image(
-									systemName: isPinned.wrappedValue
-										? "pin.fill" : "pin"
-								)
+							if !actionTitle.isEmpty {
+								Button(actionTitle, action: action)
+									.nativeActionButtonStyle(.primary, controlSize: .large)
+									.disabled(isActionDisabled)
 							}
-							.rotationEffect(.degrees(isPinned.wrappedValue ? 30 : 0))
-							.buttonStyle(isPinned.wrappedValue ? .juiceGlass(.primary) : .juiceGlass(.secondary))
-							.controlSize(.large)
-							.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+							if let isPinned {
+								if isPinned.wrappedValue {
+									Button(action: { isPinned.wrappedValue.toggle() }) {
+										Image(
+											systemName: "pin.fill"
+										)
+									}
+									.rotationEffect(.degrees(30))
+									.nativeActionButtonStyle(.primary, controlSize: .large)
+									.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+								} else {
+									Button(action: { isPinned.wrappedValue.toggle() }) {
+										Image(
+											systemName: "pin"
+										)
+									}
+									.rotationEffect(.degrees(0))
+									.nativeActionButtonStyle(.secondary, controlSize: .large)
+									.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+								}
+								}
 						}
 					}
-				}
 			}
 			ZStack(alignment: .bottomTrailing) {
 				ScrollView {
@@ -334,25 +370,18 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 
 	private var notificationBackground: some View {
 		let shape = Capsule()
-		let glassOpacity: CGFloat = 0.3
 		return
-			shape
-			.fill(Color.clear)
-			.background {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.clear, in: shape)
-					}
-					.opacity(glassOpacity)
-				} else {
-					shape.fill(.ultraThinMaterial)
-						.opacity(glassOpacity)
-				}
-			}
-			.overlay(shape.strokeBorder(.white.opacity(0.12)))
-			.shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
+			Color.clear
+			.glassCompatSurface(
+				in: shape,
+				style: .clear,
+				context: panelState,
+				fillColor: GlassThemeTokens.controlBackgroundBase(for: panelState),
+				fillOpacity: panelGlassBaseOpacity,
+				surfaceOpacity: panelGlassOpacity
+			)
+			.glassCompatBorder(in: shape, context: panelState, role: .standard)
+			.glassCompatShadow(context: panelState, elevation: .panel)
 	}
 
 }
@@ -480,7 +509,7 @@ private struct BouncingNoticeText: View {
 				}
 			}
 			.font(.system(size: 13, weight: .semibold))
-			.onAppear {
+			.onAppearUnlessPreview {
 				animate = false
 				DispatchQueue.main.async {
 					animate = true
@@ -496,6 +525,9 @@ private struct BouncingNoticeText: View {
 
 #if os(macOS)
 	private struct GlassSegmentedControl<Tag: Hashable>: View {
+		@Environment(\.colorScheme) private var colorScheme
+		@Environment(\.controlActiveState) private var controlActiveState
+
 		struct Item: Identifiable {
 			let id = UUID()
 			let title: String
@@ -529,7 +561,15 @@ private struct BouncingNoticeText: View {
 		)
 		private let segmentSpacing: CGFloat = 12
 
+		private var glassState: GlassStateContext {
+			GlassStateContext(
+				colorScheme: colorScheme,
+				isFocused: controlActiveState == .active
+			)
+		}
+
 		var body: some View {
+			let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
 			HStack(spacing: segmentSpacing) {
 				ForEach(items) { item in
 					segmentButton(for: item)
@@ -538,34 +578,23 @@ private struct BouncingNoticeText: View {
 			.frame(maxWidth: .infinity, alignment: .center)
 			.padding(6)
 			.background {
-				let shape = RoundedRectangle(
-					cornerRadius: 16,
-					style: .continuous
-				)
-				if #available(macOS 26.0, iOS 26.0, *) {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-					.overlay {
-						shape
-							.fill(
-								Color.white.opacity(backgroundGlassBaseOpacity)
-							)
-							.opacity(backgroundGlassOpacity)
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-						.opacity(backgroundGlassOpacity)
-				}
+				Color.clear
+					.glassCompatSurface(
+						in: shape,
+						style: .regular,
+						context: glassState,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillOpacity: min(
+							1,
+							backgroundGlassBaseOpacity
+								+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+						),
+						surfaceOpacity: max(glassOpacity, backgroundGlassOpacity)
+					)
 			}
-			.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-			.overlay {
-				RoundedRectangle(cornerRadius: 16, style: .continuous)
-					.strokeBorder(.white.opacity(0.12))
-			}
-			.shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
+			.clipShape(shape)
+			.glassCompatBorder(in: shape, context: glassState, role: .standard, lineWidth: 1)
+			.glassCompatShadow(context: glassState, elevation: .small)
 			.onChange(of: selection) { oldValue, newValue in
 				triggerMorph(from: oldValue, to: newValue)
 			}
@@ -579,10 +608,9 @@ private struct BouncingNoticeText: View {
 			let isSelected = selection == item.tag
 			let isHovered = hoveredTag == item.tag
 			let isPressed = pressedTag == item.tag
-			let textOpacity: CGFloat =
-				item.isEnabled ? (isSelected ? 0.95 : 0.8) : 0.4
-			let backgroundOpacity: CGFloat =
-				isPressed ? 0.16 : (isHovered ? 0.12 : 0)
+			let textOpacity: CGFloat = item.isEnabled ? (isSelected ? 0.95 : 0.8) : 0.4
+			let backgroundOpacity: CGFloat = isPressed ? 1 : (isHovered ? 0.7 : 0)
+			let hoverRole: GlassOverlayRole = isPressed ? .pressed : .hover
 
 			return Button {
 				if item.isEnabled {
@@ -591,7 +619,7 @@ private struct BouncingNoticeText: View {
 			} label: {
 				Text(item.title)
 					.font(.system(.callout, weight: .semibold))
-					.foregroundStyle(Color.primary.opacity(textOpacity))
+					.foregroundStyle(GlassThemeTokens.textPrimary(for: glassState).opacity(textOpacity))
 					.padding(segmentPadding)
 					.contentShape(Rectangle())
 			}
@@ -606,21 +634,18 @@ private struct BouncingNoticeText: View {
 						)
 				} else if backgroundOpacity > 0 {
 					Capsule(style: .continuous)
-						.fill(Color.white.opacity(backgroundOpacity))
+						.fill(GlassThemeTokens.overlayColor(for: glassState, role: hoverRole))
+						.opacity(backgroundOpacity)
 				}
 			}
 			.onHover { hovering in
-				hoveredTag =
-					hovering
-					? item.tag : (hoveredTag == item.tag ? nil : hoveredTag)
+				hoveredTag = hovering ? item.tag : (hoveredTag == item.tag ? nil : hoveredTag)
 			}
 			.onLongPressGesture(
 				minimumDuration: 0.01,
 				maximumDistance: 12,
 				pressing: { pressing in
-					pressedTag =
-						pressing
-						? item.tag : (pressedTag == item.tag ? nil : pressedTag)
+					pressedTag = pressing ? item.tag : (pressedTag == item.tag ? nil : pressedTag)
 				},
 				perform: {}
 			)
@@ -628,46 +653,26 @@ private struct BouncingNoticeText: View {
 
 		private var segmentSelectionPill: some View {
 			let shape = Capsule(style: .continuous)
-			return ZStack {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-				}
-				shape
-					.fill(Color.white)
-					.opacity(0.05)
-			}
-			.glassPopHighlight(usesColorGradient: false)
-			.overlay(
-				shape.strokeBorder(
-					LinearGradient(
-						gradient: Gradient(stops: [
-							.init(
-								color: Color.white.opacity(0.26),
-								location: 0.0
-							),
-							.init(
-								color: Color.white.opacity(0.08),
-								location: 1.0
-							),
-						]),
-						startPoint: .topLeading,
-						endPoint: .bottomTrailing
-					),
-					lineWidth: 0.8
+			return Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+					fillOpacity: 0.18,
+					surfaceOpacity: 1
 				)
-			)
-			.shadow(color: Color.black.opacity(0.10), radius: 2, x: 0, y: 1)
-			.scaleEffect(morphPulse ? 1.06 : 1)
-			.animation(
-				.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.22),
-				value: morphPulse
-			)
+				.overlay {
+					shape.fill(GlassThemeTokens.overlayColor(for: glassState, role: .standard)).opacity(0.25)
+				}
+				.glassPopHighlight(usesColorGradient: false)
+				.glassCompatBorder(in: shape, context: glassState, role: .strong, lineWidth: 0.8)
+				.glassCompatShadow(context: glassState, elevation: .small)
+				.scaleEffect(morphPulse ? 1.06 : 1)
+				.animation(
+					.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.22),
+					value: morphPulse
+				)
 		}
 
 		private func triggerMorph(from oldValue: Tag, to newValue: Tag) {
@@ -681,11 +686,14 @@ private struct BouncingNoticeText: View {
 				}
 			}
 		}
-
 	}
 #endif
 
 private struct SegmentedActionButton: View {
+	@Environment(\.colorScheme) private var colorScheme
+	#if os(macOS)
+	@Environment(\.controlActiveState) private var controlActiveState
+	#endif
 	let title: String
 	let glassOpacity: CGFloat
 	let isDisabled: Bool
@@ -701,6 +709,24 @@ private struct SegmentedActionButton: View {
 		trailing: 16
 	)
 
+	private var isWindowActive: Bool {
+		#if os(macOS)
+		return controlActiveState == .active
+		#else
+		return true
+		#endif
+	}
+
+	private var glassState: GlassStateContext {
+		GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: isWindowActive,
+			isEnabled: !isDisabled,
+			isHovered: isHovered,
+			isPressed: isPressed
+		)
+	}
+
 	var body: some View {
 		let shape = Capsule(style: .continuous)
 		let hoverOpacity: CGFloat = isPressed ? 0.06 : (isHovered ? 0.05 : 0.03)
@@ -709,52 +735,32 @@ private struct SegmentedActionButton: View {
 			if !isDisabled {
 				action()
 			}
-		} label: {
-			Text(title)
-				.font(.system(.callout, weight: .regular))
-				.foregroundStyle(Color.primary.opacity(isDisabled ? 0.4 : 0.9))
-				.padding(padding)
-				.contentShape(Rectangle())
-		}
-		.buttonStyle(.plain)
-		.disabled(isDisabled)
-		.background {
-			ZStack {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-				}
-				shape
-					.fill(Color.white)
-					.opacity(hoverOpacity)
+			} label: {
+				Text(title)
+					.font(.system(.callout, weight: .regular))
+					.foregroundStyle(
+						GlassThemeTokens.textPrimary(for: glassState).opacity(isDisabled ? 0.4 : 0.9)
+					)
+					.padding(padding)
+					.contentShape(Rectangle())
 			}
-		}
-		.overlay(
-			shape.strokeBorder(
-				LinearGradient(
-					gradient: Gradient(stops: [
-						.init(
-							color: Color.white.opacity(
-								isPressed ? 0.16 : (isHovered ? 0.2 : 0.22)
-							),
-							location: 0.0
-						),
-						.init(color: Color.white.opacity(0.08), location: 1.0),
-					]),
-					startPoint: .topLeading,
-					endPoint: .bottomTrailing
-				),
-				lineWidth: 0.8
-			)
-		)
-		.glassPopHighlight(usesColorGradient: false)
-		.shadow(color: Color.black.opacity(0.10), radius: 2, x: 0, y: 1)
-		.opacity(isDisabled ? 0.45 : 1)
+			.buttonStyle(.plain)
+			.disabled(isDisabled)
+			.background {
+				Color.clear
+					.glassCompatSurface(
+						in: shape,
+						style: .regular,
+						context: glassState,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillOpacity: hoverOpacity,
+						surfaceOpacity: glassOpacity
+					)
+			}
+			.glassCompatBorder(in: shape, context: glassState, role: .standard, lineWidth: 0.8)
+			.glassPopHighlight(usesColorGradient: false)
+			.glassCompatShadow(context: glassState, elevation: .small)
+			.opacity(isDisabled ? 0.45 : 1)
 		.onHover { hovering in
 			isHovered = hovering
 		}
@@ -879,6 +885,7 @@ private struct RightPanelView_PreviewWrapper: View {
 }
 
 private struct InspectorOverlayPreviewContainer<Content: View>: View {
+	@Environment(\.colorScheme) private var colorScheme
 	let content: Content
 
 	init(@ViewBuilder content: () -> Content) {
@@ -887,31 +894,24 @@ private struct InspectorOverlayPreviewContainer<Content: View>: View {
 
 	var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+		let context = GlassStateContext(colorScheme: colorScheme, isFocused: true)
 		content
 			.padding(20)
 			.frame(width: 480, height: 620, alignment: .top)
 			.background {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					ZStack {
-						shape
-							.fill(
-								Color(red: 1.0, green: 0.965, blue: 0.93)
-									.opacity(0.2)
-							)
-						GlassEffectContainer {
-							shape
-								.fill(Color.clear)
-								.glassEffect(.regular, in: shape)
-						}
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-						.opacity(0.7)
-				}
+				Color.clear
+					.glassCompatSurface(
+						in: shape,
+						style: .regular,
+						context: context,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
+						fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: context),
+						surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: context)
+					)
 			}
 			.clipShape(shape)
-			.overlay(shape.strokeBorder(.white.opacity(0.12)))
-			.shadow(color: Color.black.opacity(0.14), radius: 12, x: 0, y: 8)
+			.glassCompatBorder(in: shape, context: context, role: .standard)
+			.glassCompatShadow(context: context, elevation: .panel)
 			.padding(30)
 	}
 }
@@ -955,11 +955,19 @@ private struct QueuePanelContentInspectorPreview: View {
 
 	private var leftPanel: some View {
 		let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+		let context = GlassStateContext(colorScheme: .light, isFocused: true)
 		return
-			shape
-			.fill(Color.white.opacity(0.6))
-			.overlay(shape.strokeBorder(.white.opacity(0.2)))
-			.shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
+			Color.clear
+			.glassCompatSurface(
+				in: shape,
+				style: .regular,
+				context: context,
+				fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
+				fillOpacity: 0.6,
+				surfaceOpacity: 1
+			)
+			.glassCompatBorder(in: shape, context: context, role: .strong)
+			.glassCompatShadow(context: context, elevation: .panel)
 			.frame(width: 600)
 			.padding(.leading, 12)
 			.padding(.vertical, 100)
@@ -1051,4 +1059,208 @@ private struct QueuePanelContentInspectorPreview: View {
 		)
 	}
 	.padding()
+}
+struct InspectorQueuePanelView: View {
+	@EnvironmentObject private var inspector: InspectorCoordinator
+	@Binding var tab: QueuePanelContent<AnyView, AnyView>.Tab
+	@Binding var notice: QueuePanelContent<AnyView, AnyView>.Notice?
+	@Binding var queueItems: [CaskApplication]
+	@Binding var resultsItems: [CaskApplication]
+	let panelMinHeight: CGFloat
+	let onPrimaryAction: () -> Void
+	let onSecondaryAction: () -> Void
+
+	var body: some View {
+		QueuePanelContent(
+			tab: $tab,
+			notice: $notice,
+			queueTitle: "Queue",
+			resultsTitle: "Results",
+			queueCountText: "\(queueItems.count) apps added",
+			resultsCountText: "\(resultsItems.count) processed",
+			queueIsEmpty: queueItems.isEmpty,
+			resultsIsEmpty: resultsItems.isEmpty,
+			onQueueAction: {
+				withAnimation(.easeInOut(duration: 0.2)) {
+					queueItems.removeAll()
+				}
+			},
+			onResultsAction: {
+				withAnimation(.easeInOut(duration: 0.2)) {
+					resultsItems.removeAll()
+				}
+			},
+			isPinned: $inspector.isPinned,
+			bottomActions: AnyView(
+				QueueBottomActions(
+					primaryTitle: "Upload to UEM",
+					secondaryTitle: "Download Only",
+					isEnabled: !queueItems.isEmpty,
+					queueCount: queueItems.count,
+					onPrimary: onPrimaryAction,
+					onSecondary: onSecondaryAction
+				)
+			)
+		) {
+			AnyView(LazyVStack(spacing: 8) {
+				ForEach(queueItems) { item in
+					AppDetailListItem(item: item, label: "Version")
+						.transition(.opacity.combined(with: .move(edge: .top)))
+				}
+			})
+		} resultsContent: {
+			AnyView(LazyVStack(spacing: 8) {
+				ForEach(resultsItems) { item in
+					AppDetailListItem(item: item, label: "Version")
+						.transition(.opacity.combined(with: .move(edge: .top)))
+				}
+			})
+		}
+		.frame(alignment: .leading)
+		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
+		.frame(width: 400, alignment: .center)
+		.frame(maxWidth: .infinity, alignment: .trailing)
+		.background(Color.clear)
+	}
+}
+
+struct InspectorUpdatesQueuePanelView: View {
+	@EnvironmentObject private var inspector: InspectorCoordinator
+	@Binding var tab: QueuePanelContent<AnyView, AnyView>.Tab
+	@Binding var notice: QueuePanelContent<AnyView, AnyView>.Notice?
+	@Binding var queueItems: [CaskApplication]
+	@Binding var resultsItems: [CaskApplication]
+	@Binding var selectedAppKeys: Set<String>
+	let panelMinHeight: CGFloat
+	let onPrimaryAction: () -> Void
+	let onSecondaryAction: () -> Void
+	let onQueueItemsRemoved: ([CaskApplication]) -> Void
+
+	var body: some View {
+		QueuePanelContent(
+			tab: $tab,
+			notice: $notice,
+			queueTitle: "Updates Queue",
+			resultsTitle: "Results",
+			queueCountText: "\(queueItems.count) selected",
+			resultsCountText: "\(resultsItems.count) processed",
+			queueIsEmpty: queueItems.isEmpty,
+				resultsIsEmpty: resultsItems.isEmpty,
+				onQueueAction: {
+					let removedItems = queueItems
+					withAnimation(.easeInOut(duration: 0.2)) {
+						queueItems.removeAll()
+						selectedAppKeys.removeAll()
+					}
+					onQueueItemsRemoved(removedItems)
+				},
+			onResultsAction: {
+				withAnimation(.easeInOut(duration: 0.2)) {
+					resultsItems.removeAll()
+				}
+			},
+			isPinned: $inspector.isPinned,
+			bottomActions: AnyView(
+				QueueBottomActions(
+					primaryTitle: "Upload to UEM",
+					secondaryTitle: "Download Only",
+					isEnabled: !queueItems.isEmpty,
+					queueCount: queueItems.count,
+					onPrimary: onPrimaryAction,
+					onSecondary: onSecondaryAction
+				)
+			)
+		) {
+			AnyView(
+				LazyVStack(spacing: 8) {
+					ForEach(queueItems) { item in
+						AppDetailListItem(
+							item: item,
+							label: "New Version"
+						)
+						.transition(.opacity.combined(with: .move(edge: .top)))
+					}
+				}
+			)
+		} resultsContent: {
+			AnyView(
+				LazyVStack(spacing: 8) {
+					ForEach(resultsItems) { item in
+						AppDetailListItem(
+							item: item,
+							label: "New Version"
+						)
+						.transition(.opacity.combined(with: .move(edge: .top)))
+					}
+				}
+			)
+		}
+		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
+		.frame(width: 400, alignment: .center)
+		.frame(maxWidth: .infinity, alignment: .trailing)
+	}
+}
+
+struct InspectorImportQueuePanelView: View {
+	@EnvironmentObject private var inspector: InspectorCoordinator
+	@Binding var tab: QueuePanelContent<AnyView, AnyView>.Tab
+	@Binding var queueItems: [ImportedApplication]
+	@Binding var resultsItems: [ImportedApplication]
+	let panelMinHeight: CGFloat
+	let onPrimaryAction: () -> Void
+	let onSecondaryAction: () -> Void
+
+	var body: some View {
+		QueuePanelContent(
+			tab: $tab,
+			queueTitle: "Applications Queue",
+			resultsTitle: "Results",
+			queueCountText: "\(queueItems.count) items",
+			resultsCountText: "\(resultsItems.count) completed",
+			queueIsEmpty: queueItems.isEmpty,
+			resultsIsEmpty: resultsItems.isEmpty,
+			onQueueAction: {
+				withAnimation(.easeInOut(duration: 0.2)) {
+					queueItems.removeAll()
+				}
+			},
+			onResultsAction: {
+				withAnimation(.easeInOut(duration: 0.2)) {
+					resultsItems.removeAll()
+				}
+			},
+			isPinned: $inspector.isPinned,
+			bottomActions: AnyView(
+				QueueBottomActions(
+					primaryTitle: "Upload to UEM",
+					secondaryTitle: "Download Only",
+					isEnabled: !queueItems.isEmpty,
+					queueCount: queueItems.count,
+					onPrimary: onPrimaryAction,
+					onSecondary: onSecondaryAction
+				)
+			)
+		) {
+			AnyView(
+				LazyVStack(spacing: 8) {
+					ForEach(queueItems) { item in
+						ImportAppDetailListItem(item: item, label: "Version")
+							.transition(.opacity.combined(with: .move(edge: .top)))
+					}
+				}
+			)
+		} resultsContent: {
+			AnyView(
+				LazyVStack(spacing: 8) {
+					ForEach(resultsItems) { item in
+						ImportAppDetailListItem(item: item, label: "Version")
+							.transition(.opacity.combined(with: .move(edge: .top)))
+					}
+				}
+			)
+		}
+		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
+		.frame(width: 400, alignment: .center)
+		.frame(maxWidth: .infinity, alignment: .trailing)
+	}
 }

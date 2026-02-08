@@ -41,9 +41,9 @@
     @MainActor
 </string>
 				<key>trailing</key>
-				<string>        //let _ = await UEMService.instance.getOrgGroupUuid()
-        //let allApps: [UemApplication?] = await UEMService.instance.getAllApps()
-		//printAsJSON(allApps)
+				<string>		let settings = SettingsStore().load()
+		await Runtime.Config.applySettings(settings)
+    }
 </string>
 			</dict>
 			<key>title</key>

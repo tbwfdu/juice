@@ -1,5 +1,111 @@
 import SwiftUI
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
+// Consolidated shared support views/loaders for detail cards and list rows.
+// Used by: DetailCardComponents, DetailListItemComponents, DetailContentComponents.
+
+struct ImportAppIconView: View {
+	let item: ImportedApplication
+
+	var body: some View {
+		#if os(macOS)
+		if let image = resolvedIcon() {
+			Image(nsImage: image)
+				.resizable()
+				.scaledToFit()
+		} else {
+			IconByFiletype(applicationFileName: item.fullFilePath)
+		}
+		#else
+		IconByFiletype(applicationFileName: item.fullFilePath)
+		#endif
+	}
+
+	#if os(macOS)
+	private func resolvedIcon() -> NSImage? {
+		if let selected = item.selectedIcon {
+			return selected
+		}
+		if let first = item.availableIcons.first {
+			return first
+		}
+		return nil
+	}
+	#endif
+}
+
+struct LocalFileSizeInlineView: View {
+	let filePath: String
+	let cachedBytes: Int64?
+	let label: String
+	let labelFont: Font
+	let valueFont: Font
+
+	var body: some View {
+		HStack(spacing: 4) {
+			Text(label)
+				.font(labelFont)
+				.foregroundStyle(.secondary)
+			LocalFileSizeValueView(
+				filePath: filePath,
+				cachedBytes: cachedBytes,
+				font: valueFont
+			)
+		}
+	}
+}
+
+struct LocalFileSizeValueView: View {
+	let filePath: String
+	let cachedBytes: Int64?
+	let font: Font
+	@State private var sizeText: String = "—"
+
+	var body: some View {
+		Text(sizeText)
+			.font(font)
+			.foregroundStyle(.secondary)
+			.onAppearUnlessPreview {
+				updateSize()
+			}
+	}
+
+	private func updateSize() {
+		if let cachedBytes {
+			sizeText = formatBytes(cachedBytes)
+			return
+		}
+		guard !filePath.isEmpty else {
+			sizeText = "—"
+			return
+		}
+		Task.detached {
+			let size = await ImportScanService.computeFileSizeBytes(forPath: filePath)
+			await MainActor.run {
+				if let size {
+					sizeText = formatBytes(size)
+				} else {
+					sizeText = "—"
+				}
+			}
+		}
+	}
+
+	private func formatBytes(_ bytes: Int64) -> String {
+		let units = ["B", "KB", "MB", "GB", "TB"]
+		var value = Double(bytes)
+		var index = 0
+		while value >= 1024 && index < units.count - 1 {
+			value /= 1024
+			index += 1
+		}
+		return String(format: "%.2f %@", value, units[index])
+	}
+}
+
 @MainActor
 final class RemoteFileSizeLoader: ObservableObject {
 	@Published var isLoading = false
@@ -74,7 +180,7 @@ struct RemoteFileSizeValueView: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.onAppear { loader.load(urlString: urlString) }
+		.onAppearUnlessPreview { loader.load(urlString: urlString) }
 		.onChange(of: urlString) { _, newValue in
 			loader.load(urlString: newValue)
 		}
@@ -102,10 +208,12 @@ struct RemoteFileSizeInlineView: View {
 	}
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 4) {
+		VStack(alignment: .trailing, spacing: 0) {
 			Text(label)
 				.font(labelFont)
 				.foregroundStyle(.secondary)
+				.padding(.top, 4)
+				.padding(.bottom, 0)
 			Group {
 				if loader.isLoading {
 					ProgressView()
@@ -115,14 +223,14 @@ struct RemoteFileSizeInlineView: View {
 				} else if loader.isUnavailable {
 					Text("Unknown")
 				} else {
-					Text(" ")
+					Text("1234mb")
 				}
 			}
 			.font(valueFont)
 			.foregroundStyle(loader.isUnavailable ? .secondary : .primary)
-			.frame(height: 16, alignment: .leading)
+			.frame(height: 16, alignment: .trailing)
 		}
-		.onAppear { loader.load(urlString: urlString) }
+		.onAppearUnlessPreview { loader.load(urlString: urlString) }
 		.onChange(of: urlString) { _, newValue in
 			loader.load(urlString: newValue)
 		}
@@ -170,7 +278,7 @@ struct RemoteFileSizeInlineHorizontalView: View {
 			.foregroundStyle(loader.isUnavailable ? .secondary : .primary)
 			.frame(height: 16, alignment: .leading)
 		}
-		.onAppear { loader.load(urlString: urlString) }
+		.onAppearUnlessPreview { loader.load(urlString: urlString) }
 		.onChange(of: urlString) { _, newValue in
 			loader.load(urlString: newValue)
 		}

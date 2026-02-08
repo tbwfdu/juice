@@ -57,7 +57,7 @@ Currently, configuration appears to be embedded directly in `JuiceSwift/Juice.sw
 
 *   `JuiceSwift/`: Main source directory.
     *   `Components/`: Reusable UI elements (cards, badges, buttons).
-    *   `Models/`: Data structures (`JuiceModels.swift`, `CSharpCoreModels.swift`).
+    *   `Models/`: Data structures (`JuiceModels.swift`, plus focused supporting model files).
     *   `Services/`: Business logic and API handling (`UEMService.swift`, `AuthService.swift`).
     *   `Views/`: SwiftUI views for different app screens (`LandingView`, `SearchView`, etc.).
     *   `Resources/`: JSON data files (`cask_apps.json`, `recipes.json`) acting as the local database.

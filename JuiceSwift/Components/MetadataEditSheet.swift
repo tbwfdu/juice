@@ -3,13 +3,20 @@ import SwiftUI
 import AppKit
 #endif
 
+// Modal metadata editor for downloaded/imported apps.
+// Configuration ownership:
+// - Header/grid: quick metadata summary.
+// - Recipe/scripts sections: editable advanced values.
+// - Footer: cancel/save actions.
 struct MetadataEditSheet: View {
 	@Environment(\.dismiss) private var dismiss
+	@Environment(\.colorScheme) private var colorScheme
 	@State private var draft: ParsedMetadata
 	@State private var selectedIconIndex: Int
 	@State private var selectedRecipeKeys: Set<String> = []
-	@State private var recipeExpanded: Bool = true
+	@State private var recipeExpanded: Bool = false
 	@State private var scriptsExpanded: Bool = false
+	@StateObject private var focusObserver = WindowFocusObserver()
 
 	let download: EditableDownload
 	let onSave: (EditableDownload) -> Void
@@ -25,26 +32,62 @@ struct MetadataEditSheet: View {
 		self.onCancel = onCancel
 		let initial = download.parsedMetadata ?? ParsedMetadata()
 		_draft = State(initialValue: initial)
-		_selectedIconIndex = State(initialValue: download.selectedIconIndex)
+		if download.iconPaths.isEmpty {
+			_selectedIconIndex = State(initialValue: download.selectedIconIndex)
+		} else {
+			_selectedIconIndex = State(initialValue: 0)
+		}
 	}
 
+	private var glassState: GlassStateContext {
+		GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: focusObserver.isFocused
+		)
+	}
+
+	// MARK: - Body
+
 	var body: some View {
+		let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
 		VStack(alignment: .leading, spacing: 16) {
 			header
+				.padding(.top, 10)
+				.padding(.horizontal, 10)
+			metadataHeaderGrid
+				.padding(.horizontal, 10)
+			Divider()
 			ScrollView {
+				// Editable sections are grouped to mirror queue-review flow.
 				VStack(alignment: .leading, spacing: 16) {
-					metadataHeaderGrid
-					Divider()
 					recipeSection
+						.padding(.horizontal, 10)
 					scriptsSection
-					metadataForm
+						.padding(.horizontal, 10)
+					//metadataForm
 				}
 				.padding(.vertical, 4)
 			}
-			footer
-		}
-		.padding(20)
-		.frame(minWidth: 720, minHeight: 560)
+				footer
+			}
+			.padding(20)
+			.frame(minWidth: 600, minHeight: 560)
+			.glassCompatSurface(
+				in: shape,
+				style: .regular,
+				context: glassState,
+				fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+				fillOpacity: min(
+					1,
+					GlassThemeTokens.panelBaseTintOpacity(for: glassState)
+						+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+				),
+				surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+			)
+			.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+			.glassCompatBorder(in: shape, context: glassState, role: .strong)
+			.glassCompatShadow(context: glassState, elevation: .panel)
+			.background(WindowFocusReader { focusObserver.attach($0) })
 	}
 
 	private var header: some View {
@@ -89,17 +132,19 @@ struct MetadataEditSheet: View {
 	}
 
 	private var selectedIconPreview: some View {
-		RoundedRectangle(cornerRadius: 10, style: .continuous)
-			.stroke(Color.black.opacity(0.08))
+		let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+		return shape
+			.stroke(GlassThemeTokens.borderColor(for: glassState, role: .standard))
 			.background(
-				RoundedRectangle(cornerRadius: 10, style: .continuous)
-					.fill(Color.white.opacity(0.02))
+				shape
+					.fill(GlassThemeTokens.overlayColor(for: glassState, role: .subtle))
 			)
 			.overlay(
 				Group {
 					#if os(macOS)
-					if download.iconPaths.indices.contains(selectedIconIndex),
-					   let image = NSImage(contentsOf: download.iconPaths[selectedIconIndex]) {
+					let iconIndex = download.iconPaths.indices.contains(selectedIconIndex) ? selectedIconIndex : 0
+					if download.iconPaths.indices.contains(iconIndex),
+					   let image = NSImage(contentsOf: download.iconPaths[iconIndex]) {
 						Image(nsImage: image)
 							.resizable()
 							.scaledToFit()
@@ -166,12 +211,11 @@ struct MetadataEditSheet: View {
 						.foregroundStyle(.secondary)
 				}
 			}
-		}
-		.padding(10)
-		.background(
-			RoundedRectangle(cornerRadius: 10, style: .continuous)
-				.fill(Color.white.opacity(0.04))
-		)
+			}
+			.background(
+				RoundedRectangle(cornerRadius: 10, style: .continuous)
+					.fill(GlassThemeTokens.overlayColor(for: glassState, role: .subtle))
+			)
 	}
 
 	private var recipePicker: some View {
@@ -201,13 +245,19 @@ struct MetadataEditSheet: View {
 					))
 					.labelsHidden()
 				}
-				.padding(8)
-				.background(
-					RoundedRectangle(cornerRadius: 8, style: .continuous)
-						.fill(Color.white.opacity(0.04))
-				)
+					.padding(8)
+					.background(
+						RoundedRectangle(cornerRadius: 8, style: .continuous)
+							.fill(
+								GlassThemeTokens.overlayColor(
+									for: glassState,
+									role: .subtle
+								)
+							)
+					)
+				}
 			}
-		}
+		.padding(.horizontal, 10)
 	}
 
 	private var scriptsSection: some View {
@@ -228,6 +278,8 @@ struct MetadataEditSheet: View {
 				multilineField("Install Check Script", text: binding(\.installcheck_script))
 				multilineField("Uninstall Check Script", text: binding(\.uninstallcheck_script))
 			}
+				.padding(.horizontal, 10)
+				.padding(.top, 10)
 		} label: {
 			VStack(alignment: .leading, spacing: 2) {
 				Text("Add/Edit Scripts")
@@ -237,23 +289,24 @@ struct MetadataEditSheet: View {
 					.foregroundStyle(.secondary)
 			}
 		}
-		.padding(10)
-		.background(
-			RoundedRectangle(cornerRadius: 10, style: .continuous)
-				.fill(Color.white.opacity(0.04))
-		)
+			.background(
+				RoundedRectangle(cornerRadius: 10, style: .continuous)
+					.fill(GlassThemeTokens.overlayColor(for: glassState, role: .subtle))
+			)
 	}
 
 	private var footer: some View {
 		HStack {
 			Spacer()
-			JuiceButtons.secondary("Cancel") {
+			Button("Cancel") {
 				onCancel()
 				dismiss()
 			}
-			JuiceButtons.primary("Save") {
+			.nativeActionButtonStyle(.secondary, controlSize: .large)
+			Button("Save") {
 				save()
 			}
+			.nativeActionButtonStyle(.primary, controlSize: .large)
 		}
 	}
 
@@ -302,14 +355,19 @@ struct MetadataEditSheet: View {
 			Text(label)
 				.font(.system(size: 11, weight: .semibold))
 				.foregroundStyle(.secondary)
-			TextEditor(text: text)
-				.font(.system(.caption, design: .monospaced))
-				.frame(minHeight: 80)
-				.overlay(
-					RoundedRectangle(cornerRadius: 8, style: .continuous)
-						.strokeBorder(Color.white.opacity(0.12))
-				)
-		}
+				TextEditor(text: text)
+					.font(.system(.caption, design: .monospaced))
+					.frame(minHeight: 80)
+					.overlay(
+						RoundedRectangle(cornerRadius: 8, style: .continuous)
+							.strokeBorder(
+								GlassThemeTokens.borderColor(
+									for: glassState,
+									role: .standard
+								)
+							)
+					)
+			}
 	}
 
 	private var hasRecipe: Bool {
@@ -371,39 +429,78 @@ struct MetadataEditSheet: View {
 	}
 }
 
-private struct IconPickerButton: View {
-	let iconURL: URL
-	let isSelected: Bool
-	let action: () -> Void
-
-	var body: some View {
-		Button(action: action) {
-			#if os(macOS)
-			if let image = NSImage(contentsOf: iconURL) {
-				Image(nsImage: image)
-					.resizable()
-					.scaledToFit()
-					.frame(width: 34, height: 34)
-					.padding(6)
-			} else {
-				Color.clear
-					.frame(width: 34, height: 34)
-					.padding(6)
-			}
-			#else
-			Color.clear
-				.frame(width: 34, height: 34)
-				.padding(6)
-			#endif
+#Preview("Metadata Edit Sheet") {
+	let sample = EditableDownload(
+		id: UUID().uuidString,
+		displayName: "Slack",
+		baseDownload: SuccessfulDownload(
+			fileName: "Slack.dmg",
+			fileExtension: "dmg",
+			fullFilePath: "/Users/pete/Juice/slack/4.46.104/Slack.dmg",
+			fullFolderPath: "/Users/pete/Juice/slack/4.46.104"
+		),
+		iconPaths: [],
+		selectedIconIndex: 0,
+		parsedMetadata: ParsedMetadata(),
+		metadataText: "{}",
+		metadataError: nil,
+		preparationError: nil,
+		recipeIdentifier: "com.github.homebysix.munki.Slack",
+		recipeText: nil,
+		recipeError: nil,
+		parsedRecipe: Recipe(
+			id: nil,
+			parentRecipe: nil,
+			name: "Slack",
+			displayName: "Slack",
+			copyright: nil,
+			identifier: "com.github.homebysix.munki.Slack",
+			description: "Slack for teams",
+			comment: nil,
+			comments: nil,
+			pkgInfo: PkgInfo(
+				category: "Productivity",
+				iconName: nil,
+				requires: nil,
+				minimumOsVersion: "13.0",
+				developer: "Slack Technologies",
+				unattendedInstall: "true",
+				displayName: "Slack",
+				description: "Slack for teams",
+				name: "Slack",
+				postinstallScript: nil,
+				uninstallMethod: nil,
+				blockingApplications: nil,
+				uninstallScript: nil,
+				unattendedUninstall: "true",
+				maximumOsVersion: nil,
+				postuninstallScript: nil,
+				restartAction: nil,
+				preinstallScript: nil,
+				uninstallable: nil,
+				unattendedUnnstall: nil,
+				preuninstallScript: nil,
+				installerChoicesXML: nil,
+				installcheckScript: nil
+			),
+			input: nil,
+			guid: nil
+		),
+		preinstallScript: "",
+		postinstallScript: "",
+		preuninstallScript: "",
+		postuninstallScript: "",
+		installcheckScript: "",
+		uninstallcheckScript: nil
+	)
+		return ZStack {
+			JuiceGradient()
+				.ignoresSafeArea()
+			MetadataEditSheet(
+				download: sample,
+				onSave: { _ in },
+				onCancel: { }
+			)
+			.frame(width: 600, height: 700)
 		}
-		.buttonStyle(.plain)
-		.background(
-			RoundedRectangle(cornerRadius: 8, style: .continuous)
-				.fill(isSelected ? Color.accentColor.opacity(0.18) : Color.white.opacity(0.06))
-		)
-		.overlay(
-			RoundedRectangle(cornerRadius: 8, style: .continuous)
-				.strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.12))
-		)
 	}
-}

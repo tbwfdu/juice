@@ -7,7 +7,12 @@
 
 import SwiftUI
 
+// Consolidated inspector detail content sheets for UEM/imported applications.
+// Used by: SearchView, UpdatesView, ImportView inspector panels.
+
 struct AppDetailContent: View {
+	// MARK: - Inputs
+
 	let item: UemApplication
 	let onAddToQueue: (() -> Void)?
 	let onClose: (() -> Void)?
@@ -20,21 +25,24 @@ struct AppDetailContent: View {
 	@State private var matchedExpanded = false
 	@State private var headerHeight: CGFloat = 0
 
+	// MARK: - Body
+
 	var body: some View {
 		VStack(alignment: .leading, spacing: 20) {
 			ZStack(alignment: .top) {
+				// Scroll content sits below a pinned header; header height is measured dynamically.
 				ScrollView {
 					VStack(alignment: .leading, spacing: 18) {
 						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
 							detailGrid(rows: overviewRows)
 						}
-						.disclosureGroupStyle(DetailSectionDisclosureStyle())
+						.disclosureGroupStyle(DetailContentDisclosureStyle())
 
 						if !countRows.isEmpty {
 							DisclosureGroup("Counts", isExpanded: $countsExpanded) {
 								detailGrid(rows: countRows)
 							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
+							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
 
 						if !smartGroupNames.isEmpty {
@@ -48,7 +56,7 @@ struct AppDetailContent: View {
 									}
 								}
 							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
+							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
 
 						if let matchedApp = item.updatedApplication {
@@ -62,7 +70,7 @@ struct AppDetailContent: View {
 									matchedCatalogDetails(for: matchedApp)
 								}
 							}
-							.disclosureGroupStyle(DetailSectionDisclosureStyle())
+							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
 					}
 					.padding(.top, headerHeight + 4)
@@ -79,24 +87,28 @@ struct AppDetailContent: View {
 				.background(
 					GeometryReader { proxy in
 						Color.clear
-							.preference(key: HeaderHeightKey.self, value: proxy.size.height)
+							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
 					}
 				)
 			}
-			HStack {
-				Spacer()
-				JuiceButtons.secondary("Close") {
-					if let onClose {
-						onClose()
-					} else {
-						dismiss()
+				HStack {
+					Spacer()
+					Button("Close") {
+						if let onClose {
+							onClose()
+						} else {
+							dismiss()
+						}
 					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					Button("Add to Queue") {
+						onAddToQueue?()
+						if onClose == nil {
+							dismiss()
+						}
+					}
+					.nativeActionButtonStyle(.primary, controlSize: .large)
 				}
-				JuiceButtons.primary("Add to Queue") {
-					onAddToQueue?()
-					dismiss()
-				}
-			}
 			.padding()
 		}
 		//.padding(5)
@@ -107,7 +119,7 @@ struct AppDetailContent: View {
 		//.border(Color(.blue), width: 1)
 		.background(Color.clear)
 		.presentationBackground(.clear)
-		.onPreferenceChange(HeaderHeightKey.self) { newValue in
+		.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
 			headerHeight = newValue
 		}
 	}
@@ -238,61 +250,67 @@ struct AppDetailContent: View {
 		}
 	}
 
-	private var overviewRows: [DetailRow] {
+	private var overviewRows: [DetailContentRow] {
 		[
-			DetailRow(label: "Bundle ID", value: item.bundleId),
-			DetailRow(
+			DetailContentRow(label: "Bundle ID", value: item.bundleId),
+			DetailContentRow(
 				label: "App Type",
 				value: item.appType ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Assignment",
 				value: item.assignmentStatus ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Platform",
 				value: item.platform.map(String.init) ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Application Source",
 				value: item.applicationSource.map(String.init)
 					?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Location Group ID",
 				value: item.locationGroupId.map(String.init) ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Organization UUID",
 				value: item.organizationGroupUuid ?? "Not available"
 			),
-			DetailRow(label: "App File", value: item.applicationFileName),
-			DetailRow(
+			DetailContentRow(label: "App File", value: item.applicationFileName),
+			DetailContentRow(label: "File Size") {
+				RemoteFileSizeValueView(
+					urlString: item.updatedApplication?.url,
+					font: .callout.weight(.medium)
+				)
+			},
+			DetailContentRow(
 				label: "Metadata File",
 				value: item.metadataFileName ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Icon File",
 				value: item.iconFileName ?? "Not available"
 			),
 		]
 	}
 
-	private var countRows: [DetailRow] {
-		var rows: [DetailRow] = []
+	private var countRows: [DetailContentRow] {
+		var rows: [DetailContentRow] = []
 		if let assigned = item.assignedDeviceCount {
 			rows.append(
-				DetailRow(label: "Assigned Devices", value: String(assigned))
+				DetailContentRow(label: "Assigned Devices", value: String(assigned))
 			)
 		}
 		if let installed = item.installedDeviceCount {
 			rows.append(
-				DetailRow(label: "Installed Devices", value: String(installed))
+				DetailContentRow(label: "Installed Devices", value: String(installed))
 			)
 		}
 		if let notInstalled = item.notInstalledDeviceCount {
 			rows.append(
-				DetailRow(
+				DetailContentRow(
 					label: "Not Installed Devices",
 					value: String(notInstalled)
 				)
@@ -300,7 +318,7 @@ struct AppDetailContent: View {
 		}
 		if let supported = item.supportedModels?.model?.count {
 			rows.append(
-				DetailRow(label: "Supported Models", value: String(supported))
+				DetailContentRow(label: "Supported Models", value: String(supported))
 			)
 		}
 		return rows
@@ -312,7 +330,7 @@ struct AppDetailContent: View {
 			.filter { !$0.isEmpty } ?? []
 	}
 
-	private func detailGrid(rows: [DetailRow]) -> some View {
+	private func detailGrid(rows: [DetailContentRow]) -> some View {
 		VStack(alignment: .leading, spacing: 0) {
 			ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
 				HStack(alignment: .top, spacing: 10) {
@@ -326,11 +344,16 @@ struct AppDetailContent: View {
 							maxWidth: 140,
 							alignment: .leading
 						)
-					Text(row.value)
-						.font(.callout.weight(.medium))
-						.foregroundStyle(.primary)
-						.frame(maxWidth: .infinity, alignment: .leading)
-						.lineLimit(1)
+					if let valueView = row.valueView {
+						valueView
+							.frame(maxWidth: .infinity, alignment: .leading)
+					} else {
+						Text(row.value ?? "")
+							.font(.callout.weight(.medium))
+							.foregroundStyle(.primary)
+							.frame(maxWidth: .infinity, alignment: .leading)
+							.lineLimit(1)
+					}
 				}
 				.padding(.vertical, 6)
 				.padding(.horizontal, 8)
@@ -343,27 +366,27 @@ struct AppDetailContent: View {
 		.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 	}
 
-	private func matchedCatalogRows(for app: CaskApplication) -> [DetailRow] {
-		var rows: [DetailRow] = [
-			DetailRow(label: "Version", value: app.version),
-			DetailRow(
+	private func matchedCatalogRows(for app: CaskApplication) -> [DetailContentRow] {
+		var rows: [DetailContentRow] = [
+			DetailContentRow(label: "Version", value: app.version),
+			DetailContentRow(
 				label: "Token",
 				value: app.fullToken.isEmpty ? app.token : app.fullToken
 			),
-			DetailRow(label: "Description", value: app.desc ?? "Not available"),
-			DetailRow(label: "URL", value: app.url),
-			DetailRow(
+			DetailContentRow(label: "Description", value: app.desc ?? "Not available"),
+			DetailContentRow(label: "URL", value: app.url),
+			DetailContentRow(
 				label: "Matched On",
 				value: app.matchedOn ?? "Not available"
 			),
-			DetailRow(
+			DetailContentRow(
 				label: "Match Score",
 				value: app.matchedScore.map(String.init) ?? "Not available"
 			),
 		]
 
 		if let homepage = app.homepage, !homepage.isEmpty {
-			rows.insert(DetailRow(label: "Homepage", value: homepage), at: 3)
+			rows.insert(DetailContentRow(label: "Homepage", value: homepage), at: 3)
 		}
 
 		return rows
@@ -385,26 +408,32 @@ struct AppDetailContent: View {
 							alignment: .leading
 						)
 
-					if row.label == "Matched On" {
-						Pill(row.value, color: .blue)
+					if let valueView = row.valueView {
+						valueView
+							.frame(maxWidth: .infinity, alignment: .leading)
+					} else {
+						let value = row.value ?? ""
+						if row.label == "Matched On" {
+							Pill(value, color: .blue)
+								.padding(.vertical, 2)
+								.padding(.horizontal, 4)
+								.frame(maxWidth: .infinity, alignment: .leading)
+						} else if row.label == "Match Score" {
+							let scoreValue = Int(value) ?? 85
+							Pill(
+								value,
+								color: matchScoreColor(score: scoreValue)
+							)
 							.padding(.vertical, 2)
 							.padding(.horizontal, 4)
 							.frame(maxWidth: .infinity, alignment: .leading)
-					} else if row.label == "Match Score" {
-						let scoreValue = Int(row.value) ?? 85
-						Pill(
-							row.value,
-							color: matchScoreColor(score: scoreValue)
-						)
-						.padding(.vertical, 2)
-						.padding(.horizontal, 4)
-						.frame(maxWidth: .infinity, alignment: .leading)
-					} else {
-						Text(row.value)
-							.font(.callout.weight(.medium))
-							.foregroundStyle(.primary)
-							.lineLimit(2)
-							.frame(maxWidth: .infinity, alignment: .leading)
+						} else {
+							Text(value)
+								.font(.callout.weight(.medium))
+								.foregroundStyle(.primary)
+								.lineLimit(2)
+								.frame(maxWidth: .infinity, alignment: .leading)
+						}
 					}
 				}
 				.padding(.vertical, 6)
@@ -455,7 +484,7 @@ struct AppDetailContent: View {
 	}
 }
 
-private struct HeaderHeightKey: PreferenceKey {
+private struct DetailContentHeaderHeightKey: PreferenceKey {
 	static let defaultValue: CGFloat = 0
 	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
 		let next = nextValue()
@@ -465,13 +494,26 @@ private struct HeaderHeightKey: PreferenceKey {
 	}
 }
 
-private struct DetailRow: Identifiable {
+private struct DetailContentRow: Identifiable {
 	let id = UUID()
 	let label: String
-	let value: String
+	let value: String?
+	let valueView: AnyView?
+
+	init(label: String, value: String) {
+		self.label = label
+		self.value = value
+		self.valueView = nil
+	}
+
+	init<Content: View>(label: String, @ViewBuilder value: () -> Content) {
+		self.label = label
+		self.value = nil
+		self.valueView = AnyView(value())
+	}
 }
 
-private struct DetailSectionDisclosureStyle: DisclosureGroupStyle {
+private struct DetailContentDisclosureStyle: DisclosureGroupStyle {
 	func makeBody(configuration: Configuration) -> some View {
 		VStack(alignment: .leading, spacing: 6) {
 			Button {
@@ -652,4 +694,323 @@ struct LeftPanel: View {
 		.padding(10)
 	}
 	.frame(width: 500, height: 600)
+}
+
+struct ImportAppDetailContent: View {
+	// MARK: - Inputs
+
+	let item: ImportedApplication
+	let onAddToQueue: (() -> Void)?
+	let onClose: (() -> Void)?
+	@StateObject private var focusObserver = WindowFocusObserver()
+
+	@Environment(\.dismiss) private var dismiss
+	@State private var overviewExpanded = true
+	@State private var metadataExpanded = true
+	@State private var catalogExpanded = false
+	@State private var headerHeight: CGFloat = 0
+
+	// MARK: - Body
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 20) {
+			ZStack(alignment: .top) {
+				ScrollView {
+					VStack(alignment: .leading, spacing: 18) {
+						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
+							detailGrid(rows: overviewRows)
+						}
+						.disclosureGroupStyle(DetailContentDisclosureStyle())
+
+						if hasMetadataSection {
+							DisclosureGroup("Metadata", isExpanded: $metadataExpanded) {
+								detailGrid(rows: metadataRows)
+							}
+							.disclosureGroupStyle(DetailContentDisclosureStyle())
+						}
+
+						if item.macApplication != nil {
+							DisclosureGroup("Catalog Details", isExpanded: $catalogExpanded) {
+								detailGrid(rows: catalogRows)
+							}
+							.disclosureGroupStyle(DetailContentDisclosureStyle())
+						}
+					}
+					.padding(.top, headerHeight + 4)
+				}
+				.contentMargins(.top, headerHeight + 4, for: .scrollIndicators)
+				.contentMargins(.all, 10, for: .scrollContent)
+				.frame(maxHeight: .infinity, alignment: .top)
+				.layoutPriority(1)
+
+				VStack(spacing: 0) {
+					header
+					Divider()
+				}
+				.background(
+					GeometryReader { proxy in
+						Color.clear
+							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
+					}
+				)
+			}
+				HStack {
+					Spacer()
+					Button("Close") {
+						if let onClose {
+							onClose()
+						} else {
+							dismiss()
+						}
+					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					Button("Add to Queue") {
+						onAddToQueue?()
+						if onClose == nil {
+							dismiss()
+						}
+					}
+					.nativeActionButtonStyle(.primary, controlSize: .large)
+				}
+			.padding()
+		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.background(WindowFocusReader { focusObserver.attach($0) })
+		.frame(minWidth: 400, minHeight: 520)
+		.background(Color.clear)
+		.presentationBackground(.clear)
+		.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
+			headerHeight = newValue
+		}
+	}
+
+	private var header: some View {
+		Group {
+			if #available(macOS 26.0, iOS 16.0, *) {
+				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
+				ZStack {
+					GlassEffectContainer {
+						shape
+							.fill(Color.clear)
+							.glassEffect(.regular, in: shape)
+					}
+					HStack(alignment: .top, spacing: 8) {
+						ImportAppIconView(item: item)
+							.frame(width: 32, height: 32)
+						VStack(alignment: .leading, spacing: 6) {
+							Text(item.displayTitle)
+								.font(.title2.weight(.semibold))
+								.foregroundStyle(.primary)
+							Text(item.queueSubtitle)
+								.font(.system(size: 13, weight: .medium))
+								.foregroundStyle(.secondary)
+							FlowLayout(spacing: 8, rowSpacing: 8) {
+								if item.hasMetadata {
+									Pill("Metadata", color: .green)
+								}
+								if item.macApplication != nil {
+									Pill("Catalog", color: .blue)
+								} else {
+									Pill("Filesystem", color: .gray)
+								}
+								Pill(fileTypeLabel, color: .orange)
+							}
+						}
+						Spacer()
+						VStack(alignment: .trailing, spacing: 2) {
+							Text("Version")
+								.font(.subheadline.weight(.medium))
+								.foregroundStyle(.secondary)
+								.padding(.top, 6)
+							Text(resolvedVersion ?? "Not available")
+								.font(.subheadline.weight(.regular))
+								.lineLimit(1)
+								.foregroundStyle(.secondary)
+							Text("File Size")
+								.font(.subheadline.weight(.medium))
+								.foregroundStyle(.secondary)
+							LocalFileSizeValueView(
+								filePath: item.fullFilePath,
+								cachedBytes: item.cachedFileSizeBytes,
+								font: .subheadline.weight(.semibold)
+							)
+						}
+					}
+					.padding(20)
+				}
+				.overlay(shape.strokeBorder(.white.opacity(0.15)))
+				.clipShape(shape)
+				.frame(maxHeight: 120)
+			} else {
+				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
+				HStack(alignment: .top, spacing: 8) {
+					ImportAppIconView(item: item)
+						.frame(width: 32, height: 32)
+					VStack(alignment: .leading, spacing: 6) {
+						Text(item.displayTitle)
+							.font(.title2.weight(.semibold))
+							.foregroundStyle(.primary)
+						Text(item.queueSubtitle)
+							.font(.system(size: 13, weight: .medium))
+							.foregroundStyle(.secondary)
+						FlowLayout(spacing: 8, rowSpacing: 8) {
+							if item.hasMetadata {
+								Pill("Metadata", color: .green)
+							}
+							if item.macApplication != nil {
+								Pill("Catalog", color: .blue)
+							} else {
+								Pill("Filesystem", color: .gray)
+							}
+							Pill(fileTypeLabel, color: .orange)
+						}
+					}
+					Spacer()
+					VStack(alignment: .trailing, spacing: 2) {
+						Text("Version")
+							.font(.subheadline.weight(.medium))
+							.foregroundStyle(.secondary)
+							.padding(.top, 6)
+						Text(resolvedVersion ?? "Not available")
+							.font(.subheadline.weight(.regular))
+							.lineLimit(1)
+							.foregroundStyle(.secondary)
+						Text("File Size")
+							.font(.subheadline.weight(.medium))
+							.foregroundStyle(.secondary)
+						LocalFileSizeValueView(
+							filePath: item.fullFilePath,
+							cachedBytes: item.cachedFileSizeBytes,
+							font: .subheadline.weight(.semibold)
+						)
+					}
+				}
+				.padding(10)
+				.background(
+					shape
+						.fill(.ultraThinMaterial)
+						.overlay(shape.strokeBorder(.white.opacity(0.15)))
+				)
+				.clipShape(shape)
+				.shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+			}
+		}
+	}
+
+	private var overviewRows: [DetailContentRow] {
+		[
+			DetailContentRow(label: "File Name", value: item.fileName),
+			DetailContentRow(label: "File Extension", value: item.fileExtension),
+			DetailContentRow(label: "Full Path", value: item.fullFilePath),
+			DetailContentRow(label: "File Size") {
+				LocalFileSizeValueView(
+					filePath: item.fullFilePath,
+					cachedBytes: item.cachedFileSizeBytes,
+					font: .callout.weight(.medium)
+				)
+			},
+			DetailContentRow(label: "Type", value: fileTypeLabel),
+			DetailContentRow(label: "Metadata Detected", value: item.hasMetadata ? "Yes" : "No"),
+			DetailContentRow(label: "Bundle ID", value: bundleIdValue),
+			DetailContentRow(label: "Version", value: resolvedVersion ?? "Not available")
+		]
+	}
+
+	private var metadataRows: [DetailContentRow] {
+		[
+			DetailContentRow(label: "Installer File", value: item.munkiMetadata?.installerFile ?? "Not available"),
+			DetailContentRow(label: "Installer Plist", value: item.munkiMetadata?.installerPlist ?? "Not available"),
+			DetailContentRow(label: "Icon File", value: item.munkiMetadata?.iconFile ?? "Not available"),
+			DetailContentRow(label: "Display Name", value: item.parsedMetadata?.display_name ?? "Not available"),
+			DetailContentRow(label: "Developer", value: item.parsedMetadata?.developer ?? "Not available"),
+			DetailContentRow(label: "Description", value: item.parsedMetadata?.description ?? "Not available")
+		]
+	}
+
+	private var catalogRows: [DetailContentRow] {
+		guard let app = item.macApplication else { return [] }
+		var rows: [DetailContentRow] = [
+			DetailContentRow(label: "Name", value: app.name.first ?? "Not available"),
+			DetailContentRow(label: "Version", value: app.version),
+			DetailContentRow(label: "Token", value: app.fullToken.isEmpty ? app.token : app.fullToken),
+			DetailContentRow(label: "Description", value: app.desc ?? "Not available"),
+			DetailContentRow(label: "URL", value: app.url)
+		]
+		if let homepage = app.homepage, !homepage.isEmpty {
+			rows.insert(DetailContentRow(label: "Homepage", value: homepage), at: 4)
+		}
+		return rows
+	}
+
+	private var hasMetadataSection: Bool {
+		item.hasMetadata
+		|| item.munkiMetadata?.installerFile != nil
+		|| item.munkiMetadata?.installerPlist != nil
+		|| item.munkiMetadata?.iconFile != nil
+		|| item.parsedMetadata != nil
+	}
+
+	private var resolvedVersion: String? {
+		if let version = item.parsedMetadata?.version, !version.isEmpty {
+			return version
+		}
+		if let version = item.macApplication?.version, !version.isEmpty {
+			return version
+		}
+		if let version = item.parsedMetadata?.installs?.first?.cfBundleShortVersionString,
+		   !version.isEmpty {
+			return version
+		}
+		return item.parsedMetadata?.installs?.first?.cfBundleVersion
+	}
+
+	private var bundleIdValue: String {
+		item.parsedMetadata?.installs?.first?.cfBundleIdentifier ?? "Not available"
+	}
+
+	private var fileTypeLabel: String {
+		switch item.fileExtension.lowercased() {
+		case ".app": return "App Bundle"
+		case ".pkg": return "PKG"
+		case ".dmg": return "DMG"
+		case ".zip": return "ZIP"
+		default: return "Installer"
+		}
+	}
+
+	private func detailGrid(rows: [DetailContentRow]) -> some View {
+		VStack(alignment: .leading, spacing: 0) {
+			ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+				HStack(alignment: .top, spacing: 10) {
+					Text(row.label)
+						.font(.callout.weight(.medium))
+						.foregroundStyle(.secondary)
+						.lineLimit(1)
+						.frame(
+							minWidth: 100,
+							idealWidth: 120,
+							maxWidth: 140,
+							alignment: .leading
+						)
+					if let valueView = row.valueView {
+						valueView
+							.frame(maxWidth: .infinity, alignment: .leading)
+					} else {
+						Text(row.value ?? "")
+							.font(.callout.weight(.medium))
+							.foregroundStyle(.primary)
+							.frame(maxWidth: .infinity, alignment: .leading)
+							.lineLimit(2)
+					}
+				}
+				.padding(.vertical, 6)
+				.padding(.horizontal, 8)
+				.background(
+					index.isMultiple(of: 2)
+						? Color.black.opacity(0.03) : Color.clear
+				)
+			}
+		}
+		.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+	}
 }

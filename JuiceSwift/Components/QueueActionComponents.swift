@@ -1,6 +1,30 @@
 import SwiftUI
 
+// Consolidated queue confirmation actions/sheets.
+// Used by: SearchView, UpdatesView, ImportView.
+
+enum ConfirmationActionMode {
+	case upload
+	case download
+	case uploadOnly
+
+	var verb: String {
+		switch self {
+		case .upload, .uploadOnly: return "upload"
+		case .download: return "download"
+		}
+	}
+
+	var destinationText: String {
+		switch self {
+		case .upload, .uploadOnly: return "to Workspace ONE."
+		case .download: return "to your local device."
+		}
+	}
+}
+
 struct QueueActionSheet: View {
+	@Environment(\.colorScheme) private var colorScheme
 	let mode: ConfirmationActionMode
 	let itemCount: Int
 	let title: String
@@ -29,8 +53,11 @@ struct QueueActionSheet: View {
 	}
 
 	var body: some View {
-		let glassBaseOpacity = focusObserver.isFocused ? 0.9 : 0.25
 		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: focusObserver.isFocused
+		)
 		VStack(alignment: .leading, spacing: 16) {
 			Text(title)
 				.font(.system(size: 20, weight: .semibold))
@@ -45,32 +72,35 @@ struct QueueActionSheet: View {
 					.foregroundStyle(.secondary)
 			}
 
-			HStack {
-				Spacer()
-				JuiceButtons.secondary(cancelTitle, action: onCancel)
-				JuiceButtons.primary(confirmTitle, action: onConfirm)
+				HStack {
+					Spacer()
+					Button(cancelTitle, action: onCancel)
+						.nativeActionButtonStyle(.secondary, controlSize: .large)
+					Button(confirmTitle, action: onConfirm)
+						.nativeActionButtonStyle(.primary, controlSize: .large)
+				}
 			}
-		}
 		.padding(20)
 		.frame(minWidth: 520)
 		.background {
-			if #available(macOS 26.0, iOS 26.0, *) {
-				ZStack {
-					shape.fill(Color.white.opacity(glassBaseOpacity))
-					GlassEffectContainer {
-						shape
-							.fill(Color.white)
-							.glassEffect(.regular, in: shape)
-					}
-				}
-			} else {
-				shape.fill(.ultraThinMaterial)
-			}
+			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+					fillOpacity: min(
+						1,
+						GlassThemeTokens.panelBaseTintOpacity(for: glassState)
+							+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+					),
+					surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+				)
 		}
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.clipShape(shape)
-		.overlay(shape.strokeBorder(.white.opacity(0.12)))
-		.shadow(color: Color.black.opacity(0.16), radius: 6, x: 0, y: 4)
+		.glassCompatBorder(in: shape, context: glassState, role: .standard)
+		.glassCompatShadow(context: glassState, elevation: .panel)
 	}
 
 	private var messageText: Text {

@@ -3,6 +3,11 @@ import SwiftUI
 import AppKit
 #endif
 
+// Search page.
+// Layout ownership:
+// - Left panel: query field, suggestions, selected app result card.
+// - Inspector panel: queue/results and app detail flyouts.
+
 extension View {
     @ViewBuilder
     func ifAvailableMacOS14ContentMarginsElsePadding() -> some View {
@@ -29,9 +34,12 @@ struct SuggestionRowFrameKey: PreferenceKey {
 }
 
 struct SearchView: View {
+	// MARK: - Inputs & Environment
+
 	let model: PageViewData
     @EnvironmentObject private var catalog: LocalCatalog
 	@EnvironmentObject private var inspector: InspectorCoordinator
+	@Environment(\.colorScheme) private var colorScheme
     @State private var searchText = ""
     @State private var rightTab: QueuePanelContent<AnyView, AnyView>.Tab = .queue
     @State private var isSearchResultVisible: Bool = false
@@ -39,24 +47,51 @@ struct SearchView: View {
     @FocusState private var isSearchFocused: Bool
     @State private var filteredResults: [CaskApplication] = []
     @State private var searchTask: Task<Void, Never>?
-    @State private var selectedResult: CaskApplication?
+	@State private var selectedResult: CaskApplication?
+	@State private var isFetchingFileSize = false
+	@State private var selectedFileSizeText: String?
+	@State private var selectedFileSizeUnavailable = false
 	@State private var highlightedSuggestionIndex: Int? = nil
 	@State private var suggestionRowFrames: [Int: CGRect] = [:]
 	@State private var keyMonitor: Any?
     @State private var queueItems: [CaskApplication] = []
     @State private var resultsItems: [CaskApplication] = []
     @State private var queueNotice: QueuePanelContent<AnyView, AnyView>.Notice?
-    @State private var confirmationVisible = false
-    @State private var confirmationMode: ConfirmationActionMode = .upload
+	@State private var confirmationVisible = false
+	@State private var confirmationMode: ConfirmationActionMode = .upload
+	@StateObject private var downloadQueueModel = DownloadQueueViewModel()
+	@State private var downloadQueueTab: QueuePanelContent<AnyView, AnyView>.Tab = .queue
 	@StateObject private var focusObserver = WindowFocusObserver()
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
-	private let panelGlassOpacity: CGFloat = 1.0
+	private var glassState: GlassStateContext {
+		GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: focusObserver.isFocused
+		)
+	}
+	private var panelGlassOpacity: CGFloat {
+		GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+	}
 	@State private var panelMinHeightCache: CGFloat = 0
 
 	private var glassBaseOpacity: CGFloat {
-		focusObserver.isFocused ? 0.6 : 0.3
+		GlassThemeTokens.panelBaseTintOpacity(for: glassState)
 	}
+
+	private var panelBaseTintColor: Color {
+		GlassThemeTokens.controlBackgroundBase(for: glassState)
+	}
+
+	private var panelBorderColor: Color {
+		GlassThemeTokens.borderColor(for: glassState, role: .standard)
+	}
+
+	private var panelNeutralOverlayOpacity: CGFloat {
+		GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+	}
+
+	// MARK: - Body
 
 	var body: some View {
 		GeometryReader { proxy in
@@ -64,46 +99,55 @@ struct SearchView: View {
 			let panelMinHeight = min(basePanelMinHeight, availableHeight)
 //			let panelMinWidth = 630
 			let panelMinWidth = 400
-			ZStack(alignment: .bottomTrailing) {
-				VStack(alignment: .leading) {
-					HStack(alignment: .top) {
-						leftPanel(
-							panelMinHeight: panelMinHeight,
-							panelMinWidth: CGFloat(panelMinWidth)
+				ZStack(alignment: .bottomTrailing) {
+					VStack(alignment: .leading) {
+						HStack(alignment: .top) {
+							// Main searchable content region.
+							leftPanel(
+								panelMinHeight: panelMinHeight,
+								panelMinWidth: CGFloat(panelMinWidth)
 						)
-					}
-					.frame(maxWidth: .infinity, alignment: .topLeading)
-					.padding(.horizontal, 40)
-					.padding(.vertical, 0)
-					.contentShape(Rectangle())
-					.onTapGesture {
-						if inspector.isPresented {
-							inspector.hide()
 						}
+						.frame(maxWidth: .infinity, alignment: .topLeading)
+						.padding(.horizontal, 40)
+						.padding(.vertical, 0)
+						Spacer(minLength:20)
 					}
-					Spacer(minLength:20)
-				}
 
 				EmptyView()
 			}
-			.onAppear {
+			.onAppearUnlessPreview {
 				panelMinHeightCache = panelMinHeight
 			}
 		.onChange(of: panelMinHeight) { _, newValue in
 			panelMinHeightCache = newValue
 			if inspector.isPresented {
-				inspector.show(queuePanelView(panelMinHeight: newValue))
+				if downloadQueueModel.shouldPresentPanel {
+					inspector.show(
+						downloadPanelView(panelMinHeight: newValue)
+					)
+				} else {
+					inspector.show(queuePanelView(panelMinHeight: newValue))
+				}
 			}
 		}
 		.onChange(of: inspector.isPresented) { _, isPresented in
 			if isPresented {
-				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+				if downloadQueueModel.shouldPresentPanel {
+					inspector.show(
+						downloadPanelView(panelMinHeight: panelMinHeightCache)
+					)
+				} else {
+					inspector.show(
+						queuePanelView(panelMinHeight: panelMinHeightCache)
+					)
+				}
 			}
 		}
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 		.ifAvailableMacOS14ContentMarginsElsePadding()
-		.onAppear {
+		.onAppearUnlessPreview {
 			queueItems = model.queueItems
 			resultsItems = model.searchResults
 		}
@@ -113,6 +157,7 @@ struct SearchView: View {
 				itemCount: queueItems.count,
 				onConfirm: {
 					confirmationVisible = false
+					startQueueProcessing(mode: confirmationMode)
 				},
 				onCancel: {
 					confirmationVisible = false
@@ -121,8 +166,8 @@ struct SearchView: View {
 		}
 	}
 
-	@ViewBuilder
-	private func leftPanel(panelMinHeight: CGFloat, panelMinWidth: CGFloat) -> some View {
+		@ViewBuilder
+		private func leftPanel(panelMinHeight: CGFloat, panelMinWidth: CGFloat) -> some View {
 		ZStack(alignment: .topLeading) {
 			VStack(alignment: .leading, spacing: 16) {
 				SectionHeader("Search", subtitle: "Use the search box below to find applications you wish to download or upload automatically to Workspace ONE.")
@@ -157,27 +202,27 @@ struct SearchView: View {
 						updateSuggestions()
 						showSuggestions = isSearchFocused && !newValue.isEmpty && !filteredResults.isEmpty
 					}
-					.onChange(of: filteredResults.count) { _, _ in
-						showSuggestions = isSearchFocused && !searchText.isEmpty && !filteredResults.isEmpty
-						if showSuggestions, !filteredResults.isEmpty {
-							if let current = highlightedSuggestionIndex, current < filteredResults.count {
-								// keep current highlight
+						.onChange(of: filteredResults.count) { _, _ in
+							showSuggestions = isSearchFocused && !searchText.isEmpty && !filteredResults.isEmpty
+							if showSuggestions, !filteredResults.isEmpty {
+								if let current = highlightedSuggestionIndex, current < filteredResults.count {
+									// keep current highlight
+								} else {
+									highlightedSuggestionIndex = nil
+								}
 							} else {
-								highlightedSuggestionIndex = 0
+								highlightedSuggestionIndex = nil
 							}
-						} else {
-							highlightedSuggestionIndex = nil
 						}
-					}
-					.onChange(of: isSearchFocused) { _, focused in
-						if !focused {
-							showSuggestions = false
-							highlightedSuggestionIndex = nil
-						} else if !searchText.isEmpty && !filteredResults.isEmpty {
-							showSuggestions = true
-							highlightedSuggestionIndex = highlightedSuggestionIndex ?? 0
+						.onChange(of: isSearchFocused) { _, focused in
+							if !focused {
+								showSuggestions = false
+								highlightedSuggestionIndex = nil
+							} else if !searchText.isEmpty && !filteredResults.isEmpty {
+								showSuggestions = true
+								highlightedSuggestionIndex = nil
+							}
 						}
-					}
 					.onChange(of: showSuggestions) { _, isVisible in
 						if !isVisible {
 							highlightedSuggestionIndex = nil
@@ -186,15 +231,13 @@ struct SearchView: View {
 							startKeyMonitor()
 						}
 					}
-					.onAppear {
-						updateSuggestions()
-						showSuggestions = isSearchFocused && !searchText.isEmpty && !filteredResults.isEmpty
-						if showSuggestions, !filteredResults.isEmpty {
-							highlightedSuggestionIndex = 0
-						}
-						if showSuggestions {
-							startKeyMonitor()
-						}
+						.onAppearUnlessPreview {
+							updateSuggestions()
+							showSuggestions = isSearchFocused && !searchText.isEmpty && !filteredResults.isEmpty
+							highlightedSuggestionIndex = nil
+							if showSuggestions {
+								startKeyMonitor()
+							}
 					}
 					.onChange(of: catalog.caskApps.count) { _, _ in
 						updateSuggestions()
@@ -221,18 +264,21 @@ struct SearchView: View {
 				.frame(maxWidth: .infinity, alignment: .leading)
 
 				ZStack(alignment: .top) {
-					if isSearchResultVisible, let selected = selectedResult {
-						SearchResultCard(
-							selectedApplication: selected,
+						if isSearchResultVisible, let selected = selectedResult {
+							SearchResultCard(
+								selectedApplication: selected,
 							title: selected.name.first ?? selected.token,
 							subtitle: selected.desc ?? "",
 							token: selected.fullToken,
 							version: selected.version,
 							fileType: selected.fileType,
-							actionTitle: "Add"
-						) {
-							addSelectedToQueue()
-						}
+							fileSizeText: selectedFileSizeText,
+							isFileSizeLoading: isFetchingFileSize,
+								isFileSizeUnavailable: selectedFileSizeUnavailable,
+								actionTitle: "Add"
+							) {
+								addToQueue(selected)
+							}
 						.transition(.opacity.animation(.easeInOut(duration: 0.15)))
 						.zIndex(1)
 					} else {
@@ -254,53 +300,60 @@ struct SearchView: View {
 		.layoutPriority(1)
 		.background {
 			let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-			if #available(macOS 26.0, iOS 26.0, *) {
-				GlassEffectContainer {
-					shape
-						.fill(Color.white).opacity(glassBaseOpacity)
-						.glassEffect(.regular, in: shape)
-				}
-				.opacity(panelGlassOpacity)
-			} else {
-				shape.fill(.ultraThinMaterial)
-					.opacity(panelGlassOpacity)
-			}
+			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: panelBaseTintColor,
+					fillOpacity: min(1, glassBaseOpacity + panelNeutralOverlayOpacity),
+					surfaceOpacity: panelGlassOpacity
+				)
 		}
 		.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 		.overlay {
 			RoundedRectangle(cornerRadius: 14, style: .continuous)
-				.strokeBorder(.white.opacity(0.12))
+				.strokeBorder(panelBorderColor)
 		}
-		.shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
+		.glassCompatShadow(context: glassState, elevation: .card)
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.zIndex(1)
 
 		}
-		.overlayPreferenceValue(AutoSuggestAnchorKey.self) { anchor in
-			GeometryReader { proxy in
-				if showSuggestions, isSearchFocused, !filteredResults.isEmpty, let anchor {
+			.overlayPreferenceValue(AutoSuggestAnchorKey.self) { anchor in
+				GeometryReader { proxy in
+					if showSuggestions, isSearchFocused, !filteredResults.isEmpty, let anchor {
 					let rect = proxy[anchor]
 					let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 					let rowHeight: CGFloat = 52
 					ScrollViewReader { scrollProxy in
 						ScrollView(.vertical, showsIndicators: filteredResults.count > 1) {
 							VStack(alignment: .leading, spacing: 0) {
-								ForEach(Array(filteredResults.enumerated()), id: \.element.id) { index, app in
-									Button {
-										handleSuggestionSelection(app)
-									} label: {
-										suggestionRow(for: app)
-											.contentShape(Rectangle())
-											.background(
-												RoundedRectangle(cornerRadius: 8, style: .continuous)
-													.fill(Color.white.opacity(index == highlightedSuggestionIndex ? 0.22 : 0))
-													.overlay(
+										ForEach(Array(filteredResults.enumerated()), id: \.element.id) { index, app in
+											let isHighlighted = index == highlightedSuggestionIndex
+											let highlightFill = isHighlighted
+												? GlassThemeTokens.selectedChipFill(for: glassState)
+												: .clear
+											let highlightBorder = isHighlighted
+												? GlassThemeTokens.selectedChipBorder(for: glassState)
+												: .clear
+											Button {
+												handleSuggestionSelection(app)
+											} label: {
+												suggestionRow(for: app)
+													.contentShape(Rectangle())
+													.background(
 														RoundedRectangle(cornerRadius: 8, style: .continuous)
-															.stroke(Color.white.opacity(index == highlightedSuggestionIndex ? 0.38 : 0), lineWidth: 1)
+															.fill(highlightFill)
+															.overlay(
+																RoundedRectangle(cornerRadius: 8, style: .continuous)
+																	.stroke(highlightBorder, lineWidth: 1)
+															)
+															.padding(.horizontal, 4)
+															.padding(.top, 4)
+															.padding(.bottom, 1)
 													)
-													.shadow(color: Color.white.opacity(index == highlightedSuggestionIndex ? 0.12 : 0), radius: 1, x: 0, y: 0.5)
-											)
-									}
+											}
 									.buttonStyle(.plain)
 									.onHover { hovering in
 										if hovering {
@@ -337,33 +390,38 @@ struct SearchView: View {
 								}
 							}
 						}
-					}
-					.frame(height: min(CGFloat(filteredResults.count) * rowHeight, 300))
-					.background {
-						if #available(macOS 26.0, iOS 26.0, *) {
-							GlassEffectContainer {
-								shape
-									.fill(Color.clear)
-									.glassEffect(.regular, in: shape)
-							}
-						} else {
-							shape.fill(.ultraThinMaterial)
 						}
-					}
-					.clipShape(shape)
-					.overlay(shape.strokeBorder(.white.opacity(0.16)))
-					.shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 6)
-					.frame(width: rect.width, alignment: .leading)
+							.frame(height: min(CGFloat(filteredResults.count) * rowHeight, 300))
+							.background {
+								Color.clear
+									.glassCompatSurface(
+										in: shape,
+										style: .clear,
+										context: glassState,
+										fillColor: panelBaseTintColor,
+										fillOpacity: min(1, glassBaseOpacity + panelNeutralOverlayOpacity),
+										surfaceOpacity: 1
+									)
+							}
+						.clipShape(shape)
+						.glassCompatBorder(in: shape, context: glassState, role: .strong)
+						.glassCompatShadow(context: glassState, elevation: .panel)
+						.frame(width: rect.width, alignment: .leading)
 					.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 					.offset(x: rect.minX, y: rect.maxY + 6)
 					.zIndex(100)
+					}
 				}
+				.allowsHitTesting(showSuggestions && isSearchFocused && !filteredResults.isEmpty)
 			}
-		}
-		.contentShape(Rectangle())
-		.onTapGesture {
-			isSearchFocused = false
-			showSuggestions = false
+			.onChange(of: selectedResult?.id) { _, _ in
+			guard let app = selectedResult else {
+				isFetchingFileSize = false
+				selectedFileSizeText = nil
+				selectedFileSizeUnavailable = false
+				return
+			}
+			loadFileSize(for: app)
 		}
 	}
 
@@ -386,6 +444,15 @@ struct SearchView: View {
 		)
 	}
 
+	@ViewBuilder
+	private func downloadPanelView(panelMinHeight: CGFloat) -> some View {
+		DownloadQueuePanelContent(
+			model: downloadQueueModel,
+			tab: $downloadQueueTab,
+			panelMinHeight: panelMinHeight
+		)
+	}
+
     @ViewBuilder
     private func suggestionRow(for app: CaskApplication) -> some View {
         HStack(spacing: 12) {
@@ -396,10 +463,10 @@ struct SearchView: View {
             }
             VStack(alignment: .leading) {
                 Text(app.name.first ?? app.token)
-                    .fontWeight(.medium)
+					.font(.headline.weight(.semibold))
                     .foregroundStyle(.primary)
                 Text(app.desc ?? "")
-                    .font(.caption)
+					.font(.body)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -410,7 +477,7 @@ struct SearchView: View {
         .padding(.horizontal, 8)
     }
 
-    private func handleSuggestionSelection(_ app: CaskApplication) {
+	private func handleSuggestionSelection(_ app: CaskApplication) {
         selectedResult = app
         isSearchResultVisible = true
         showSuggestions = false
@@ -418,23 +485,20 @@ struct SearchView: View {
 		highlightedSuggestionIndex = nil
     }
 
-    private func addSelectedToQueue() {
-        guard let selected = selectedResult else { return }
-        let token = selected.fullToken.isEmpty ? selected.token : selected.fullToken
-        if queueItems.contains(where: { $0.id == token }) {
-            showQueueNotice("Already in queue", isDuplicate: true)
-            resetSearchUI()
-            return
-        }
-        let wasEmpty = queueItems.isEmpty
-        queueItems.append(selected)
-		inspector.notifyQueueAdded()
-        showQueueNotice("Added to queue", isDuplicate: false)
-		if wasEmpty {
+	    private func addToQueue(_ selected: CaskApplication) {
+	        let token = selected.fullToken.isEmpty ? selected.token : selected.fullToken
+	        if queueItems.contains(where: { $0.id == token }) {
+	            showQueueNotice("Already in queue", isDuplicate: true)
+				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+	            resetSearchUI()
+	            return
+	        }
+	        queueItems.append(selected)
+			inspector.notifyQueueAdded()
+	        showQueueNotice("Added to queue", isDuplicate: false)
 			inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
-		}
-        resetSearchUI()
-    }
+	        resetSearchUI()
+	    }
 
     private func resetSearchUI() {
 		searchTask?.cancel()
@@ -486,11 +550,13 @@ struct SearchView: View {
                         isSearchResultVisible = false
 						}
                     }
-					if showSuggestions, !results.isEmpty {
-						highlightedSuggestionIndex = min(highlightedSuggestionIndex ?? 0, results.count - 1)
-					} else if results.isEmpty {
-						highlightedSuggestionIndex = nil
-					}
+						if showSuggestions, !results.isEmpty {
+							if let current = highlightedSuggestionIndex {
+								highlightedSuggestionIndex = min(current, results.count - 1)
+							}
+						} else if results.isEmpty {
+							highlightedSuggestionIndex = nil
+						}
                 }
             }
         }
@@ -510,6 +576,60 @@ struct SearchView: View {
 		if index < 0 { index = filteredResults.count - 1 }
 		if index >= filteredResults.count { index = 0 }
 		highlightedSuggestionIndex = index
+	}
+
+	private func loadFileSize(for app: CaskApplication) {
+		let urlString = app.url
+		if urlString.isEmpty {
+			selectedFileSizeText = nil
+			selectedFileSizeUnavailable = true
+			isFetchingFileSize = false
+			return
+		}
+
+		selectedFileSizeText = nil
+		selectedFileSizeUnavailable = false
+		isFetchingFileSize = true
+
+		Task {
+			let currentId = app.id
+			if let cached = await RemoteFileSizeService.cachedSizeText(for: urlString) {
+				await MainActor.run {
+					guard selectedResult?.id == currentId else { return }
+					selectedFileSizeText = cached
+					selectedFileSizeUnavailable = false
+					isFetchingFileSize = false
+				}
+				return
+			}
+
+			let label = await RemoteFileSizeService.sizeText(for: urlString)
+			await MainActor.run {
+				guard selectedResult?.id == currentId else { return }
+				if let label {
+					selectedFileSizeText = label
+					selectedFileSizeUnavailable = false
+				} else {
+					selectedFileSizeText = nil
+					selectedFileSizeUnavailable = true
+				}
+				isFetchingFileSize = false
+			}
+		}
+	}
+
+	private func startQueueProcessing(mode: ConfirmationActionMode) {
+		guard !queueItems.isEmpty else { return }
+		downloadQueueModel.configure(
+			queue: queueItems,
+			mode: mode,
+			recipes: catalog.recipes
+		)
+		queueItems.removeAll()
+		inspector.show(
+			downloadPanelView(panelMinHeight: panelMinHeightCache)
+		)
+		downloadQueueModel.start()
 	}
 
 	private func dismissSuggestions() {
@@ -576,22 +696,16 @@ struct SearchView: View {
         .environmentObject(LocalCatalog())
 		.environmentObject(InspectorCoordinator())
 		.frame(width: 700, height: 400)
-		.background(){
-			JuiceGradient()
-				.frame(maxWidth: .infinity)
-				.frame(height: 500)
-				.mask(
-					LinearGradient(
-						stops: [
-							.init(color: Color.white, location: 0.0),
-							.init(color: Color.white, location: 0.55),
-							.init(color: Color.white.opacity(0.7), location: 0.7),
-							.init(color: Color.white.opacity(0.3), location: 0.82),
-							.init(color: Color.white.opacity(0.0), location: 1.0)
-						],
-						startPoint: .top,
-						endPoint: .bottom
-					)
+	        .background(){
+				JuiceGradient()
+					.frame(maxWidth: .infinity)
+					.frame(height: 500)
+					.mask(
+						LinearGradient(
+							stops: JuiceBackgroundStyle.v1.legacyTopGradientMaskStops,
+							startPoint: .top,
+							endPoint: .bottom
+						)
 				)
 				.ignoresSafeArea(edges: .top)
 		}

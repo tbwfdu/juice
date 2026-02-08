@@ -1,6 +1,7 @@
 import SwiftUI
 
-// Common typography helpers
+// MARK: - Typography
+
 struct JuiceTypography {
     static func sectionTitle(_ text: String) -> some View {
         Text(text)
@@ -16,15 +17,57 @@ struct JuiceTypography {
     static func metaLabel(_ title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(.secondary)
+				.font(.body.weight(.semibold))
+               
             Text(value)
-                .font(.system(size: 13, weight: .medium))
+				.font(.body)
+				.foregroundStyle(.secondary)
         }
     }
 }
 
-// Common button helpers
+// MARK: - Buttons
+
+enum NativeActionButtonVariant {
+	case primary
+	case secondary
+}
+
+extension View {
+	@ViewBuilder
+	func nativeActionButtonStyle(
+		_ variant: NativeActionButtonVariant,
+		controlSize: ControlSize = .large
+	) -> some View {
+		if #available(macOS 26.0, iOS 26.0, *) {
+			switch variant {
+			case .primary:
+				self
+					.buttonStyle(.glass(.regular))
+					.controlSize(controlSize)
+					.buttonBorderShape(.automatic)
+					.tint(.accentColor)
+			case .secondary:
+				self
+					.buttonStyle(.glass(.clear))
+					.controlSize(controlSize)
+					.buttonBorderShape(.automatic)
+			}
+		} else {
+			switch variant {
+			case .primary:
+				self
+					.buttonStyle(.borderedProminent)
+					.controlSize(controlSize)
+			case .secondary:
+				self
+					.buttonStyle(.bordered)
+					.controlSize(controlSize)
+			}
+		}
+	}
+}
+
 struct JuiceButtons {
     @MainActor static func primary(_ title: String, action: @escaping () -> Void) -> some View {
         Group {
@@ -148,6 +191,8 @@ enum JuiceGlassButtonKind {
     case clear
 }
 
+// MARK: - Custom Button Style
+
 struct JuiceGlassButtonStyle: ButtonStyle {
     let kind: JuiceGlassButtonKind
 	let usesColorGradient: Bool
@@ -175,6 +220,24 @@ private struct JuiceGlassButtonBody: View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
     }
 
+    private var isWindowActive: Bool {
+        #if os(macOS)
+        return controlActiveState == .active
+        #else
+        return true
+        #endif
+    }
+
+    private func state(isPressed: Bool) -> GlassStateContext {
+        GlassStateContext(
+            colorScheme: colorScheme,
+            isFocused: isWindowActive,
+            isEnabled: isEnabled,
+            isHovered: isHovered,
+            isPressed: isPressed
+        )
+    }
+
     var body: some View {
         if kind == .icon {
             let circle = Circle()
@@ -186,16 +249,16 @@ private struct JuiceGlassButtonBody: View {
                 .padding(4)
                 .contentShape(circle)
                 .background {
-                    // Use the same background approach but with a circular shape
-                    if #available(macOS 26.0, iOS 26.0, *) {
-                        GlassEffectContainer {
-                            circle
-                                .fill(Color.clear)
-                                .glassEffect(.regular, in: circle)
-                        }
-                    } else {
-                        circle.fill(.ultraThinMaterial)
-                    }
+                    let context = state(isPressed: configuration.isPressed)
+                    Color.clear
+                        .glassCompatSurface(
+                            in: circle,
+                            style: .regular,
+                            context: context,
+                            fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
+                            fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: context),
+                            surfaceOpacity: 1
+                        )
                 }
                 .overlay {
                     // Tint overlay
@@ -227,7 +290,12 @@ private struct JuiceGlassButtonBody: View {
 //                    }
 //                    .opacity(isHovered ? 1.0 : 0.85)
 //                }
-                .shadow(color: shadowColor(isPressed: configuration.isPressed), radius: (isHovered ? 1.5 : 1), x: 0, y: (isHovered ? 0.8 : 0.5))
+                .shadow(
+                    color: shadowColor(isPressed: configuration.isPressed),
+                    radius: (isHovered ? 1.5 : 1),
+                    x: 0,
+                    y: (isHovered ? 0.8 : 0.5)
+                )
                 .opacity(isEnabled ? 1 : 0.45)
                 .onHover { hovering in
                     withAnimation(.easeOut(duration: 0.12)) {
@@ -242,7 +310,10 @@ private struct JuiceGlassButtonBody: View {
                 .padding(paddingInsets)
                 .contentShape(shape)
                 .background {
-                    glassBackground(shape: shape)
+                    glassBackground(
+                        shape: shape,
+                        isPressed: configuration.isPressed
+                    )
                 }
                 .overlay {
                     tintOverlay(shape: shape, isPressed: configuration.isPressed)
@@ -321,33 +392,33 @@ private struct JuiceGlassButtonBody: View {
     }
 
     @ViewBuilder
-    private func glassBackground(shape: RoundedRectangle) -> some View {
-        if #available(macOS 26.0, iOS 26.0, *) {
-            let glassStyle: Glass = kind == .clear ? .clear : .regular
-            GlassEffectContainer {
-                shape
-                    .fill(Color.clear)
-                    .glassEffect(glassStyle, in: shape)
-            }
-        } else {
-            shape.fill(.ultraThinMaterial)
-        }
+    private func glassBackground(shape: RoundedRectangle, isPressed: Bool) -> some View {
+        let context = state(isPressed: isPressed)
+        let surfaceStyle: GlassCompatSurfaceStyle = kind == .clear ? .clear : .regular
+        Color.clear
+            .glassCompatSurface(
+                in: shape,
+                style: surfaceStyle,
+                context: context,
+                fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
+                fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: context),
+                surfaceOpacity: 1
+            )
     }
 
     private func tintOverlay(shape: RoundedRectangle, isPressed: Bool) -> some View {
-        let baseOpacity: CGFloat
+        let context = state(isPressed: isPressed)
+        let role: GlassOverlayRole
         switch kind {
         case .primary:
-            baseOpacity = isPressed ? 0.12 : (isHovered ? 0.10 : 0.08)
+            role = isPressed ? .pressed : (isHovered ? .hover : .standard)
         case .secondary:
-            baseOpacity = isPressed ? 0.06 : (isHovered ? 0.05 : 0.03)
+            role = isPressed ? .hover : (isHovered ? .standard : .subtle)
         case .ghost, .icon, .clear:
-            baseOpacity = isPressed ? 0.04 : (isHovered ? 0.03 : 0.015)
+            role = isPressed ? .standard : (isHovered ? .subtle : .subtle)
         }
-
         return shape
-            .fill(Color.white)
-            .opacity(baseOpacity)
+            .fill(GlassThemeTokens.overlayColor(for: context, role: role))
     }
 
 	@ViewBuilder
@@ -356,22 +427,24 @@ private struct JuiceGlassButtonBody: View {
 		isPressed: Bool,
 		usesColorGradient: Bool
 	) -> some View {
-		let whiteOpacity: CGFloat = isPressed ? 0.22 : (isHovered ? 0.18 : 0.14)
-		let gradientOpacity: CGFloat = isPressed ? 0.18 : (isHovered ? 0.14 : 0.1)
+		let context = state(isPressed: isPressed)
+		let strongOverlay = GlassThemeTokens.overlayColor(for: context, role: .strong)
+		let standardOverlay = GlassThemeTokens.overlayColor(for: context, role: .standard)
+		let subtleOverlay = GlassThemeTokens.overlayColor(for: context, role: .subtle)
+		let gradientOpacity: CGFloat = isPressed ? 0.16 : (isHovered ? 0.12 : 0.08)
 		let allowColorGradient = usesColorGradient && isEnabled && isWindowActive
 		ZStack {
 			shape
 				.fill(
 					LinearGradient(
 						colors: [
-							Color.white.opacity(0.55),
-							Color.white.opacity(0.2)
+							strongOverlay,
+							standardOverlay
 						],
 						startPoint: .topLeading,
 						endPoint: .bottomTrailing
 					)
 				)
-				.opacity(whiteOpacity)
 			if allowColorGradient {
 				shape
 					.fill(LinearGradient.juice)
@@ -381,8 +454,8 @@ private struct JuiceGlassButtonBody: View {
 				.fill(
 					LinearGradient(
 						colors: [
-							Color.white.opacity(isPressed ? 0.42 : (isHovered ? 0.36 : 0.3)),
-							Color.white.opacity(0.0)
+							strongOverlay,
+							subtleOverlay.opacity(0)
 						],
 						startPoint: .top,
 						endPoint: .bottom
@@ -390,41 +463,32 @@ private struct JuiceGlassButtonBody: View {
 				)
 				.scaleEffect(x: 1, y: 0.68, anchor: .top)
 			shape
-				.stroke(Color.white.opacity(isPressed ? 0.5 : (isHovered ? 0.44 : 0.38)), lineWidth: 0.6)
+				.stroke(
+					GlassThemeTokens.borderColor(
+						for: context,
+						role: isPressed ? .strong : .standard
+					),
+					lineWidth: 0.6
+				)
 				.opacity(0.9)
 				.scaleEffect(x: 1, y: 0.22, anchor: .top)
 		}
 	}
 
-	private var isWindowActive: Bool {
-		#if os(macOS)
-		return controlActiveState == .active
-		#else
-		return true
-		#endif
-	}
-
     @ViewBuilder
     private func borderOverlay(shape: RoundedRectangle, isPressed: Bool) -> some View {
-        let highlight = colorScheme == .dark ? 0.22 : 0.28
-        let topOpacity = isPressed ? highlight * 0.6 : (isHovered ? highlight * 0.9 : highlight)
-
+        let context = state(isPressed: isPressed)
         ZStack {
             shape.strokeBorder(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(topOpacity),
-                        Color.white.opacity(0.08)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
+                GlassThemeTokens.borderColor(for: context, role: .standard),
                 lineWidth: 0.8
             )
 
             if kind == .primary {
-                let primaryOpacity = isPressed ? 0.35 : (isHovered ? 0.28 : 0.22)
-                shape.strokeBorder(Color.white.opacity(primaryOpacity), lineWidth: 0.8)
+                shape.strokeBorder(
+                    GlassThemeTokens.borderColor(for: context, role: .strong),
+                    lineWidth: 0.8
+                )
             }
         }
     }
@@ -448,10 +512,9 @@ private struct JuiceGlassButtonBody: View {
     }
 
     private func shadowColor(isPressed: Bool) -> Color {
-        let base = colorScheme == .dark ? 0.28 : 0.12
-        let hoverBoost: CGFloat = isHovered ? 0.12 : 0
-        let opacity = isPressed ? base * 0.5 : min(base + hoverBoost, 0.24)
-        return Color.black.opacity(opacity)
+        let context = state(isPressed: isPressed)
+        let elevation: GlassCompatElevation = (kind == .ghost || kind == .icon || kind == .clear) ? .small : .card
+        return GlassThemeTokens.shadow(for: context, elevation: elevation).color
     }
 }
 
@@ -466,6 +529,7 @@ extension ButtonStyle where Self == JuiceGlassButtonStyle {
 
 private struct GlassPopHighlightModifier: ViewModifier {
 	let usesColorGradient: Bool
+	@Environment(\.colorScheme) private var colorScheme
 	@Environment(\.isEnabled) private var isEnabled
 	#if os(macOS)
 	@Environment(\.controlActiveState) private var controlActiveState
@@ -473,6 +537,14 @@ private struct GlassPopHighlightModifier: ViewModifier {
 	@State private var isHovered = false
 
 	func body(content: Content) -> some View {
+		let context = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: isWindowActive,
+			isEnabled: isEnabled,
+			isHovered: isHovered
+		)
+		let strongOverlay = GlassThemeTokens.overlayColor(for: context, role: .strong)
+		let standardOverlay = GlassThemeTokens.overlayColor(for: context, role: .standard)
 		content
 			.overlay {
 				let shape = Capsule(style: .continuous)
@@ -482,18 +554,17 @@ private struct GlassPopHighlightModifier: ViewModifier {
 						.fill(
 							LinearGradient(
 								colors: [
-									Color.white.opacity(0.4),
-									Color.white.opacity(0.12)
+									strongOverlay,
+									standardOverlay
 								],
 								startPoint: .topLeading,
 								endPoint: .bottomTrailing
 							)
 						)
-						.opacity(isHovered ? 0.18 : 0.14)
 					if allowColorGradient {
 						shape
 							.fill(LinearGradient.juice)
-							.opacity(isHovered ? 0.14 : 0.1)
+							.opacity(isHovered ? 0.12 : 0.08)
 					}
 				}
 			}
@@ -519,29 +590,48 @@ extension View {
 	}
 }
 
-// A small layout helper for left column framing
+// MARK: - Shared Layout Modifiers
+
+private struct GlassPanelStyleModifier: ViewModifier {
+	let cornerRadius: CGFloat
+	@Environment(\.colorScheme) private var colorScheme
+	#if os(macOS)
+	@Environment(\.controlActiveState) private var controlActiveState
+	#endif
+
+	private var isWindowActive: Bool {
+		#if os(macOS)
+		return controlActiveState == .active
+		#else
+		return true
+		#endif
+	}
+
+	func body(content: Content) -> some View {
+		let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+		let context = GlassStateContext(colorScheme: colorScheme, isFocused: isWindowActive)
+		content
+			.glassCompatSurface(
+				in: shape,
+				style: .regular,
+				context: context,
+				fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
+				fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: context),
+				surfaceOpacity: 1
+			)
+			.glassCompatBorder(in: shape, context: context, role: .standard)
+			.glassCompatShadow(context: context, elevation: .card)
+			.clipShape(shape)
+	}
+}
+
 extension View {
     func leftColumnFrame(maxWidth: CGFloat = 2000) -> some View {
         self.frame(minWidth: 0, maxWidth: maxWidth, alignment: .leading)
     }
 
 	func glassPanelStyle(cornerRadius: CGFloat = 14) -> some View {
-		let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-		return self
-			.background {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-				}
-			}
-			.clipShape(shape)
-			.overlay(shape.strokeBorder(.white.opacity(0.12)))
-			.shadow(color: Color.black.opacity(0.10), radius: 3, x: 0, y: 1)
+		modifier(GlassPanelStyleModifier(cornerRadius: cornerRadius))
 	}
 }
 

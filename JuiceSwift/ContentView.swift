@@ -1,12 +1,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    private let landingBackgroundStyle = JuiceBackgroundStyle.v1
+    private let nonLandingBackgroundStyle = JuiceBackgroundStyle.v2
+
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selection: NavigationItem? = .landing
     private let model = PageViewData.instance
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
     @State private var isHoveringSidebar = false
     @ObservedObject private var glassPresenter = GlassWindowPresenter.shared
 	@StateObject private var inspector = InspectorCoordinator()
+    @StateObject private var windowFocusObserver = WindowFocusObserver()
     @State private var inspectorWidth: CGFloat = 400
 
     init(initialSelection: NavigationItem? = .search) {
@@ -24,32 +29,27 @@ struct ContentView: View {
 				
         } detail: {
             ZStack(alignment: .top) {
-                WindowGlassBackground()
-                    .ignoresSafeArea()
                 let currentSelection = selection ?? .landing
+                let activeBackgroundStyle = currentSelection == .landing ? landingBackgroundStyle : nonLandingBackgroundStyle
                 let showHeader = currentSelection != .landing
-                let useGradientBackground = currentSelection == .landing
-                    || currentSelection == .search
-                    || currentSelection == .updates
-                    || currentSelection == .importApps
-                    || currentSelection == .settings
                 let contentTopPadding: CGFloat = {
                     guard showHeader else { return 0 }
                     return (currentSelection == .search || currentSelection == .updates || currentSelection == .importApps || currentSelection == .settings) ? 80 : 10
                 }()
-                if useGradientBackground {
+                if activeBackgroundStyle.usesWordGlassMaskBackground {
+                    JuiceGlassWordBackground(style: activeBackgroundStyle, showsDesktopWallpaper: false)
+                        .ignoresSafeArea()
+                } else {
+                    WindowGlassBackground()
+                        .ignoresSafeArea()
+                }
+                if activeBackgroundStyle.showsLegacyTopGradient {
                     JuiceGradient()
                         .frame(maxWidth: .infinity)
-                        .frame(height: 500)
+                        .frame(height: activeBackgroundStyle.legacyTopGradientHeight)
                         .mask(
                             LinearGradient(
-                                stops: [
-                                    .init(color: Color.white, location: 0.0),
-                                    .init(color: Color.white, location: 0.55),
-                                    .init(color: Color.white.opacity(0.7), location: 0.7),
-                                    .init(color: Color.white.opacity(0.3), location: 0.82),
-                                    .init(color: Color.white.opacity(0.0), location: 1.0)
-                                ],
+                                stops: activeBackgroundStyle.legacyTopGradientMaskStops,
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
@@ -60,7 +60,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(.top, contentTopPadding)
                 if showHeader {
-                    GradientHeaderBar(title: "Juice", backgroundStyle: useGradientBackground ? .clear : .gradient)
+                    GradientHeaderBar(title: "Juice", backgroundStyle: activeBackgroundStyle.headerBackgroundStyle)
                         .zIndex(1)
                 }
                 
@@ -117,6 +117,19 @@ struct ContentView: View {
         .toolbarBackground(.hidden, for: .windowToolbar)
         .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 350)
         .environmentObject(inspector)
+        .background(WindowFocusReader { window in
+            windowFocusObserver.attach(window)
+        })
+        .overlay {
+			let glassState = GlassStateContext(
+				colorScheme: colorScheme,
+				isFocused: windowFocusObserver.isFocused
+			)
+            GlassThemeTokens.windowBackgroundBase(for: glassState)
+                .opacity(windowFocusObserver.isFocused ? 0 : (colorScheme == .light ? 0.10 : 0.12))
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
 	}
 
     @ViewBuilder
@@ -144,6 +157,7 @@ struct JuiceGradient: View {
 }
 
 private struct InspectorOverlayView: View {
+	@Environment(\.colorScheme) private var colorScheme
     let content: AnyView
     let hasContent: Bool
     let isPresented: Bool
@@ -154,6 +168,7 @@ private struct InspectorOverlayView: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
         let paddedWidth = measuredWidth > 0 ? (measuredWidth + 40) : widthRange.lowerBound
         let clampedWidth = max(widthRange.lowerBound, min(widthRange.upperBound, paddedWidth))
         let hiddenOffset = clampedWidth + 40
@@ -193,33 +208,28 @@ private struct InspectorOverlayView: View {
 			.frame(width: clampedWidth)
 			.frame(maxHeight: .infinity, alignment: .top)
 			.background {
-				if #available(macOS 26.0, iOS 26.0, *) {
-					ZStack {
-						shape
-							.fill(Color(red: 1.0, green: 0.965, blue: 0.93).opacity(0.2))
-						GlassEffectContainer {
-							shape
-								.fill(Color.clear)
-								.glassEffect(.regular, in: shape)
-						}
-					}
-				} else {
-					shape.fill(.ultraThinMaterial)
-						.opacity(0.7)
-				}
+				Color.clear
+					.glassCompatSurface(
+						in: shape,
+						style: .regular,
+						context: glassState,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillOpacity: 0.40,
+						surfaceOpacity: 0.90
+					)
 			}
 			.clipShape(shape)
-			.overlay(shape.strokeBorder(.white.opacity(0.12)))
+			.glassCompatBorder(in: shape, context: glassState, role: .standard)
 			.overlay(
 				ZStack {
 					RadialGradient(
-						colors: [Color.white.opacity(0.35), .clear],
+						colors: [GlassThemeTokens.textPrimary(for: glassState).opacity(0.35), .clear],
 						center: .topLeading,
 						startRadius: 0,
 						endRadius: 10
 					)
 					RadialGradient(
-						colors: [Color.white.opacity(0.26), .clear],
+						colors: [GlassThemeTokens.textPrimary(for: glassState).opacity(0.26), .clear],
 						center: .bottomTrailing,
 						startRadius: 0,
 						endRadius: 10
@@ -229,7 +239,7 @@ private struct InspectorOverlayView: View {
 				.blendMode(.screen)
 				.allowsHitTesting(false)
 			)
-			.shadow(color: Color.black.opacity(0.14), radius: 12, x: 0, y: 8)
+			.glassCompatShadow(context: glassState, elevation: .panel)
 			.padding(.top, 8)
 			.padding(.trailing, 8)
 			.padding(.bottom, 8)
@@ -264,23 +274,31 @@ private struct InspectorContentWidthKey: PreferenceKey {
 }
 
 struct PlaceholderView: View {
+	@Environment(\.colorScheme) private var colorScheme
     let title: String
     let subtitle: String
 
     var body: some View {
+		let context = GlassStateContext(colorScheme: colorScheme, isFocused: true)
+		let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         VStack(spacing: 12) {
             Text(title)
                 .font(.system(size: 44, weight: .bold))
             Text(subtitle)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
+				.foregroundStyle(GlassThemeTokens.textSecondary(for: context))
         }
-        .foregroundStyle(.white)
+		.foregroundStyle(GlassThemeTokens.textPrimary(for: context))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.12))
-                .padding(48)
+			shape
+				.fill(GlassThemeTokens.overlayColor(for: context, role: .standard))
+				.overlay(
+					shape.strokeBorder(
+						GlassThemeTokens.borderColor(for: context, role: .standard)
+					)
+				)
+				.padding(48)
         )
     }
 }
