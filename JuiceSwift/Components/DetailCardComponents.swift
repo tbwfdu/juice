@@ -39,6 +39,76 @@ import SwiftUI
 	}
 #endif
 
+private func softenedDetailBadgeShadow(
+	for glassState: GlassStateContext
+) -> (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
+	_ = glassState
+	return (color: .clear, radius: 0, x: 0, y: 0)
+}
+
+@MainActor
+@ViewBuilder
+private func cardActionsButtons(
+	onDetails: (() -> Void)?,
+	onAddToQueue: (() -> Void)?
+	
+) -> some View {
+//
+		if #available(macOS 26.0, *) {
+			@State var hoverGlassSpacing:CGFloat = 0
+			ZStack {
+				GlassEffectContainer(spacing: hoverGlassSpacing) {
+					HStack(spacing: 4) {
+						if let onDetails {
+							Button(action: onDetails) {
+								Image(systemName: "magnifyingglass")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+						if let onAddToQueue {
+							Button(action: onAddToQueue) {
+								Image(systemName: "plus")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+					}
+				}
+			}
+		} else {
+			HStack(spacing: 4) {
+				if let onDetails {
+					Button(action: onDetails) {
+						Image(systemName: "magnifyingglass")
+							.frame(width: 10, height: 10)
+							.padding(2)
+					}
+					.buttonStyle(.bordered)
+					.controlSize(.mini)
+					.buttonBorderShape(.circle)
+				}
+				if let onAddToQueue {
+					Button(action: onAddToQueue) {
+						Button(action: {}) {
+							Image(systemName: "plus")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.bordered)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+					}
+				}
+			}
+		}
+	}
+//}
+
 struct AppDetailCard: View {
 	// MARK: - Inputs
 
@@ -46,6 +116,7 @@ struct AppDetailCard: View {
 	let isSelected: Bool
 	let onToggleSelect: (() -> Void)?
 	let onDetails: (() -> Void)?
+	let onAddToQueue: (() -> Void)?
 	@Environment(\.colorScheme) private var colorScheme
 
 	@State private var isHovered: Bool = false
@@ -54,19 +125,24 @@ struct AppDetailCard: View {
 		item: UemApplication,
 		isSelected: Bool = false,
 		onToggleSelect: (() -> Void)? = nil,
-		onDetails: (() -> Void)? = nil
+		onDetails: (() -> Void)? = nil,
+		onAddToQueue: (() -> Void)? = nil
 	) {
 		self.item = item
 		self.isSelected = isSelected
 		self.onToggleSelect = onToggleSelect
 		self.onDetails = onDetails
+		self.onAddToQueue = onAddToQueue
 	}
 
 	// MARK: - Content Layout
 
 	private var content: some View {
-		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-		let badgeShadow = GlassThemeTokens.shadow(for: glassState, elevation: .small)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
 		return VStack(alignment: .leading, spacing: 8) {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
@@ -79,7 +155,11 @@ struct AppDetailCard: View {
 							.foregroundStyle(.green)
 							.background(
 								Circle()
-									.fill(GlassThemeTokens.windowBackgroundBase(for: glassState))
+									.fill(
+										GlassThemeTokens.windowBackgroundBase(
+											for: glassState
+										)
+									)
 									.frame(width: 14, height: 14)
 									.shadow(
 										color: badgeShadow.color,
@@ -137,15 +217,16 @@ struct AppDetailCard: View {
 						labelFont: .system(size: 10, weight: .medium),
 						valueFont: .system(size: 10, weight: .medium)
 					)
-					}
-					Spacer(minLength: 0)
 				}
+				Spacer(minLength: 0)
+			}
 			FlowLayout(spacing: 6, rowSpacing: 6) {
 				if item.wasMatched ?? false {
 					if item.hasUpdate ?? false {
 						Pill("Has Update", color: .orange)
 					} else {
-						Pill("Up To Date", color: .green).onAppearUnlessPreview {
+						Pill("Up To Date", color: .green).onAppearUnlessPreview
+						{
 							printStruct(item)
 						}
 					}
@@ -177,13 +258,16 @@ struct AppDetailCard: View {
 
 	var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-		let badgeShadow = GlassThemeTokens.shadow(for: glassState, elevation: .small)
-		let panelBaseTintColor = GlassThemeTokens.controlBackgroundBase(for: glassState)
-		let panelFillOpacity = min(
-			1,
-			GlassThemeTokens.panelBaseTintOpacity(for: glassState)
-				+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		//let badgeShadow = softenedDetailBadgeShadow(for: glassState)
+		let cardBaseColor = GlassThemeTokens.controlBackgroundBase(
+			for: glassState
+		)
+		let cardFillOpacity = GlassThemeTokens.panelBaseTintOpacity(
+			for: glassState
 		)
 		let hoverBorder = shape.strokeBorder(
 			LinearGradient.juice,
@@ -195,15 +279,16 @@ struct AppDetailCard: View {
 		)
 
 		// Container styling is centralized here so inner content stays data-focused.
-		return content
+		return
+			content
 			.padding(.horizontal, 12)
 			.padding(.vertical, 14)
 			.glassCompatSurface(
 				in: shape,
-				style: .regular,
+				style: .clear,
 				context: glassState,
-				fillColor: panelBaseTintColor,
-				fillOpacity: panelFillOpacity,
+				fillColor: cardBaseColor,
+				fillOpacity: cardFillOpacity,
 				surfaceOpacity: 1
 			)
 			.glassCompatBorder(in: shape, context: glassState, role: .standard)
@@ -218,10 +303,10 @@ struct AppDetailCard: View {
 					}
 				}
 			)
-		.frame(minWidth: 250)
-		.frame(idealWidth: 275)
-		.frame(maxWidth: 400)
-		.contentShape(shape)
+			.frame(minWidth: 250)
+			.frame(idealWidth: 275)
+			.frame(maxWidth: 400)
+			.contentShape(shape)
 			.gesture(
 				TapGesture().onEnded {
 					onToggleSelect?()
@@ -229,49 +314,36 @@ struct AppDetailCard: View {
 				including: .gesture
 			)
 			.overlay(alignment: .topTrailing) {
-				if onDetails != nil, item.hasUpdate ?? false {
-					Button {
-						onDetails?()
-						} label: {
-							Image(systemName: "info.circle")
-								.font(.system(size: 12, weight: .regular))
-								.foregroundStyle(.secondary)
-								.padding(6)
-								.background(
-									Circle()
-										.fill(GlassThemeTokens.windowBackgroundBase(for: glassState).opacity(0.9))
-										.shadow(
-											color: badgeShadow.color,
-											radius: badgeShadow.radius,
-											x: badgeShadow.x,
-											y: badgeShadow.y
-										)
-								)
-						}
-					.buttonStyle(.plain)
+				if onDetails != nil || onAddToQueue != nil {
+					cardActionsButtons(
+						onDetails: (item.hasUpdate ?? false) ? onDetails : nil,
+						onAddToQueue: (item.hasUpdate ?? false)
+							? onAddToQueue : nil
+					)
 					.padding(.top, 8)
 					.padding(.trailing, 8)
+					//.border(.red, width: 1)
 				}
 			}
 			.onHover { hovering in
 				withAnimation(.easeOut(duration: 0.15)) {
 					isHovered = hovering
-			}
-		}
-		.frame(height: 150)
-		.onAppearUnlessPreview {
-
-			//			let v = ProcessInfo.processInfo.operatingSystemVersion
-			//			print(
-			//				"[AppDetailCard] OS version: \(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
-			//			)
-
-			#if canImport(AppKit)
-				if ProcessInfo.isRunningForPreviews {
-					applyPreviewWindowChromeTweaks()
 				}
-			#endif
-		}
+			}
+			.frame(height: 150)
+			.onAppearUnlessPreview {
+
+				//			let v = ProcessInfo.processInfo.operatingSystemVersion
+				//			print(
+				//				"[AppDetailCard] OS version: \(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
+				//			)
+
+				#if canImport(AppKit)
+					if ProcessInfo.isRunningForPreviews {
+						applyPreviewWindowChromeTweaks()
+					}
+				#endif
+			}
 	}
 
 	private var imageAsset: String {
@@ -303,6 +375,219 @@ extension View {
 		}
 	}
 }
+
+struct ImportAppDetailCard: View {
+	// MARK: - Inputs
+
+	let item: ImportedApplication
+	let isSelected: Bool
+	let onToggleSelect: (() -> Void)?
+	let onDetails: (() -> Void)?
+	let onAddToQueue: (() -> Void)?
+	@Environment(\.colorScheme) private var colorScheme
+
+	@State private var isHovered: Bool = false
+
+	init(
+		item: ImportedApplication,
+		isSelected: Bool = false,
+		onToggleSelect: (() -> Void)? = nil,
+		onDetails: (() -> Void)? = nil,
+		onAddToQueue: (() -> Void)? = nil
+	) {
+		self.item = item
+		self.isSelected = isSelected
+		self.onToggleSelect = onToggleSelect
+		self.onDetails = onDetails
+		self.onAddToQueue = onAddToQueue
+	}
+
+	// MARK: - Content Layout
+
+	private var content: some View {
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
+		return VStack(alignment: .leading, spacing: 8) {
+			HStack(alignment: .top, spacing: 8) {
+				ZStack(alignment: .topTrailing) {
+					ImportAppIconView(item: item)
+						.frame(width: 32, height: 32)
+					if isSelected {
+						Image(systemName: "checkmark.circle.fill")
+							.font(.system(size: 14, weight: .semibold))
+							.foregroundStyle(.green)
+							.background(
+								Circle()
+									.fill(
+										GlassThemeTokens.windowBackgroundBase(
+											for: glassState
+										)
+									)
+									.frame(width: 14, height: 14)
+									.shadow(
+										color: badgeShadow.color,
+										radius: badgeShadow.radius,
+										x: badgeShadow.x,
+										y: badgeShadow.y
+									)
+							)
+							.offset(x: 6, y: -6)
+							.accessibilityHidden(true)
+					}
+				}
+				VStack(alignment: .leading, spacing: 2) {
+					Text(item.displayTitle)
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.font(.system(.callout, weight: .semibold))
+					Text(item.displaySubtitle)
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.lineLimit(1)
+						.font(.system(.footnote, weight: .regular))
+						.foregroundStyle(.tertiary)
+					let hasVersion = (resolvedVersion ?? "").isEmpty == false
+					let versionText =
+						hasVersion
+						? "Version \(resolvedVersion ?? "")" : "Version"
+					Text(versionText)
+						.font(.system(.caption, weight: .medium))
+						.foregroundStyle(.secondary)
+						.lineLimit(1)
+						.opacity(hasVersion ? 1 : 0)
+					LocalFileSizeInlineView(
+						filePath: item.fullFilePath,
+						cachedBytes: item.cachedFileSizeBytes,
+						label: "Size:",
+						labelFont: .system(size: 10, weight: .medium),
+						valueFont: .system(size: 10, weight: .medium)
+					)
+				}
+				Spacer(minLength: 0)
+			}
+			FlowLayout(spacing: 6, rowSpacing: 6) {
+				if item.hasMetadata {
+					Pill("Metadata", color: .green)
+				}
+				if (item.matchingRecipeId ?? "").isEmpty == false
+					|| (item.macApplication?.matchingRecipeId ?? "").isEmpty
+						== false
+				{
+					Pill("Recipe", color: .orange)
+				}
+				if item.macApplication != nil {
+					Pill("Catalog", color: .blue)
+				} else {
+					Pill("Filesystem", color: .gray)
+				}
+				Pill(fileTypeLabel, color: .orange)
+			}
+			Spacer(minLength: 0)
+		}
+	}
+
+	var body: some View {
+		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		//let badgeShadow = softenedDetailBadgeShadow(for: glassState)
+		let cardBaseColor = GlassThemeTokens.controlBackgroundBase(
+			for: glassState
+		)
+		let cardFillOpacity = GlassThemeTokens.panelBaseTintOpacity(
+			for: glassState
+		)
+		let hoverBorder = shape.strokeBorder(
+			LinearGradient.juice,
+			lineWidth: 1.5
+		).opacity(0.4)
+		let selectedBorder = shape.strokeBorder(
+			LinearGradient.juice,
+			lineWidth: 2
+		)
+
+		// Container styling is centralized here so inner content stays data-focused.
+		return
+			content
+			.padding(.horizontal, 12)
+			.padding(.vertical, 14)
+			.glassCompatSurface(
+				in: shape,
+				style: .clear,
+				context: glassState,
+				fillColor: cardBaseColor,
+				fillOpacity: cardFillOpacity,
+				surfaceOpacity: 1
+			)
+			.glassCompatBorder(in: shape, context: glassState, role: .standard)
+			.glassCompatShadow(context: glassState, elevation: .card)
+			.clipShape(shape)
+			.overlay(
+				Group {
+					if isSelected {
+						selectedBorder
+					} else if isHovered {
+						hoverBorder
+					}
+				}
+			)
+			.frame(minWidth: 250)
+			.frame(idealWidth: 275)
+			.frame(maxWidth: 400)
+			.contentShape(shape)
+			.onTapGesture {
+				onToggleSelect?()
+			}
+			.overlay(alignment: .topTrailing) {
+				if onDetails != nil || onAddToQueue != nil {
+					cardActionsButtons(
+						onDetails: onDetails,
+						onAddToQueue: onAddToQueue
+					)
+					.padding(.top, 8)
+					.padding(.trailing, 8)
+				}
+			}
+			.onHover { hovering in
+				withAnimation(.easeOut(duration: 0.15)) {
+					isHovered = hovering
+				}
+			}
+			.frame(height: 135)
+	}
+
+	private var resolvedVersion: String? {
+		if let version = item.parsedMetadata?.version, !version.isEmpty {
+			return version
+		}
+		if let version = item.macApplication?.version, !version.isEmpty {
+			return version
+		}
+		if let version = item.parsedMetadata?.installs?.first?
+			.cfBundleShortVersionString,
+			!version.isEmpty
+		{
+			return version
+		}
+		return item.parsedMetadata?.installs?.first?.cfBundleVersion
+	}
+
+	private var fileTypeLabel: String {
+		switch item.fileExtension.lowercased() {
+		case ".app": return "App Bundle"
+		case ".pkg": return "PKG"
+		case ".dmg": return "DMG"
+		case ".zip": return "ZIP"
+		default: return "Installer"
+		}
+	}
+}
+
 
 #Preview {
 	let exampleAppItem = UemApplication(
@@ -375,233 +660,29 @@ extension View {
 		updatedApplication: nil
 	)
 	let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-	ZStack(){
-			if #available(macOS 26.0, iOS 26.0, *) {
-				GlassEffectContainer {
-					shape
-						.fill(Color.clear)
-						.glassEffect(.regular, in: shape)
-				}
-				AppDetailCard(item: exampleAppItem)
+	ZStack {
+		if #available(macOS 26.0, iOS 26.0, *) {
+			GlassEffectContainer {
+				shape
+					.fill(Color.clear)
+					.glassEffect(.regular, in: shape)
 			}
+			AppDetailCard(item: exampleAppItem, onDetails: {}, onAddToQueue: {})
 		}
+	}
 	.frame(width: 400)
-		.background(){
-			JuiceGradient()
-				.frame(maxWidth: .infinity)
-				.frame(height: 500)
-					.mask(
-						LinearGradient(
-							stops: JuiceBackgroundStyle.v1.legacyTopGradientMaskStops,
-							startPoint: .top,
-							endPoint: .bottom
-						)
-					)
-					.ignoresSafeArea(edges: .top)
-			}
-	}
-struct ImportAppDetailCard: View {
-	// MARK: - Inputs
-
-	let item: ImportedApplication
-	let isSelected: Bool
-	let onToggleSelect: (() -> Void)?
-	let onDetails: (() -> Void)?
-	@Environment(\.colorScheme) private var colorScheme
-
-	@State private var isHovered: Bool = false
-
-	init(
-		item: ImportedApplication,
-		isSelected: Bool = false,
-		onToggleSelect: (() -> Void)? = nil,
-		onDetails: (() -> Void)? = nil
-	) {
-		self.item = item
-		self.isSelected = isSelected
-		self.onToggleSelect = onToggleSelect
-		self.onDetails = onDetails
-	}
-
-	// MARK: - Content Layout
-
-	private var content: some View {
-		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-		let badgeShadow = GlassThemeTokens.shadow(for: glassState, elevation: .small)
-		return VStack(alignment: .leading, spacing: 8) {
-			HStack(alignment: .top, spacing: 8) {
-				ZStack(alignment: .topTrailing) {
-					ImportAppIconView(item: item)
-						.frame(width: 32, height: 32)
-					if isSelected {
-						Image(systemName: "checkmark.circle.fill")
-							.font(.system(size: 14, weight: .semibold))
-							.foregroundStyle(.green)
-							.background(
-								Circle()
-									.fill(GlassThemeTokens.windowBackgroundBase(for: glassState))
-									.frame(width: 14, height: 14)
-									.shadow(
-										color: badgeShadow.color,
-										radius: badgeShadow.radius,
-										x: badgeShadow.x,
-										y: badgeShadow.y
-									)
-							)
-							.offset(x: 6, y: -6)
-							.accessibilityHidden(true)
-					}
-				}
-				VStack(alignment: .leading, spacing: 2) {
-					Text(item.displayTitle)
-						.frame(maxWidth: .infinity, alignment: .leading)
-						.clipped()
-						.font(.system(.callout, weight: .semibold))
-					Text(item.displaySubtitle)
-						.frame(maxWidth: .infinity, alignment: .leading)
-						.clipped()
-						.lineLimit(1)
-						.font(.system(.footnote, weight: .regular))
-						.foregroundStyle(.tertiary)
-					let hasVersion = (resolvedVersion ?? "").isEmpty == false
-					let versionText = hasVersion ? "Version \(resolvedVersion ?? "")" : "Version"
-					Text(versionText)
-						.font(.system(.caption, weight: .medium))
-						.foregroundStyle(.secondary)
-						.lineLimit(1)
-						.opacity(hasVersion ? 1 : 0)
-					LocalFileSizeInlineView(
-						filePath: item.fullFilePath,
-						cachedBytes: item.cachedFileSizeBytes,
-						label: "Size:",
-						labelFont: .system(size: 10, weight: .medium),
-						valueFont: .system(size: 10, weight: .medium)
-					)
-				}
-				Spacer(minLength: 0)
-			}
-			FlowLayout(spacing: 6, rowSpacing: 6) {
-				if item.hasMetadata {
-					Pill("Metadata", color: .green)
-				}
-				if (item.matchingRecipeId ?? "").isEmpty == false || (item.macApplication?.matchingRecipeId ?? "").isEmpty == false {
-					Pill("Recipe", color: .orange)
-				}
-				if item.macApplication != nil {
-					Pill("Catalog", color: .blue)
-				} else {
-					Pill("Filesystem", color: .gray)
-				}
-				Pill(fileTypeLabel, color: .orange)
-			}
-			Spacer(minLength: 0)
-		}
-	}
-
-	var body: some View {
-		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-		let badgeShadow = GlassThemeTokens.shadow(for: glassState, elevation: .small)
-		let panelBaseTintColor = GlassThemeTokens.controlBackgroundBase(for: glassState)
-		let panelFillOpacity = min(
-			1,
-			GlassThemeTokens.panelBaseTintOpacity(for: glassState)
-				+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
-		)
-		let hoverBorder = shape.strokeBorder(
-			LinearGradient.juice,
-			lineWidth: 1.5
-		).opacity(0.4)
-		let selectedBorder = shape.strokeBorder(
-			LinearGradient.juice,
-			lineWidth: 2
-		)
-
-		// Container styling is centralized here so inner content stays data-focused.
-		return content
-			.padding(.horizontal, 12)
-			.padding(.vertical, 14)
-			.glassCompatSurface(
-				in: shape,
-				style: .regular,
-				context: glassState,
-				fillColor: panelBaseTintColor,
-				fillOpacity: panelFillOpacity,
-				surfaceOpacity: 1
+	.background {
+		JuiceGradient()
+			.frame(maxWidth: .infinity)
+			.frame(height: 500)
+			.mask(
+				LinearGradient(
+					stops: JuiceBackgroundStyle.v1.legacyTopGradientMaskStops,
+					startPoint: .top,
+					endPoint: .bottom
+				)
 			)
-			.glassCompatBorder(in: shape, context: glassState, role: .standard)
-			.glassCompatShadow(context: glassState, elevation: .card)
-			.clipShape(shape)
-			.overlay(
-				Group {
-					if isSelected {
-						selectedBorder
-					} else if isHovered {
-						hoverBorder
-					}
-				}
-			)
-		.frame(minWidth: 250)
-		.frame(idealWidth: 275)
-		.frame(maxWidth: 400)
-		.contentShape(shape)
-		.onTapGesture {
-			onToggleSelect?()
-		}
-		.overlay(alignment: .topTrailing) {
-			if onDetails != nil {
-				Button {
-					onDetails?()
-					} label: {
-						Image(systemName: "info.circle")
-							.font(.system(size: 12, weight: .semibold))
-							.foregroundStyle(.secondary)
-							.padding(6)
-							.background(
-								Circle()
-									.fill(GlassThemeTokens.windowBackgroundBase(for: glassState).opacity(0.9))
-									.shadow(
-										color: badgeShadow.color,
-										radius: badgeShadow.radius,
-										x: badgeShadow.x,
-										y: badgeShadow.y
-									)
-							)
-					}
-				.buttonStyle(.plain)
-				.padding(.top, 8)
-				.padding(.trailing, 8)
-			}
-		}
-		.onHover { hovering in
-			withAnimation(.easeOut(duration: 0.15)) {
-				isHovered = hovering
-			}
-		}
-		.frame(height: 135)
-	}
-
-	private var resolvedVersion: String? {
-		if let version = item.parsedMetadata?.version, !version.isEmpty {
-			return version
-		}
-		if let version = item.macApplication?.version, !version.isEmpty {
-			return version
-		}
-		if let version = item.parsedMetadata?.installs?.first?.cfBundleShortVersionString,
-		   !version.isEmpty {
-			return version
-		}
-		return item.parsedMetadata?.installs?.first?.cfBundleVersion
-	}
-
-	private var fileTypeLabel: String {
-		switch item.fileExtension.lowercased() {
-		case ".app": return "App Bundle"
-		case ".pkg": return "PKG"
-		case ".dmg": return "DMG"
-		case ".zip": return "ZIP"
-		default: return "Installer"
-		}
+			.ignoresSafeArea(edges: .top)
 	}
 }
+

@@ -20,41 +20,31 @@ public struct Pill: View {
         self.color = color
     }
 
-    public var body: some View {
-        let shape = Capsule(style: .continuous)
-		let context = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-		let tone = color ?? .accentColor
-        Text(value)
+	    public var body: some View {
+	        let shape = Capsule(style: .continuous)
+			let context = GlassStateContext(colorScheme: colorScheme, isFocused: true)
+			let tone = color ?? .accentColor
+	        Text(value)
             .foregroundStyle(tone).opacity(0.8)
             .font(.system(.footnote, weight: .semibold))
             .padding(.vertical, 2)
             .padding(.horizontal, 6)
             .background {
-				Color.clear
-					.glassCompatSurface(
-						in: shape,
-						style: .regular,
-						context: context,
-						fillColor: tone,
-						fillOpacity: 0.2,
-						surfaceOpacity: 1
-					)
-            }
-            .overlay {
-                shape.strokeBorder(
-                    LinearGradient(
-                        colors: [
-							tone.opacity(0.35),
-							tone.opacity(0.12),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 0.8
-                )
-            }
-    }
-}
+					Color.clear
+						.glassCompatSurface(
+							in: shape,
+							style: .clear,
+							context: context,
+							fillColor: tone,
+							fillOpacity: 0.16,
+							surfaceOpacity: 1
+						)
+	            }
+	            .overlay {
+	                shape.strokeBorder(tone.opacity(0.22), lineWidth: 0.8)
+	            }
+	    }
+	}
 
 #Preview("Pill") {
     VStack(spacing: 8) {
@@ -167,7 +157,7 @@ struct ThinkingIndicator: View {
 	var body: some View {
 		HStack(spacing: 10) {
 			Image(systemName: iconName)
-				.font(.system(size: 16, weight: .semibold))
+				.font(.system(size: 16, weight: .medium))
 				.foregroundStyle(iconGradient)
 				.scaleEffect(phase ? 1.1 : 0.95)
 				.opacity(phase ? 0.85 : 1)
@@ -179,7 +169,7 @@ struct ThinkingIndicator: View {
 			HStack(spacing: 0) {
 				ForEach(Array(currentPhrase.enumerated()), id: \.offset) { index, letter in
 					Text(String(letter))
-						.font(.system(size: 13, weight: .semibold))
+						.font(.system(size: 13, weight: .medium))
 						.foregroundStyle(.primary)
 						.hueRotation(.degrees(phase ? 220 : 0))
 						.opacity(phase ? 0.35 : 0.8)

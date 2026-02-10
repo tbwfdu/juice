@@ -48,6 +48,12 @@ struct ImportView: View {
 
 	@State private var expandActionsTrigger: Int = 0
 
+	private struct FolderHierarchyItem: Identifiable {
+		let id = UUID()
+		let icon: String
+		let text: String
+	}
+
 	private var glassBaseOpacity: CGFloat {
 		GlassThemeTokens.panelBaseTintOpacity(for: glassState)
 	}
@@ -91,7 +97,7 @@ struct ImportView: View {
 						)
 					}
 					.frame(maxWidth: .infinity, alignment: .topLeading)
-					.padding(.horizontal, 40)
+					.padding(.horizontal, 20)
 					.padding(.vertical, 0)
 					Spacer(minLength: 20)
 				}
@@ -106,15 +112,6 @@ struct ImportView: View {
 				{
 					inspector.show(queuePanelView(panelMinHeight: newValue))
 				}
-			}
-			.onChange(of: queueItems.count) { oldValue, newValue in
-				guard oldValue == 0, newValue > 0 else { return }
-				guard !inspector.isPresented, selectedApp == nil,
-					!suppressQueueAutoShow, !showingDetails
-				else { return }
-				inspector.show(
-					queuePanelView(panelMinHeight: panelMinHeightCache)
-				)
 			}
 			.onChange(of: inspector.isPresented) { _, isPresented in
 				if !isPresented {
@@ -173,7 +170,7 @@ struct ImportView: View {
 			importActionRow().frame(alignment: .leading)
 			if !importApps.isEmpty {
 				importHeaderRow()
-					.frame(minWidth: 550)
+					.frame(minWidth: 300)
 					.frame(maxWidth: 900, alignment: .center)
 			}
 			importListSection()
@@ -195,7 +192,10 @@ struct ImportView: View {
 					style: .regular,
 					context: glassState,
 					fillColor: panelBaseTintColor,
-					fillOpacity: min(1, glassBaseOpacity + panelNeutralOverlayOpacity),
+					fillOpacity: min(
+						1,
+						glassBaseOpacity + panelNeutralOverlayOpacity
+					),
 					surfaceOpacity: panelGlassOpacity
 				)
 		}
@@ -211,93 +211,153 @@ struct ImportView: View {
 
 	@ViewBuilder
 	private func importActionRow() -> some View {
-			VStack(alignment: .leading) {
-				Text("Select a Folder")
-					.font(.system(size: 12, weight: .bold))
-					.tracking(-0.5)
-					.fontWeight(.medium)
-					.frame(alignment: .leading)
-				HStack {
-					HStack(spacing: 5) {
-						Text("Path:")
-							.font(.system(size: 11, weight: .regular))
-							.foregroundStyle(.tertiary)
-						Text(selectedFolderURL?.path ?? "")
-							.lineLimit(1)
-							.truncationMode(.middle)
-							.padding(.horizontal, 12)
-							.padding(.vertical, 8)
-							.foregroundStyle(.secondary)
-						Spacer(minLength: 0)
-					}
-						.padding(.horizontal, 10)
-						.background(
-							RoundedRectangle(cornerRadius: 20, style: .continuous)
-								.stroke(panelBorderColor.opacity(0.8), lineWidth: 1)
-						)
-						.frame(maxWidth: .infinity, alignment: .leading)
-					Spacer()
-					if #available(macOS 26.0, iOS 26.0, *) {
-						Button(action: {
-							selectFolder()
-							expandActionsTrigger &+= 1
-						}) {
-							Image(systemName: "folder.fill")
-								.symbolRenderingMode(.hierarchical)
-								.symbolVariant(.none)
-								.fontWeight(.regular)
-								.padding(.horizontal, -5)
-								.padding(.vertical, 2)
-						}
-						.padding(1)
-						.buttonStyle(.glassProminent)
-						.controlSize(.large)
-						//.frame(minWidth: 10, minHeight: 10)
-						} else {
-							Button(action: {
-								selectFolder()
-								expandActionsTrigger &+= 1
-						}) {
-							Text("Select Folder")
-								.font(.system(size: 12, weight: .regular))
-								.padding(.horizontal, 5)
-								.padding(.vertical, 4)
-							}
-							.padding(1)
-							.nativeActionButtonStyle(.primary, controlSize: .large)
-							.frame(minWidth: 10)
-						}
+		VStack(alignment: .leading) {
+			Text("Scan Directory")
+				.font(.system(size: 12, weight: .bold))
+				.tracking(-0.5)
+				.fontWeight(.medium)
+				.frame(alignment: .leading)
+			HStack {
+				folderHierarchyView()
+					//.padding(.trailing, 10)
+					.background(
+						RoundedRectangle(cornerRadius: 20, style: .continuous)
+							.stroke(panelBorderColor.opacity(0.8), lineWidth: 1)
+					)
+					//.frame(maxWidth: .infinity, alignment: .leading)
 
+				Spacer()
+
+				if #available(macOS 26.0, iOS 26.0, *) {
+					Button(action: {
+						selectFolder()
+						expandActionsTrigger &+= 1
+					}) {
+						Image(systemName: "plus")
+							.symbolRenderingMode(.hierarchical)
+							.symbolVariant(.none)
+							.fontWeight(.regular)
+							.padding(.horizontal, -5)
+							.padding(.vertical, 2)
+					}
+					.padding(1)
+					.buttonStyle(.glassProminent)
+					.controlSize(.large)
+				} else {
+					Button(action: {
+						selectFolder()
+						expandActionsTrigger &+= 1
+					}) {
+						Image(systemName: "plus")
+							.font(.system(size: 13, weight: .regular))
+							.padding(.horizontal, 6)
+							.padding(.vertical, 4)
+					}
+					.padding(1)
+					.nativeActionButtonStyle(.primary, controlSize: .large)
+					.frame(minWidth: 10)
 				}
-				buttonsView().frame(minHeight: 20)
 			}
-				.frame(maxWidth: 500)
-				.frame(minWidth: 500, alignment: .topLeading)
-				.padding(10)
-				.background {
-					let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-					Color.clear
-						.glassCompatSurface(
-							in: shape,
-							style: .regular,
-							context: glassState,
-							fillColor: panelBaseTintColor,
-							fillOpacity: min(
-								1,
-								GlassThemeTokens.panelBaseTintOpacity(for: glassState)
-									+ (panelNeutralOverlayOpacity * 0.45)
-							),
-							surfaceOpacity: panelGlassOpacity
-						)
-				}
-				.overlay(
-					RoundedRectangle(cornerRadius: 14, style: .continuous)
-						.strokeBorder(panelBorderColor.opacity(0.9))
-				)
-				.glassCompatShadow(context: glassState, elevation: .small)
-			
-			
 		}
+		.frame(minWidth: 300, alignment: .topLeading)
+		.frame(maxWidth: 900)
+		.padding(10)
+		.background {
+			let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: panelBaseTintColor,
+					fillOpacity: min(
+						1,
+						GlassThemeTokens.panelBaseTintOpacity(for: glassState)
+							+ (panelNeutralOverlayOpacity * 0.45)
+					),
+					surfaceOpacity: panelGlassOpacity
+				)
+		}
+		.overlay(
+			RoundedRectangle(cornerRadius: 14, style: .continuous)
+				.strokeBorder(panelBorderColor.opacity(0.9))
+		)
+		.glassCompatShadow(context: glassState, elevation: .small)
+		buttonsView().frame(minHeight: 20)
+	}
+
+	@ViewBuilder
+	private func folderHierarchyView() -> some View {
+		let hierarchy = folderHierarchyItems()
+		if hierarchy.isEmpty {
+			Text("No folder selected")
+				.font(.system(size: 11, weight: .regular))
+				.foregroundStyle(.tertiary)
+				.padding(.vertical, 8)
+				.padding(.trailing, 12)
+				.frame(maxWidth: .infinity, alignment: .leading)
+		} else {
+			ScrollView(.horizontal, showsIndicators: false) {
+				HStack(spacing: 6) {
+					ForEach(Array(hierarchy.enumerated()), id: \.element.id) {
+						index,
+						item in
+						HStack(spacing: 2) {
+							Image(systemName: item.icon)
+							Text(item.text)
+						}
+						.font(.system(size: 11, weight: .medium))
+						.foregroundStyle(.secondary)
+						if index < hierarchy.count - 1 {
+							//							Text(">")
+							//								.foregroundStyle(.tertiary)
+							Image(systemName: "greaterthan").foregroundStyle(
+								.tertiary
+							)
+						}
+					}
+				}
+				.padding(.vertical, 8)
+				.padding(.trailing, 12)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+		}
+	}
+
+	private func folderHierarchyItems() -> [FolderHierarchyItem] {
+		guard let selectedFolderURL else { return [] }
+
+		let path = selectedFolderURL.standardizedFileURL.path
+		let components = path.split(separator: "/").map(String.init)
+		let resourceValues = try? selectedFolderURL.resourceValues(forKeys: [
+			.volumeNameKey
+		])
+		let detectedVolumeName = resourceValues?.volumeName?.trimmingCharacters(
+			in: .whitespacesAndNewlines
+		)
+		let fallbackVolumeName = "Macintosh HD"
+		let volumeName =
+			(detectedVolumeName?.isEmpty == false)
+			? detectedVolumeName! : fallbackVolumeName
+
+		var items: [FolderHierarchyItem] = [
+			FolderHierarchyItem(icon: "internaldrive.fill", text: volumeName)
+		]
+
+		let pathStartIndex: Int
+		if components.count > 1, components[0] == "Volumes" {
+			pathStartIndex = 2
+		} else {
+			pathStartIndex = 0
+		}
+
+		for component in components.dropFirst(pathStartIndex)
+		where !component.isEmpty {
+			items.append(FolderHierarchyItem(icon: "folder", text: component))
+		}
+
+		return items
+	}
 
 	@ViewBuilder
 	private func buttonsView() -> some View {
@@ -345,6 +405,16 @@ struct ImportView: View {
 				}
 			}
 			Spacer(minLength: 1)
+			Button {
+				selectAllDiscoveredApps()
+			} label: {
+				Image(systemName: "checkmark.rectangle.stack")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -3)
+					.padding(.vertical, 2)
+			}
+			.nativeActionButtonStyle(.secondary, controlSize: .large)
+			.disabled(importApps.isEmpty)
 		}
 	}
 
@@ -380,12 +450,13 @@ struct ImportView: View {
 							Array(importApps.enumerated()),
 							id: \.element.id
 						) { _, app in
-							ImportAppDetailCard(
-								item: app,
-								isSelected: selectedAppIds.contains(app.id),
-								onToggleSelect: { toggleSelection(for: app) },
-								onDetails: { showDetails(for: app) }
-							)
+								ImportAppDetailCard(
+									item: app,
+									isSelected: selectedAppIds.contains(app.id),
+									onToggleSelect: { toggleSelection(for: app) },
+									onDetails: { showDetails(for: app) },
+									onAddToQueue: { addToQueue(app) }
+								)
 							.transition(
 								.asymmetric(
 									insertion: .move(edge: .top).combined(
@@ -408,15 +479,15 @@ struct ImportView: View {
 				.scrollContentBackground(.hidden)
 				.background(Color.clear)
 
-							if !selectedAppIds.isEmpty {
-								Button("Add Selected (\(selectedAppIds.count))") {
-									addSelectedToQueue()
-								}
-								.nativeActionButtonStyle(.primary, controlSize: .large)
-								.padding(.trailing, 20)
-								.padding(.bottom, 16)
-								.glassCompatShadow(context: glassState, elevation: .card)
+					if !selectedAppIds.isEmpty {
+						Button("Add Selected (\(selectedAppIds.count))") {
+							addSelectedToQueue()
 						}
+						.nativeActionButtonStyle(.secondary, controlSize: .large)
+						.padding(.trailing, 20)
+						.padding(.bottom, 16)
+						.glassCompatShadow(context: glassState, elevation: .card)
+					}
 			}
 			.background(Color.clear)
 			.frame(maxHeight: 500)
@@ -438,6 +509,9 @@ struct ImportView: View {
 			onSecondaryAction: {
 				confirmationMode = .download
 				confirmationVisible = true
+			},
+			onQueueItemsRemoved: { removedItems in
+				restoreQueueItemsToImportList(removedItems)
 			}
 		)
 	}
@@ -498,12 +572,18 @@ struct ImportView: View {
 		}
 	}
 
-	private func addToQueue(_ app: ImportedApplication) {
+	private func addToQueue(_ app: ImportedApplication, notifyBadge: Bool = true) {
 		guard !queueItems.contains(where: { $0.id == app.id }) else {
 			return
 		}
+		let wasQueueEmpty = queueItems.isEmpty
 		queueItems.append(app)
-		inspector.notifyQueueAdded()
+		if notifyBadge {
+			inspector.notifyQueueAdded(
+				by: 1,
+				triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
+			)
+		}
 		importApps.removeAll { $0.id == app.id }
 		selectedAppIds.remove(app.id)
 	}
@@ -519,9 +599,14 @@ struct ImportView: View {
 	private func addSelectedToQueue() {
 		let selectedApps = importApps.filter { selectedAppIds.contains($0.id) }
 		guard !selectedApps.isEmpty else { return }
+		let wasQueueEmpty = queueItems.isEmpty
 		for app in selectedApps {
-			addToQueue(app)
+			addToQueue(app, notifyBadge: false)
 		}
+		inspector.notifyQueueAdded(
+			by: selectedApps.count,
+			triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
+		)
 	}
 
 	private func selectFolder() {
@@ -565,6 +650,30 @@ struct ImportView: View {
 		isScanning = false
 		Task { await ImportScanService.clearSizeCache() }
 	}
+
+	private func restoreQueueItemsToImportList(
+		_ removedItems: [ImportedApplication]
+	) {
+		guard !removedItems.isEmpty else { return }
+		let existingIds = Set(importApps.map(\.id))
+		let restored = removedItems.filter { !existingIds.contains($0.id) }
+		guard !restored.isEmpty else { return }
+		withAnimation(.easeInOut(duration: 0.2)) {
+			importApps.insert(contentsOf: restored, at: 0)
+		}
+		expandActionsTrigger &+= 1
+	}
+
+	private func selectAllDiscoveredApps() {
+		let allIds = Set(importApps.map(\.id))
+		guard !allIds.isEmpty else { return }
+		let allAlreadySelected = allIds.isSubset(of: selectedAppIds)
+		if allAlreadySelected {
+			selectedAppIds.subtract(allIds)
+		} else {
+			selectedAppIds.formUnion(allIds)
+		}
+	}
 }
 
 @available(macOS 26.0, iOS 16.0, *)
@@ -589,15 +698,19 @@ private struct ActionButtonsGlass: View {
 				HStack(spacing: buttonSpacing) {
 					if isExpanded {
 						Button(action: onPrimary) {
-							Text(primaryTitle)
-								.font(.system(size: 12, weight: .regular))
-								.padding(.horizontal, 10)
-								.padding(.vertical, 4)
-								.frame(width: 80)
+								HStack(spacing: 5) {
+									FolderScanBadgeIcon(size: 11)
+									Text("Scan")
+										.font(.system(size: 12, weight: .regular))
+								}
+							.padding(.horizontal, 8)
+							.padding(.vertical, 3)
 						}
-						.buttonStyle(.glassProminent)
-						.controlSize(.large)
+							.buttonStyle(.glassProminent)
+							.controlSize(.small)
+							.buttonBorderShape(.capsule)
 						.disabled(!isEnabled)
+						.accessibilityLabel(primaryTitle)
 						.glassEffectID("glassPrimary", in: namespace)
 
 					}
@@ -606,45 +719,41 @@ private struct ActionButtonsGlass: View {
 							onSecondary()
 							collapseExpanded()
 						}) {
-							Text(secondaryTitle)
-								.font(.system(size: 12, weight: .regular))
-								.padding(.horizontal, 10)
-								.padding(.vertical, 4)
-								.frame(width: 80)
+							Image(systemName: "xmark")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
 						}
 						.padding(1)
 						.buttonStyle(.glass)
 						.controlSize(.large)
+						.buttonBorderShape(.automatic)
 						.disabled(!isEnabled)
+						.accessibilityLabel(secondaryTitle)
 						.glassEffectID("glassSecondary", in: namespace)
 					}
 				}
-				.frame(minWidth: 150, alignment: .leading)
+				}
 			}
-		}
-		.frame(maxWidth: 150, alignment: .leading)
+			.frame(maxWidth: .infinity, alignment: .leading)
 		.onChange(of: externalExpandTrigger) { _, _ in
-			expandActions()
-		}
-	}
-
-	private func toggleExpanded() {
-		if isExpanded {
-			collapseExpanded()
-		} else {
 			expandActions()
 		}
 	}
 
 	func expandActions() {
 		expandTask?.cancel()
-		withAnimation(.bouncy) {
-			isExpanded.toggle()
+		if !isExpanded {
+			withAnimation(.bouncy) {
+				isExpanded = true
+			}
 		}
 		expandTask = Task { @MainActor in
 			try? await Task.sleep(for: .seconds(0.1))
-			withAnimation(.bouncy) {
-				isAllExpanded.toggle()
+			if !isAllExpanded {
+				withAnimation(.bouncy) {
+					isAllExpanded = true
+				}
 			}
 			try? await Task.sleep(for: .seconds(0.3))
 			glassSpacing = 10
@@ -657,12 +766,12 @@ private struct ActionButtonsGlass: View {
 		glassSpacing = 40
 		buttonSpacing = 25
 		withAnimation(.bouncy) {
-			isExpanded.toggle()
+			isExpanded = false
 		}
 		Task { @MainActor in
 			try? await Task.sleep(for: .seconds(0.2))
 			withAnimation(.bouncy) {
-				isAllExpanded.toggle()
+				isAllExpanded = false
 			}
 		}
 	}
@@ -693,6 +802,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 					primaryTitle: primaryTitle,
 					secondaryTitle: secondaryTitle,
 					isEnabled: isEnabled,
+					externalExpandTrigger: externalExpandTrigger,
 					onPrimary: onPrimary,
 					onSecondary: onSecondary
 				)
@@ -713,6 +823,7 @@ private struct ActionButtonsFallback: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
 
@@ -720,37 +831,82 @@ private struct ActionButtonsFallback: View {
 
 	var body: some View {
 		HStack(spacing: 16) {
-			if isExpanded {
-				Button(primaryTitle) {
-					guard isEnabled else { return }
-					onPrimary()
+				if isExpanded {
+					Button {
+						guard isEnabled else { return }
+						onPrimary()
+					} label: {
+						HStack(spacing: 5) {
+							FolderScanBadgeIcon(size: 11)
+							Text("Scan")
+								.font(.system(size: 12, weight: .regular))
+						}
+						.padding(.horizontal, 8)
+						.padding(.vertical, 3)
+					}
+						.nativeActionButtonStyle(.primary, controlSize: .small)
+						.buttonBorderShape(.capsule)
+					.disabled(!isEnabled)
+					.accessibilityLabel(primaryTitle)
+					Button {
+						guard isEnabled else { return }
+						onSecondary()
+					} label: {
+						Image(systemName: "xmark")
+							.font(.system(size: 11, weight: .regular))
+							.padding(.horizontal, -5)
+							.padding(.vertical, 2)
+					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					.buttonBorderShape(.automatic)
+					.disabled(!isEnabled)
+					.accessibilityLabel(secondaryTitle)
 				}
-				.disabled(!isEnabled)
-				Button(secondaryTitle) {
-					guard isEnabled else { return }
-					onSecondary()
-				}
-				.disabled(!isEnabled)
-			}
 			ZStack(alignment: .topTrailing) {
 				Button {
 					withAnimation(.spring(response: 0.4, dampingFraction: 0.8))
 					{
 						isExpanded.toggle()
 					}
-					} label: {
-						Image(systemName: isExpanded ? "xmark" : "plus")
-							.frame(width: 44, height: 44)
-					}
-					.nativeActionButtonStyle(.primary, controlSize: .large)
-					.buttonBorderShape(.capsule)
+				} label: {
+					Image(systemName: isExpanded ? "xmark" : "plus")
+						.frame(width: 44, height: 44)
 				}
+				.nativeActionButtonStyle(.primary, controlSize: .large)
+				.buttonBorderShape(.capsule)
+			}
 		}
 		.padding(12)
 		.background(
 			RoundedRectangle(cornerRadius: 16, style: .continuous)
 				.fill(.ultraThinMaterial)
 		)
+		.onChange(of: externalExpandTrigger) { _, _ in
+			guard !isExpanded else { return }
+			withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+				isExpanded = true
+			}
+		}
+	}
+}
+
+private struct FolderScanBadgeIcon: View {
+	let size: CGFloat
+
+	var body: some View {
+		ZStack(alignment: .bottomTrailing) {
+			Image(systemName: "folder")
+				.font(.system(size: size, weight: .regular))
+
+			ZStack {
+				Circle()
+					.fill(.thinMaterial)
+					.frame(width: size * 0.7, height: size * 0.7)
+				Image(systemName: "magnifyingglass")
+					.font(.system(size: size * 0.42, weight: .semibold))
+			}
+			.offset(x: size * 0.14, y: size * 0.14)
+		}
 	}
 }
 

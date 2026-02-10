@@ -17,29 +17,29 @@ private struct GlassToolButton: View {
 	@State private var wigglePhase = false
 	@State private var wiggleTask: Task<Void, Never>?
 
-    init(
-        icon: String,
-        iconOpacity: CGFloat,
-        baseOpacity: Double,
-        hoverOpacity: Double,
-        pressedOpacity: Double,
-        focusMultiplier: Double,
-        action: @escaping () -> Void,
-        size: String? = nil,
+	init(
+		icon: String,
+		iconOpacity: CGFloat,
+		baseOpacity: Double,
+		hoverOpacity: Double,
+		pressedOpacity: Double,
+		focusMultiplier: Double,
+		action: @escaping () -> Void,
+		size: String? = nil,
 		image: String? = nil,
 		buttonDiameter: CGFloat? = nil
-    ) {
-        self.icon = icon
-        self.iconOpacity = iconOpacity
-        self.baseOpacity = baseOpacity
-        self.hoverOpacity = hoverOpacity
-        self.pressedOpacity = pressedOpacity
-        self.focusMultiplier = focusMultiplier
-        self.action = action
-        self.size = size
+	) {
+		self.icon = icon
+		self.iconOpacity = iconOpacity
+		self.baseOpacity = baseOpacity
+		self.hoverOpacity = hoverOpacity
+		self.pressedOpacity = pressedOpacity
+		self.focusMultiplier = focusMultiplier
+		self.action = action
+		self.size = size
 		self.image = image
 		self.buttonDiameter = buttonDiameter
-    }
+	}
 
 	private var currentOpacity: Double {
 		let base =
@@ -48,55 +48,58 @@ private struct GlassToolButton: View {
 		return base * focusMultiplier
 	}
 
-    @ViewBuilder
-    private var glowBackground: some View {
-        if isHovered && !isPressed {
-            let glowColor: Color = .primary
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [glowColor.opacity(0.1), .clear],
-                        center: .center,
-                        startRadius: 5,
-                        endRadius: 20
-                    )
-                )
-                .blur(radius: 3)
-        }
-        if isPressed {
-            let glowColor: Color = .primary
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [glowColor.opacity(0.2), .clear],
-                        center: .center,
-                        startRadius: 5,
-                        endRadius: 30
-                    )
-                )
-                .blur(radius: 3)
-        }
-    }
+	@ViewBuilder
+	private var glowBackground: some View {
+		if isHovered && !isPressed {
+			let glowColor: Color = .primary
+			Circle()
+				.fill(
+					RadialGradient(
+						colors: [glowColor.opacity(0.1), .clear],
+						center: .center,
+						startRadius: 5,
+						endRadius: 20
+					)
+				)
+				.blur(radius: 3)
+		}
+		if isPressed {
+			let glowColor: Color = .primary
+			Circle()
+				.fill(
+					RadialGradient(
+						colors: [glowColor.opacity(0.2), .clear],
+						center: .center,
+						startRadius: 5,
+						endRadius: 30
+					)
+				)
+				.blur(radius: 3)
+		}
+	}
 
-    private var pressGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                if !isPressed { isPressed = true }
-            }
-            .onEnded { _ in
-                isPressed = false
-                self.action()
-            }
-    }
+	private var pressGesture: some Gesture {
+		DragGesture(minimumDistance: 0)
+			.onChanged { _ in
+				if !isPressed { isPressed = true }
+			}
+			.onEnded { _ in
+				isPressed = false
+				self.action()
+			}
+	}
 
-    private var buttonLabel: some View {
+	private var buttonLabel: some View {
 		return ZStack {
 			if let imageName = image, !imageName.isEmpty {
 				let wiggleAngle: Double = isPressed ? (wigglePhase ? 4 : -4) : 0
 				let imageWidth: CGFloat = buttonDiameter.map { $0 * 0.8 } ?? 30
-				let imageHeight: CGFloat = buttonDiameter.map { $0 * 1.25 } ?? 45
-				let imageOffsetY: CGFloat = buttonDiameter.map { -0.06 * $0 } ?? -2
-				let imagePadding: CGFloat = buttonDiameter.map { $0 * 0.28 } ?? 10
+				let imageHeight: CGFloat =
+					buttonDiameter.map { $0 * 1.25 } ?? 45
+				let imageOffsetY: CGFloat =
+					buttonDiameter.map { -0.06 * $0 } ?? -2
+				let imagePadding: CGFloat =
+					buttonDiameter.map { $0 * 0.28 } ?? 10
 				let diameter: CGFloat = buttonDiameter ?? 0
 				Image(imageName)
 					.resizable()
@@ -111,15 +114,19 @@ private struct GlassToolButton: View {
 
 			} else {
 				Image(systemName: icon)
-					.font(size == "small" ? .system(size: 11, weight: .regular) : .system(size: 16, weight: .regular))
+					.font(
+						size == "small"
+							? .system(size: 11, weight: .regular)
+							: .system(size: 16, weight: .regular)
+					)
 					.foregroundStyle(
 						Color(.labelColor.withAlphaComponent(iconOpacity))
 					)
 					.opacity(currentOpacity)
 					.animation(.easeInOut(duration: 0.12), value: isHovered)
 			}
-        }
-    }
+		}
+	}
 
 	@ViewBuilder
 	private var sizedLabel: some View {
@@ -132,7 +139,10 @@ private struct GlassToolButton: View {
 			.contentShape(Circle())
 		} else {
 			buttonLabel
-				.frame(width: size == "small" ? 4 : 5, height: size == "small" ? 18 : 18)
+				.frame(
+					width: size == "small" ? 4 : 5,
+					height: size == "small" ? 18 : 18
+				)
 		}
 	}
 
@@ -157,8 +167,7 @@ private struct GlassToolButton: View {
 					stopWiggle()
 				}
 			}
-		}
-		else {
+		} else {
 			Button(action: action) {
 				sizedLabel
 			}
@@ -248,7 +257,7 @@ private struct GlassButtonForImage: View {
 			? pressedOpacity : (isHovered ? hoverOpacity : baseOpacity)
 		return base * focusMultiplier
 	}
-	
+
 	private var imageHoverOpacity: Double {
 		let hoverOpacity: Double = 1
 		let unHoveredOpacity: Double = 0.7
@@ -257,7 +266,7 @@ private struct GlassButtonForImage: View {
 			? 1 : (isHovered ? hoverOpacity : unHoveredOpacity)
 		return base
 	}
-	
+
 	private var imageHoverSaturation: Double {
 		let hovered: Double = 1
 		let unHovered: Double = 0.8
@@ -266,7 +275,7 @@ private struct GlassButtonForImage: View {
 			? 1 : (isHovered ? hovered : unHovered)
 		return base
 	}
-	
+
 	private var imageHoverBrightness: Double {
 		let hovered: Double = 0
 		let unHovered: Double = -0.1
@@ -275,7 +284,7 @@ private struct GlassButtonForImage: View {
 			? 0 : (isHovered ? hovered : unHovered)
 		return base
 	}
-	
+
 	private var imageHoverGrayscale: Double {
 		let hovered: Double = 0
 		let unHovered: Double = 0.99
@@ -332,7 +341,8 @@ private struct GlassButtonForImage: View {
 				let wiggleAngle: Double = isPressed ? (wigglePhase ? 4 : -4) : 0
 				let _: CGFloat = buttonDiameter.map { $0 * 0.8 } ?? 30
 				let _: CGFloat = buttonDiameter.map { $0 * 1.25 } ?? 45
-				let imageOffsetY: CGFloat = buttonDiameter.map { -0.06 * $0 } ?? +10
+				let imageOffsetY: CGFloat =
+					buttonDiameter.map { -0.06 * $0 } ?? +10
 				let _: CGFloat = buttonDiameter.map { $0 * 0.28 } ?? 0
 				let _: CGFloat = buttonDiameter ?? 0
 				Image(imageName)
@@ -344,9 +354,9 @@ private struct GlassButtonForImage: View {
 					.animation(.easeInOut(duration: 0.12), value: isHovered)
 					.padding(.bottom, 3)
 					.grayscale(imageHoverGrayscale)
-					//.saturation(imageHoverSaturation)
-					//.brightness(imageHoverBrightness)
-					
+				//.saturation(imageHoverSaturation)
+				//.brightness(imageHoverBrightness)
+
 			}
 		}
 	}
@@ -363,7 +373,10 @@ private struct GlassButtonForImage: View {
 			.contentShape(Circle())
 		} else {
 			buttonLabel
-				.frame(width: size == "small" ? 4 : 5, height: size == "small" ? 18 : 18)
+				.frame(
+					width: size == "small" ? 4 : 5,
+					height: size == "small" ? 18 : 18
+				)
 		}
 	}
 
@@ -388,8 +401,7 @@ private struct GlassButtonForImage: View {
 					stopWiggle()
 				}
 			}
-		}
-		else {
+		} else {
 			Button(action: action) {
 				sizedLabel
 			}
@@ -448,7 +460,7 @@ private struct GlassTextButton: View {
 	let action: () -> Void
 	@State private var isHovered = false
 	@State private var isPressed = false
-	
+
 	private var currentOpacity: Double {
 		let base =
 			isPressed
@@ -456,82 +468,90 @@ private struct GlassTextButton: View {
 		return base * focusMultiplier
 	}
 
-    @ViewBuilder
-    private var glowBackground: some View {
-        if isHovered && !isPressed {
-            let glowColor: Color = .primary
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [glowColor.opacity(0.1), .clear],
-                        center: .center,
-                        startRadius: 1,
-                        endRadius: 80
-                    )
-                )
-                .blur(radius: 10)
-        }
-        if isPressed {
-            let glowColor: Color = .primary
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [glowColor.opacity(0.1), .clear],
-                        center: .center,
-                        startRadius: 1,
-                        endRadius: 80
-                    )
-                )
-                .blur(radius: 10)
-        }
-    }
+	@ViewBuilder
+	private var glowBackground: some View {
+		if isHovered && !isPressed {
+			let glowColor: Color = .primary
+			Circle()
+				.fill(
+					RadialGradient(
+						colors: [glowColor.opacity(0.1), .clear],
+						center: .center,
+						startRadius: 1,
+						endRadius: 80
+					)
+				)
+				.blur(radius: 10)
+		}
+		if isPressed {
+			let glowColor: Color = .primary
+			Circle()
+				.fill(
+					RadialGradient(
+						colors: [glowColor.opacity(0.1), .clear],
+						center: .center,
+						startRadius: 1,
+						endRadius: 80
+					)
+				)
+				.blur(radius: 10)
+		}
+	}
 
-    private var pressGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                if !isPressed { isPressed = true }
-            }
-            .onEnded { _ in
-                isPressed = false
-                self.action()
-            }
-    }
+	private var pressGesture: some Gesture {
+		DragGesture(minimumDistance: 0)
+			.onChanged { _ in
+				if !isPressed { isPressed = true }
+			}
+			.onEnded { _ in
+				isPressed = false
+				self.action()
+			}
+	}
 
-    private var buttonLabel: some View {
-        return HStack {
-            Text(title)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(
-                    AnyShapeStyle(
-                        isSelected
-						? AnyShapeStyle(colorScheme == .light ? Color.white.opacity(0.6) : Color.black.opacity(0.6))
-                        : AnyShapeStyle(colorScheme == .dark ? Color.white.opacity(0.8) : Color.black.opacity(0.6))
-                    )
-                )
-                .opacity(isSelected ? 1.0 : (0.5 * currentOpacity))
-                .animation(.easeInOut(duration: 0.12), value: isHovered)
-        }
-        .frame(width: 60, height: 40)
-        .padding(.horizontal, 1)
-        .padding(.vertical, -10)
-    }
+	private var buttonLabel: some View {
+		return HStack {
+			Text(title)
+				.font(.system(size: 12, weight: .regular))
+				.foregroundStyle(
+					AnyShapeStyle(
+						isSelected
+							? AnyShapeStyle(
+								colorScheme == .light
+									? Color.white.opacity(0.6)
+									: Color.black.opacity(0.6)
+							)
+							: AnyShapeStyle(
+								colorScheme == .dark
+									? Color.white.opacity(0.8)
+									: Color.black.opacity(0.6)
+							)
+					)
+				)
+				.opacity(isSelected ? 1.0 : (0.5 * currentOpacity))
+				.animation(.easeInOut(duration: 0.12), value: isHovered)
+		}
+		.frame(width: 60, height: 40)
+		.padding(.horizontal, 1)
+		.padding(.vertical, -10)
+	}
 
 	var body: some View {
-        Button(action: action) {
-            buttonLabel
-        }
-        //.buttonStyle(isSelected ? .glass(.clear) : .glass(.regular))
-        .tint(isSelected ? .accentColor : nil)
-        .padding(-4)
-        .background { glowBackground }
-        .overlay(Color.primary.opacity(0.001))
-        .modifier(ButtonStyleAvailabilityModifier())
-        .controlSize(.extraLarge)
-        .shadow(color: Color.black.opacity(0.22), radius: 8, x: 0, y: 5)
-        .onHover { hovering in
-            isHovered = hovering
-        }
-        .gesture(pressGesture)
+		Button(action: action) {
+			buttonLabel
+		}
+		//.buttonStyle(isSelected ? .glass(.clear) : .glass(.regular))
+		.tint(isSelected ? .accentColor : nil)
+		.padding(-4)
+		.background { glowBackground }
+		.overlay(Color.primary.opacity(0.001))
+		.modifier(ButtonStyleAvailabilityModifier())
+		.controlSize(.extraLarge)
+		.shadow(color: Color.black.opacity(0.22), radius: 8, x: 0, y: 5)
+		.onHover { hovering in
+			isHovered = hovering
+		}
+		.gesture(pressGesture)
 	}
 }
 
@@ -661,12 +681,12 @@ struct SingleGlassButtonImageRound: View {
 						focusMultiplier: isFocusedWindow ? 1.0 : 0.7,
 						action: action,
 						//size: isSmall ? "small" : "",
-						image: image, // pass asset name (e.g., "JuiceLogo")
+						image: image,  // pass asset name (e.g., "JuiceLogo")
 						buttonDiameter: buttonDiameter
 					)
 					.glassEffect(.regular)
 				}
-				
+
 				//.glassEffect(.regular)
 				.background(
 					WindowFocusReader { window in
@@ -692,9 +712,13 @@ struct SingleGlassButtonImageRound: View {
 							.resizable()
 							.scaledToFit()
 							.frame(width: imageWidth, height: imageHeight)
-							.rotationEffect(.degrees(wiggleAngle), anchor: .center)
+							.rotationEffect(
+								.degrees(wiggleAngle),
+								anchor: .center
+							)
 							.foregroundStyle(
-								(colorScheme == .light ? Color.black : Color.white)
+								(colorScheme == .light
+									? Color.black : Color.white)
 									.opacity(Double(iconOpacity))
 							)
 					}
@@ -868,7 +892,7 @@ struct GlassTabControl: View {
 				Button {
 					withAnimation(.spring(response: 0.45, dampingFraction: 0.8))
 					{
-						
+
 					}
 				} label: {
 					ZStack {
@@ -946,7 +970,6 @@ struct GlassTabControl: View {
 		.contentShape(shape)
 	}
 }
-
 
 //Joined buttons!
 //struct InspectorControl: View {
@@ -1141,13 +1164,13 @@ private protocol WindowFocusObservableProxy {
 			ZStack {
 				Color.gray.opacity(0.15).ignoresSafeArea()
 				VStack {
-//					InspectorControl(
-//						inspector: inspector,
-//						columnVisibility: $columnVisibility
-//					)
-//					.padding(20)
-//					.frame(maxWidth: .infinity, maxHeight: .infinity)
-//					SingleGlassButton(icon: "chevron.right.square") {}
+					//					InspectorControl(
+					//						inspector: inspector,
+					//						columnVisibility: $columnVisibility
+					//					)
+					//					.padding(20)
+					//					.frame(maxWidth: .infinity, maxHeight: .infinity)
+					//					SingleGlassButton(icon: "chevron.right.square") {}
 					GlassTabControl(
 						isQueueSelected: isQueue,
 						onSelectQueue: { isQueue = true },
@@ -1187,11 +1210,84 @@ private protocol WindowFocusObservableProxy {
 				VStack {
 					SingleGlassButtonSml(
 						icon: "trash",
-						action: {})
+						action: {}
+					)
 					SingleGlassButtonImageRound(
 						image: "JuiceLogo",
 						buttonDiameter: 10,
-						action: {})
+						action: {}
+					)
+				}
+			}
+			.frame(width: 600, height: 200)
+			.preferredColorScheme(.light)
+			.background(
+				// A background is needed to see the blur/reflection effect
+				LinearGradient(
+					gradient: Gradient(colors: [.blue, .purple]),
+					startPoint: .topLeading,
+					endPoint: .bottomTrailing
+				)
+				.ignoresSafeArea()
+			)
+		}
+
+	}
+
+	return PreviewHost()
+}
+
+#Preview("2 Small") {
+	struct PreviewHost: View {
+		@State private var isQueue = true
+		@State private var columnVisibility: NavigationSplitViewVisibility =
+			.all
+		@StateObject private var inspector = InspectorCoordinator()
+
+		var body: some View {
+			ZStack {
+				if #available(macOS 26.0, *) {
+					GlassEffectContainer (spacing: 1) {
+						HStack (spacing: 4) {
+							Button(action: {}) {
+								Image(systemName: "magnifyingglass")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							
+							.buttonStyle(.glass(.clear))
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+							Button(action: {}) {
+								Image(systemName: "plus")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.glass(.clear))
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+					}
+				} else {
+					HStack (spacing: 4) {
+						Button(action: {}) {
+							Image(systemName: "magnifyingglass")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						
+						.buttonStyle(.bordered)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+						Button(action: {}) {
+							Image(systemName: "plus")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.bordered)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+					}
 				}
 			}
 			.frame(width: 600, height: 200)

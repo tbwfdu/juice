@@ -175,7 +175,7 @@ struct RemoteFileSizeValueView: View {
 					.font(font)
 					.foregroundStyle(.primary)
 			} else if loader.isUnavailable {
-				Text("Unknown")
+				Text("")
 					.font(font)
 					.foregroundStyle(.secondary)
 			}
@@ -221,7 +221,7 @@ struct RemoteFileSizeInlineView: View {
 				} else if let sizeText = loader.sizeText {
 					Text(sizeText)
 				} else if loader.isUnavailable {
-					Text("Unknown")
+					Text(" ")
 				} else {
 					Text("1234mb")
 				}
@@ -269,7 +269,7 @@ struct RemoteFileSizeInlineHorizontalView: View {
 				} else if let sizeText = loader.sizeText {
 					Text(sizeText)
 				} else if loader.isUnavailable {
-					Text("Unknown")
+					Text(" ")
 				} else {
 					Text(" ")
 				}

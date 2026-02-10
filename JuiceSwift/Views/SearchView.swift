@@ -109,9 +109,9 @@ struct SearchView: View {
 						)
 						}
 						.frame(maxWidth: .infinity, alignment: .topLeading)
-						.padding(.horizontal, 40)
+						.padding(.horizontal, 20)
 						.padding(.vertical, 0)
-						Spacer(minLength:20)
+						Spacer(minLength: 20)
 					}
 
 				EmptyView()
@@ -427,7 +427,7 @@ struct SearchView: View {
 
 	@ViewBuilder
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
-		InspectorQueuePanelView(
+		InspectorSearchQueuePanelView(
 			tab: $rightTab,
 			notice: $queueNotice,
 			queueItems: $queueItems,
@@ -493,10 +493,16 @@ struct SearchView: View {
 	            resetSearchUI()
 	            return
 	        }
+			let wasQueueEmpty = queueItems.isEmpty
 	        queueItems.append(selected)
-			inspector.notifyQueueAdded()
+			inspector.notifyQueueAdded(
+				by: 1,
+				triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
+			)
 	        showQueueNotice("Added to queue", isDuplicate: false)
-			inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+			if inspector.isPresented || !wasQueueEmpty {
+				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
+			}
 	        resetSearchUI()
 	    }
 

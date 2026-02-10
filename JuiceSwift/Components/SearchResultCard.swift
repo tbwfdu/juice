@@ -32,19 +32,19 @@ struct SearchResultCard: View {
 		.disabled
 	]
 
-	init(
-		selectedApplication: CaskApplication,
-		title: String,
-		subtitle: String,
-		token: String,
-		version: String,
-		fileType: String,
-		fileSizeText: String? = nil,
-		isFileSizeLoading: Bool = false,
-		isFileSizeUnavailable: Bool = false,
-		actionTitle: String = "Add",
-		action: @escaping () -> Void = {}
-	) {
+		init(
+			selectedApplication: CaskApplication,
+			title: String,
+			subtitle: String,
+			token: String,
+			version: String,
+			fileType: String,
+			fileSizeText: String? = nil,
+			isFileSizeLoading: Bool = false,
+			isFileSizeUnavailable: Bool = false,
+			actionTitle: String = "+",
+			action: @escaping () -> Void = {}
+		) {
 		self.selectedApplication = selectedApplication
 		self.title = title
 		self.subtitle = subtitle
@@ -74,9 +74,16 @@ struct SearchResultCard: View {
 						.lineLimit(2)
 					}
 					.frame(maxWidth: .infinity, alignment: .leading)
-					Button(actionTitle, action: action)
-						.nativeActionButtonStyle(.primary, controlSize: .large)
-				}
+						Button(action: action) {
+							Image(systemName: "plus")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.accessibilityLabel(actionTitle)
+							.nativeActionButtonStyle(.primary, controlSize: .large)
+							.buttonBorderShape(.automatic)
+					}
 
 			Divider()
 				.opacity(0.6)
@@ -116,7 +123,7 @@ struct SearchResultCard: View {
 						.font(.body)
 						.foregroundStyle(.secondary)
 				} else if isFileSizeUnavailable {
-					Text("Unknown")
+					Text("")
 						.font(.body)
 						.foregroundStyle(.secondary)
 				} else {

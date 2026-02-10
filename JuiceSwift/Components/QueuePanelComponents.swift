@@ -102,33 +102,6 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 		ZStack(alignment: .center) {
 			VStack(alignment: .leading, spacing: 12) {
 				#if os(macOS)
-					//				GlassSegmentedControl(
-					//					items: [
-					//						.init(title: "Queue", tag: .queue),
-					//						.init(title: "Results", tag: .results, isEnabled: resultsTabEnabled)
-					//					],
-					//					selection: $tab,
-					//					glassOpacity: glassOpacity,
-					//					backgroundGlassOpacity: glassOpacity,
-					//					backgroundGlassBaseOpacity: glassBaseOpacity
-					//				)
-					//				.onChange(of: resultsIsEmpty) { _, isEmpty in
-					//					if isEmpty && tab == .results {
-					//						tab = .queue
-					//					}
-					//				}
-					//				HStack(){
-					//					Spacer()
-					//				GlassTabControl(
-					//					isQueueSelected: tab == .queue,
-					//					onSelectQueue: { tab = .queue },
-					//					isResultsSelected: tab == .results,
-					//					onSelectResults: { tab = .results }
-					//				)
-					//						.frame(
-					//							maxWidth: 150, alignment: .trailing
-					//						)
-					//				}
 				#else
 					Picker("", selection: $tab) {
 						Text("Queue").tag(Tab.queue)
@@ -152,7 +125,8 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 								action: onQueueAction,
 								bottomActions: bottomActions,
 								content: queueContent,
-								isActionDisabled: queueIsEmpty
+								isActionDisabled: queueIsEmpty,
+								centerEmptyContent: true
 							)
 							.transition(tabTransition(for: .queue))
 						} else {
@@ -163,7 +137,8 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 								action: onResultsAction,
 								bottomActions: nil,
 								content: resultsContent,
-								isActionDisabled: resultsIsEmpty
+								isActionDisabled: resultsIsEmpty,
+								centerEmptyContent: false
 							)
 							.transition(tabTransition(for: .results))
 						}
@@ -242,7 +217,8 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 		action: @escaping () -> Void,
 		bottomActions: AnyView?,
 		@ViewBuilder content: @escaping () -> Content,
-		isActionDisabled: Bool
+		isActionDisabled: Bool,
+		centerEmptyContent: Bool = false
 	) -> some View {
 		VStack(alignment: .leading, spacing: 12) {
 			HStack {
@@ -321,18 +297,27 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 									.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
 								}
 								}
-						}
 					}
+				}
 			}
+			.padding(.horizontal, 5)
+			.padding(.top, 20)
 			ZStack(alignment: .bottomTrailing) {
-				ScrollView {
+				if centerEmptyContent && isActionDisabled {
 					content()
+						.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 						.padding(.vertical, 14)
 						.padding(.horizontal, 10)
+				} else {
+					ScrollView {
+							content()
+								.padding(.vertical, 14)
+								.padding(.horizontal, 10)
+					}
 				}
 				if let bottomActions {
 					bottomActions
-						.padding(.trailing, 12)
+						.padding(.trailing, 18)
 						.padding(.bottom, 12)
 				}
 			}
@@ -397,7 +382,7 @@ struct QueueBottomActions: View {
 	var body: some View {
 		HStack {
 			Spacer()
-			ExpandableMenu_AvailabilityAdapter(
+			ExpandableJuiceMenu_AvailabilityAdapter(
 				primaryTitle: primaryTitle,
 				secondaryTitle: secondaryTitle,
 				isEnabled: isEnabled,
@@ -1060,7 +1045,7 @@ private struct QueuePanelContentInspectorPreview: View {
 	}
 	.padding()
 }
-struct InspectorQueuePanelView: View {
+struct InspectorSearchQueuePanelView: View {
 	@EnvironmentObject private var inspector: InspectorCoordinator
 	@Binding var tab: QueuePanelContent<AnyView, AnyView>.Tab
 	@Binding var notice: QueuePanelContent<AnyView, AnyView>.Notice?
@@ -1090,7 +1075,7 @@ struct InspectorQueuePanelView: View {
 					resultsItems.removeAll()
 				}
 			},
-			isPinned: $inspector.isPinned,
+			isPinned: nil,
 			bottomActions: AnyView(
 				QueueBottomActions(
 					primaryTitle: "Upload to UEM",
@@ -1102,12 +1087,22 @@ struct InspectorQueuePanelView: View {
 				)
 			)
 		) {
-			AnyView(LazyVStack(spacing: 8) {
-				ForEach(queueItems) { item in
-					AppDetailListItem(item: item, label: "Version")
-						.transition(.opacity.combined(with: .move(edge: .top)))
+			AnyView(
+				Group {
+					if queueItems.isEmpty {
+						EmptyQueueContentUnavailableView(message: "Search for some Apps to get started")
+							.frame(maxWidth: .infinity, minHeight: 220)
+							.padding(.bottom, 100)
+					} else {
+						LazyVStack(spacing: 8) {
+							ForEach(queueItems) { item in
+								AppDetailListItem(item: item, label: "Version")
+									.transition(.opacity.combined(with: .move(edge: .top)))
+							}
+						}
+					}
 				}
-			})
+			)
 		} resultsContent: {
 			AnyView(LazyVStack(spacing: 8) {
 				ForEach(resultsItems) { item in
@@ -1159,7 +1154,7 @@ struct InspectorUpdatesQueuePanelView: View {
 					resultsItems.removeAll()
 				}
 			},
-			isPinned: $inspector.isPinned,
+			isPinned: nil,
 			bottomActions: AnyView(
 				QueueBottomActions(
 					primaryTitle: "Upload to UEM",
@@ -1172,13 +1167,21 @@ struct InspectorUpdatesQueuePanelView: View {
 			)
 		) {
 			AnyView(
-				LazyVStack(spacing: 8) {
-					ForEach(queueItems) { item in
-						AppDetailListItem(
-							item: item,
-							label: "New Version"
-						)
-						.transition(.opacity.combined(with: .move(edge: .top)))
+				Group {
+					if queueItems.isEmpty {
+						EmptyQueueContentUnavailableView(message: "Query UEM find updates to add them here")
+							.frame(maxWidth: .infinity, minHeight: 220)
+							.padding(.bottom, 100)
+					} else {
+						LazyVStack(spacing: 8) {
+							ForEach(queueItems) { item in
+								AppDetailListItem(
+									item: item,
+									label: "New Version"
+								)
+								.transition(.opacity.combined(with: .move(edge: .top)))
+							}
+						}
 					}
 				}
 			)
@@ -1209,6 +1212,7 @@ struct InspectorImportQueuePanelView: View {
 	let panelMinHeight: CGFloat
 	let onPrimaryAction: () -> Void
 	let onSecondaryAction: () -> Void
+	let onQueueItemsRemoved: ([ImportedApplication]) -> Void
 
 	var body: some View {
 		QueuePanelContent(
@@ -1220,16 +1224,18 @@ struct InspectorImportQueuePanelView: View {
 			queueIsEmpty: queueItems.isEmpty,
 			resultsIsEmpty: resultsItems.isEmpty,
 			onQueueAction: {
+				let removedItems = queueItems
 				withAnimation(.easeInOut(duration: 0.2)) {
 					queueItems.removeAll()
 				}
+				onQueueItemsRemoved(removedItems)
 			},
 			onResultsAction: {
 				withAnimation(.easeInOut(duration: 0.2)) {
 					resultsItems.removeAll()
 				}
 			},
-			isPinned: $inspector.isPinned,
+			isPinned: nil,
 			bottomActions: AnyView(
 				QueueBottomActions(
 					primaryTitle: "Upload to UEM",
@@ -1242,10 +1248,18 @@ struct InspectorImportQueuePanelView: View {
 			)
 		) {
 			AnyView(
-				LazyVStack(spacing: 8) {
-					ForEach(queueItems) { item in
-						ImportAppDetailListItem(item: item, label: "Version")
-							.transition(.opacity.combined(with: .move(edge: .top)))
+				Group {
+					if queueItems.isEmpty {
+						EmptyQueueContentUnavailableView(message: "Import some Apps and add them to queue to see them here")
+							.frame(maxWidth: .infinity, minHeight: 220)
+							.padding(.bottom, 100)
+					} else {
+						LazyVStack(spacing: 8) {
+							ForEach(queueItems) { item in
+								ImportAppDetailListItem(item: item, label: "Version")
+									.transition(.opacity.combined(with: .move(edge: .top)))
+							}
+						}
 					}
 				}
 			)

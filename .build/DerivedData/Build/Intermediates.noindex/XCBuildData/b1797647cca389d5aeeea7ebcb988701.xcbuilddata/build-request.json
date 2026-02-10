@@ -1,0 +1,64 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "f2166d64d1b4a9c2c54085e13f0c18f1d7edeb4d9ebdcaff99892651647ed841"
+    }
+  ],
+  "containerPath" : "/Users/pete/GitHub_EUC/juice_swift/Juice.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "arm64",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : false,
+      "platform" : "macosx",
+      "sdk" : "macosx26.2",
+      "sdkVariant" : "macos",
+      "supportedArchitectures" : [
+        "arm64e",
+        "arm64",
+        "x86_64"
+      ],
+      "targetArchitecture" : "arm64"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData/Build/Products",
+      "derivedDataPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData",
+      "indexDataStoreFolderPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/pete/GitHub_EUC/juice_swift/.build/DerivedData/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

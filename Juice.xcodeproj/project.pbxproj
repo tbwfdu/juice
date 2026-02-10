@@ -10,6 +10,17 @@
 		A1B2C3D4E5F6010203040501 /* Juice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010203040502 /* Juice.swift */; };
 		A1B2C3D4E5F6010203040503 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010203040504 /* ContentView.swift */; };
 		A1B2C3D4E5F601020304050B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F601020304050C /* Assets.xcassets */; };
+		B1C2D3E4F5A6010203040601 /* JuiceiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040602 /* JuiceiOSApp.swift */; };
+		B1C2D3E4F5A6010203040603 /* MobileContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040604 /* MobileContentView.swift */; };
+		B1C2D3E4F5A6010203040611 /* IOSCatalogModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040612 /* IOSCatalogModels.swift */; };
+		B1C2D3E4F5A6010203040613 /* IOSCatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040614 /* IOSCatalogStore.swift */; };
+		B1C2D3E4F5A6010203040615 /* IOSSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040616 /* IOSSearchView.swift */; };
+		B1C2D3E4F5A6010203040617 /* IOSUpdatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040618 /* IOSUpdatesView.swift */; };
+		B1C2D3E4F5A6010203040619 /* cask_apps.json in Resources */ = {isa = PBXBuildFile; fileRef = C179E5642F260111002E8158 /* cask_apps.json */; };
+		B1C2D3E4F5A6010203040620 /* IOSV2GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040621 /* IOSV2GlassStyle.swift */; };
+		B1C2D3E4F5A6010203040622 /* JuiceSwift/Components/GlassThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040624 /* JuiceSwift/Components/GlassThemeTokens.swift */; };
+		B1C2D3E4F5A6010203040623 /* JuiceSwift/Extensions/Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040625 /* JuiceSwift/Extensions/Colors.swift */; };
+		B1C2D3E4F5A6010203040626 /* IOSLandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6010203040627 /* IOSLandingView.swift */; };
 		C143485B2F26ED51009AA717 /* Juice.icon in Resources */ = {isa = PBXBuildFile; fileRef = C143485A2F26ED51009AA717 /* Juice.icon */; };
 		C153AD242F29A17B00E50AF1 /* app_aliases.json in Resources */ = {isa = PBXBuildFile; fileRef = C153AD232F29A17B00E50AF1 /* app_aliases.json */; };
 		C179E5632F260111002E8158 /* cask_apps.json in Resources */ = {isa = PBXBuildFile; fileRef = C179E5642F260111002E8158 /* cask_apps.json */; };
@@ -33,6 +44,17 @@
 		A1B2C3D4E5F601020304050C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F601020304050D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F601020304050E /* Juice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = Juice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C2D3E4F5A6010203040602 /* JuiceiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuiceiOSApp.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040604 /* MobileContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileContentView.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040605 /* JuiceiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = JuiceiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C2D3E4F5A6010203040612 /* IOSCatalogModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSCatalogModels.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040614 /* IOSCatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSCatalogStore.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040616 /* IOSSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSSearchView.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040618 /* IOSUpdatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSUpdatesView.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040621 /* IOSV2GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSV2GlassStyle.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6010203040624 /* JuiceSwift/Components/GlassThemeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuiceSwift/Components/GlassThemeTokens.swift; sourceTree = SOURCE_ROOT; };
+		B1C2D3E4F5A6010203040625 /* JuiceSwift/Extensions/Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JuiceSwift/Extensions/Colors.swift; sourceTree = SOURCE_ROOT; };
+		B1C2D3E4F5A6010203040627 /* IOSLandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSLandingView.swift; sourceTree = "<group>"; };
 		C143485A2F26ED51009AA717 /* Juice.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Juice.icon; sourceTree = "<group>"; };
 		C153AD232F29A17B00E50AF1 /* app_aliases.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = app_aliases.json; sourceTree = "<group>"; };
 		C166BB842F2D91FB0041147B /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -42,11 +64,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C166BB882F2D91FC0041147B /* Juice-Widgets */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Juice-Widgets";
-			sourceTree = "<group>";
-		};
 		C179E55F2F25E43D002E8158 /* Components */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Components;
@@ -60,11 +77,6 @@
 		C179E5612F25E46A002E8158 /* Models */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Models;
-			sourceTree = "<group>";
-		};
-		C197FDD42F38828700D46D4D /* Juice_iOS */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Juice_iOS;
 			sourceTree = "<group>";
 		};
 		C1A8B0D52F2851A700921C70 /* Extensions */ = {
@@ -101,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F601020304050E /* Juice.app */,
+				B1C2D3E4F5A6010203040605 /* JuiceiOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,14 +122,30 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6010203040511 /* JuiceSwift */,
-				C166BB882F2D91FC0041147B /* Juice-Widgets */,
-				C197FDD42F38828700D46D4D /* Juice_iOS */,
+				B1C2D3E4F5A6010203040606 /* JuiceiOS */,
 				C166BB832F2D91FB0041147B /* Frameworks */,
 				A1B2C3D4E5F6010203040512 /* Products */,
 				C143485A2F26ED51009AA717 /* Juice.icon */,
 			);
 			sourceTree = "<group>";
 			usesTabs = 1;
+		};
+		B1C2D3E4F5A6010203040606 /* JuiceiOS */ = {
+			isa = PBXGroup;
+			children = (
+				B1C2D3E4F5A6010203040602 /* JuiceiOSApp.swift */,
+				B1C2D3E4F5A6010203040604 /* MobileContentView.swift */,
+				B1C2D3E4F5A6010203040612 /* IOSCatalogModels.swift */,
+				B1C2D3E4F5A6010203040614 /* IOSCatalogStore.swift */,
+				B1C2D3E4F5A6010203040616 /* IOSSearchView.swift */,
+				B1C2D3E4F5A6010203040618 /* IOSUpdatesView.swift */,
+				B1C2D3E4F5A6010203040627 /* IOSLandingView.swift */,
+				B1C2D3E4F5A6010203040621 /* IOSV2GlassStyle.swift */,
+				B1C2D3E4F5A6010203040624 /* JuiceSwift/Components/GlassThemeTokens.swift */,
+				B1C2D3E4F5A6010203040625 /* JuiceSwift/Extensions/Colors.swift */,
+			);
+			path = JuiceiOS;
+			sourceTree = "<group>";
 		};
 		C166BB832F2D91FB0041147B /* Frameworks */ = {
 			isa = PBXGroup;
@@ -162,6 +191,20 @@
 			productReference = A1B2C3D4E5F601020304050E /* Juice.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B1C2D3E4F5A6010203040607 /* JuiceiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1C2D3E4F5A601020304060C /* Build configuration list for PBXNativeTarget "JuiceiOS" */;
+			buildPhases = (
+				B1C2D3E4F5A6010203040608 /* Sources */,
+				B1C2D3E4F5A6010203040609 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = JuiceiOS;
+			productName = JuiceiOS;
+			productReference = B1C2D3E4F5A6010203040605 /* JuiceiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -173,6 +216,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					A1B2C3D4E5F6010203040514 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					B1C2D3E4F5A6010203040607 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
@@ -191,6 +237,7 @@
 			projectRoot = "";
 			targets = (
 				A1B2C3D4E5F6010203040514 /* Juice */,
+				B1C2D3E4F5A6010203040607 /* JuiceiOS */,
 			);
 		};
 /* End PBXProject section */
@@ -206,6 +253,12 @@
 				C179E5672F260111002E8158 /* recipes.json in Resources */,
 			);
 		};
+		B1C2D3E4F5A6010203040609 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				B1C2D3E4F5A6010203040619 /* cask_apps.json in Resources */,
+			);
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -214,6 +267,21 @@
 			files = (
 				A1B2C3D4E5F6010203040501 /* Juice.swift in Sources */,
 				A1B2C3D4E5F6010203040503 /* ContentView.swift in Sources */,
+			);
+		};
+		B1C2D3E4F5A6010203040608 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				B1C2D3E4F5A6010203040601 /* JuiceiOSApp.swift in Sources */,
+				B1C2D3E4F5A6010203040603 /* MobileContentView.swift in Sources */,
+				B1C2D3E4F5A6010203040611 /* IOSCatalogModels.swift in Sources */,
+				B1C2D3E4F5A6010203040613 /* IOSCatalogStore.swift in Sources */,
+				B1C2D3E4F5A6010203040615 /* IOSSearchView.swift in Sources */,
+				B1C2D3E4F5A6010203040617 /* IOSUpdatesView.swift in Sources */,
+				B1C2D3E4F5A6010203040620 /* IOSV2GlassStyle.swift in Sources */,
+				B1C2D3E4F5A6010203040622 /* JuiceSwift/Components/GlassThemeTokens.swift in Sources */,
+				B1C2D3E4F5A6010203040623 /* JuiceSwift/Extensions/Colors.swift in Sources */,
+				B1C2D3E4F5A6010203040626 /* IOSLandingView.swift in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */
@@ -341,6 +409,58 @@
 			};
 			name = Release;
 		};
+		B1C2D3E4F5A601020304060A /* Debug configuration for PBXNativeTarget "JuiceiOS" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Juice;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.JuiceiOS;
+				PRODUCT_NAME = JuiceiOS;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B1C2D3E4F5A601020304060B /* Release configuration for PBXNativeTarget "JuiceiOS" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Juice;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.JuiceiOS;
+				PRODUCT_NAME = JuiceiOS;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -357,6 +477,14 @@
 			buildConfigurations = (
 				A1B2C3D4E5F601020304051D /* Debug configuration for PBXProject "Juice" */,
 				A1B2C3D4E5F601020304051E /* Release configuration for PBXProject "Juice" */,
+			);
+			defaultConfigurationName = Debug;
+		};
+		B1C2D3E4F5A601020304060C /* Build configuration list for PBXNativeTarget "JuiceiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1C2D3E4F5A601020304060A /* Debug configuration for PBXNativeTarget "JuiceiOS" */,
+				B1C2D3E4F5A601020304060B /* Release configuration for PBXNativeTarget "JuiceiOS" */,
 			);
 			defaultConfigurationName = Debug;
 		};

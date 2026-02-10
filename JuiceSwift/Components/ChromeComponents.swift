@@ -20,31 +20,18 @@ struct GradientHeaderBar: View {
 	var backgroundStyle: BackgroundStyle = .gradient
 
     var body: some View {
-		VStack(alignment: .leading) {
+		ZStack {
 			backgroundView
             Text(title)
 				.font(.system(size: 40, weight: .bold, design: .default))
 				.foregroundStyle(.primary)
-				.padding(.leading, 150)
-				//.padding(5)
 				.tracking(-2)
-				//.frame(height: .infinity, alignment: .trailing)
         }
-        //.frame(maxWidth: .infinity)
+		.frame(maxWidth: .infinity, alignment: .center)
 		.frame(
 			minHeight: 40,
 			maxHeight: 40,
-			//alignment: .init(horizontal: .leading, vertical: .top)
 		)
-		//.padding(.bottom, 20)
-		
-//        .overlay(
-//            Rectangle()
-//                .fill(Color.black.opacity(0.12))
-//                .frame(height: 1),
-//            alignment: .bottom
-//        )
-		//.ignoresSafeArea(edges: .all)
     }
 
 	@ViewBuilder
@@ -68,6 +55,8 @@ struct GradientHeaderBar: View {
 
 struct NavigationMenu: View {
     @Binding var selection: NavigationItem?
+	let onCollapse: (() -> Void)?
+	let panelWidth: CGFloat?
     @State private var hoveredItem: NavigationItem?
 	@Environment(\.colorScheme) private var colorScheme
 	@StateObject private var focusObserver = WindowFocusObserver()
@@ -79,7 +68,7 @@ struct NavigationMenu: View {
 		)
 	}
 
-    var body: some View {
+	    var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
 		return VStack(spacing: 0) {
 			VStack(alignment: .leading, spacing: 6) {
@@ -92,8 +81,15 @@ struct NavigationMenu: View {
 
 			navItemButton(.settings)
 		}
-		.padding(16)
-		.frame(minWidth: 220, idealWidth: 280, maxWidth: 350)
+		.padding(.horizontal, 8)
+		.padding(.vertical, 16)
+		.padding(.top, 24)
+		.frame(width: panelWidth, alignment: .leading)
+		.frame(
+			minWidth: panelWidth == nil ? 220 : nil,
+			idealWidth: panelWidth == nil ? 280 : nil,
+			maxWidth: panelWidth == nil ? 350 : nil
+		)
 		.frame(maxHeight: .infinity, alignment: .top)
 		.background {
 			Color.clear
@@ -108,6 +104,21 @@ struct NavigationMenu: View {
 			}
 			.clipShape(shape)
 			.glassCompatBorder(in: shape, context: glassState, role: .standard)
+			.overlay(alignment: .topTrailing) {
+				if let onCollapse {
+					Button(action: onCollapse) {
+						Image(systemName: "sidebar.left")
+							.symbolVariant(.fill)
+							.font(.system(size: 14, weight: .regular))
+							.frame(width: 28, height: 22)
+							.foregroundStyle(.secondary)
+					}
+					.buttonStyle(.plain)
+					.help("Collapse")
+					.padding(.top, 8)
+					.padding(.trailing, 8)
+				}
+			}
 			.overlay(
 				ZStack {
 					RadialGradient(
@@ -160,7 +171,7 @@ struct NavigationMenu: View {
 				Spacer(minLength: 0)
 			}
 			.padding(.vertical, 10)
-			.padding(.horizontal, 10)
+			.padding(.horizontal, 8)
 			.background(
 					rowShape
 						.fill(
@@ -180,7 +191,7 @@ struct NavigationMenu: View {
 }
 
 #Preview {
-    NavigationMenu(selection: .constant(.landing))
+	NavigationMenu(selection: .constant(.landing), onCollapse: nil, panelWidth: nil)
         .frame(width: 280)
 }
 //

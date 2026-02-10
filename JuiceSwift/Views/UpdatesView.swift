@@ -1,6 +1,7 @@
 import SwiftUI
+
 #if os(macOS)
-import AppKit
+	import AppKit
 #endif
 
 // Updates page.
@@ -29,7 +30,8 @@ struct UpdatesView: View {
 	@State private var confirmationVisible = false
 	@State private var confirmationMode: ConfirmationActionMode = .upload
 	@StateObject private var downloadQueueModel = DownloadQueueViewModel()
-	@State private var downloadQueueTab: QueuePanelContent<AnyView, AnyView>.Tab = .queue
+	@State private var downloadQueueTab:
+		QueuePanelContent<AnyView, AnyView>.Tab = .queue
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
 	private var glassState: GlassStateContext {
@@ -43,6 +45,7 @@ struct UpdatesView: View {
 	}
 	@StateObject private var focusObserver = WindowFocusObserver()
 	@State private var panelMinHeightCache: CGFloat = 0
+	@State private var expandActionsTrigger: Int = 0
 
 	private var glassBaseOpacity: CGFloat {
 		GlassThemeTokens.panelBaseTintOpacity(for: glassState)
@@ -77,7 +80,7 @@ struct UpdatesView: View {
 						)
 					}
 					.frame(maxWidth: .infinity, alignment: .topLeading)
-					.padding(.horizontal, 40)
+					.padding(.horizontal, 20)
 					.padding(.vertical, 0)
 					.contentShape(Rectangle())
 					.onTapGesture {
@@ -107,18 +110,13 @@ struct UpdatesView: View {
 					}
 				}
 			}
-			.onChange(of: queueItems.count) { oldValue, newValue in
-				guard oldValue == 0, newValue > 0 else { return }
-				guard !inspector.isPresented, selectedApp == nil else { return }
-				inspector.show(
-					queuePanelView(panelMinHeight: panelMinHeightCache)
-				)
-			}
 			.onChange(of: inspector.isPresented) { _, isPresented in
 				if isPresented, selectedApp == nil {
 					if downloadQueueModel.shouldPresentPanel {
 						inspector.show(
-							downloadPanelView(panelMinHeight: panelMinHeightCache)
+							downloadPanelView(
+								panelMinHeight: panelMinHeightCache
+							)
 						)
 					} else {
 						inspector.show(
@@ -175,10 +173,14 @@ struct UpdatesView: View {
 				"Application Updates",
 				subtitle: "Query Workspace ONE for Application Updates"
 			)
-			queryButtonsRow()
+			//queryButtonsRow()
+			buttonsView()
 			if !uemApps.isEmpty {
-				let updates: [UemApplication] = uemApps.filter { ($0.hasUpdate ?? false) }
-				let displayedApps: [UemApplication] = showAllUemApps ? uemApps : updates
+				let updates: [UemApplication] = uemApps.filter {
+					($0.hasUpdate ?? false)
+				}
+				let displayedApps: [UemApplication] =
+					showAllUemApps ? uemApps : updates
 				updatesHeaderRow(displayedApps: displayedApps)
 					.frame(minWidth: 550)
 					.frame(
@@ -208,7 +210,10 @@ struct UpdatesView: View {
 					style: .regular,
 					context: glassState,
 					fillColor: panelBaseTintColor,
-					fillOpacity: min(1, glassBaseOpacity + panelNeutralOverlayOpacity),
+					fillOpacity: min(
+						1,
+						glassBaseOpacity + panelNeutralOverlayOpacity
+					),
 					surfaceOpacity: panelGlassOpacity
 				)
 		}
@@ -222,32 +227,119 @@ struct UpdatesView: View {
 		.zIndex(1)
 	}
 
-		@ViewBuilder
-		private func queryButtonsRow() -> some View {
-			HStack(spacing: 8) {
-				Button("Get All Apps") {
-					Task { @MainActor in
-						isQueryingUem = true
-						let apps: [UemApplication] = await UEMService.instance
-						.getAllApps().compactMap { $0 }
-					withAnimation(.bouncy(duration: 0.35, extraBounce: 0.12)) {
-						uemApps = apps
-						selectedAppKeys.removeAll()
-						selectedApp = nil
-							isQueryingUem = false
+	@ViewBuilder
+	private func queryButtonsRow() -> some View {
+		HStack(spacing: 8) {
+			#if os(macOS)
+				if #available(macOS 26.0, *) {
+					Button(action: queryAllApps) {
+						HStack(spacing: 5) {
+							CloudQueryBadgeIcon(size: 11)
+							Text("Query")
+								.font(.system(size: 12, weight: .regular))
 						}
+						.padding(.horizontal, 8)
+						.padding(.vertical, 3)
 					}
+					.buttonStyle(.glassProminent)
+					.controlSize(.small)
+					.buttonBorderShape(.capsule)
+
+					Button(action: clearQueriedApps) {
+						Image(systemName: "xmark")
+							.font(.system(size: 11, weight: .regular))
+							.padding(.horizontal, -5)
+							.padding(.vertical, 2)
+					}
+					.padding(1)
+					.buttonStyle(.glass)
+					.controlSize(.large)
+					.buttonBorderShape(.automatic)
+					.disabled(uemApps.isEmpty)
+				} else {
+					Button(action: queryAllApps) {
+						HStack(spacing: 5) {
+							CloudQueryBadgeIcon(size: 11)
+							Text("Query")
+								.font(.system(size: 12, weight: .regular))
+						}
+						.padding(.horizontal, 8)
+						.padding(.vertical, 3)
+					}
+					.nativeActionButtonStyle(.primary, controlSize: .small)
+					.buttonBorderShape(.capsule)
+
+					Button(action: clearQueriedApps) {
+						Image(systemName: "xmark")
+							.font(.system(size: 11, weight: .regular))
+							.padding(.horizontal, -5)
+							.padding(.vertical, 2)
+					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					.buttonBorderShape(.automatic)
+					.disabled(uemApps.isEmpty)
 				}
-				.nativeActionButtonStyle(.primary, controlSize: .large)
-				Button("Clear") {
-					withAnimation(.bouncy(duration: 0.3, extraBounce: 0.1)) {
-						uemApps.removeAll()
+			#else
+				Button(action: queryAllApps) {
+					HStack(spacing: 5) {
+						CloudQueryBadgeIcon(size: 11)
+						Text("Query")
+							.font(.system(size: 12, weight: .regular))
 					}
+					.padding(.horizontal, 8)
+					.padding(.vertical, 3)
+				}
+				.nativeActionButtonStyle(.primary, controlSize: .small)
+				.buttonBorderShape(.capsule)
+
+				Button(action: clearQueriedApps) {
+					Image(systemName: "xmark")
+						.font(.system(size: 11, weight: .regular))
+						.padding(.horizontal, -5)
+						.padding(.vertical, 2)
 				}
 				.nativeActionButtonStyle(.secondary, controlSize: .large)
+				.buttonBorderShape(.automatic)
 				.disabled(uemApps.isEmpty)
+			#endif
+		}
+	}
+
+	@ViewBuilder
+	private func buttonsView() -> some View {
+		ActionButtonsAvailabilityAdapter(
+			primaryTitle: "Query",
+			secondaryTitle: "Clear",
+			isEnabled: true,
+			externalExpandTrigger: expandActionsTrigger,
+			onPrimary: {
+				queryAllApps()
+			},
+			onSecondary: {
+				clearQueriedApps()
+			}
+		)
+	}
+
+	private func queryAllApps() {
+		Task { @MainActor in
+			isQueryingUem = true
+			let apps: [UemApplication] = await UEMService.instance
+				.getAllApps().compactMap { $0 }
+			withAnimation(.bouncy(duration: 0.35, extraBounce: 0.12)) {
+				uemApps = apps
+				selectedAppKeys.removeAll()
+				selectedApp = nil
+				isQueryingUem = false
 			}
 		}
+	}
+
+	private func clearQueriedApps() {
+		withAnimation(.bouncy(duration: 0.3, extraBounce: 0.1)) {
+			uemApps.removeAll()
+		}
+	}
 
 	@ViewBuilder
 	private func appsListSection() -> some View {
@@ -275,22 +367,39 @@ struct UpdatesView: View {
 		} else if uemApps.count > 0 {
 			ZStack(alignment: .bottom) {
 				ScrollView {
-					let updates: [UemApplication] = uemApps.filter { ($0.hasUpdate ?? false) }
-					let displayedApps: [UemApplication] = showAllUemApps ? uemApps : updates
-					FlowLayout(spacing: 6, rowSpacing: 6, rowAlignment: .center) {
-						ForEach(Array(displayedApps.enumerated()), id: \.element.id) { index, app in
+					let updates: [UemApplication] = uemApps.filter {
+						($0.hasUpdate ?? false)
+					}
+					let displayedApps: [UemApplication] =
+						showAllUemApps ? uemApps : updates
+					FlowLayout(spacing: 6, rowSpacing: 6, rowAlignment: .center)
+					{
+						ForEach(
+							Array(displayedApps.enumerated()),
+							id: \.element.id
+						) { index, app in
 							let hasUpdate: Bool = app.hasUpdate ?? false
 							AnimatedAppCard(
 								app: app,
 								delay: Double(index) * 0.04,
-								isSelected: selectedAppKeys.contains(appKey(app)),
-								onToggleSelect: hasUpdate ? { toggleSelection(for: app) } : nil,
-								onDetails: hasUpdate ? { selectedApp = app } : nil
+								isSelected: selectedAppKeys.contains(
+									appKey(app)
+								),
+								onToggleSelect: hasUpdate
+									? { toggleSelection(for: app) } : nil,
+								onDetails: hasUpdate
+									? { selectedApp = app } : nil,
+								onAddToQueue: hasUpdate
+									? { addToQueue(app) } : nil
 							)
 							.transition(
 								.asymmetric(
-									insertion: .move(edge: .top).combined(with: .opacity),
-									removal: .scale(scale: 0.9).combined(with: .opacity)
+									insertion: .move(edge: .top).combined(
+										with: .opacity
+									),
+									removal: .scale(scale: 0.9).combined(
+										with: .opacity
+									)
 								)
 							)
 						}
@@ -306,15 +415,15 @@ struct UpdatesView: View {
 				.scrollContentBackground(.hidden)
 				.background(Color.clear)
 
-						if !selectedAppKeys.isEmpty {
-							Button("Add Selected (\(selectedAppKeys.count))") {
-								addSelectedToQueue()
-							}
-							.nativeActionButtonStyle(.primary, controlSize: .large)
-							.padding(.trailing, 20)
-							.padding(.bottom, 16)
-							.glassCompatShadow(context: glassState, elevation: .card)
+				if !selectedAppKeys.isEmpty {
+					Button("Add Selected (\(selectedAppKeys.count))") {
+						addSelectedToQueue()
 					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					.padding(.trailing, 20)
+					.padding(.bottom, 16)
+					.glassCompatShadow(context: glassState, elevation: .card)
+				}
 			}
 			.background(Color.clear)
 			.frame(maxHeight: 500)
@@ -324,7 +433,8 @@ struct UpdatesView: View {
 	}
 
 	@ViewBuilder
-	private func updatesHeaderRow(displayedApps: [UemApplication]) -> some View {
+	private func updatesHeaderRow(displayedApps: [UemApplication]) -> some View
+	{
 		HStack(alignment: .center, spacing: 8) {
 			updatesHeaderTitle(displayedApps: displayedApps)
 			Spacer(minLength: 1)
@@ -350,11 +460,23 @@ struct UpdatesView: View {
 					trailing: 5
 				)
 			)
+			Button {
+				selectAllUpdatableApps(from: displayedApps)
+			} label: {
+				Image(systemName: "checkmark.rectangle.stack")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -3)
+					.padding(.vertical, 2)
+			}
+			.nativeActionButtonStyle(.secondary, controlSize: .large)
+			.disabled(!displayedApps.contains(where: { $0.hasUpdate ?? false }))
 		}
 	}
 
 	@ViewBuilder
-	private func updatesHeaderTitle(displayedApps: [UemApplication]) -> some View {
+	private func updatesHeaderTitle(displayedApps: [UemApplication])
+		-> some View
+	{
 		HStack(spacing: 8) {
 			JuiceTypography.sectionTitle(
 				showAllUemApps
@@ -386,26 +508,26 @@ struct UpdatesView: View {
 
 	@ViewBuilder
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
-			InspectorUpdatesQueuePanelView(
-				tab: $rightTab,
-				notice: $queueNotice,
-				queueItems: $queueItems,
-				resultsItems: $resultsItems,
-				selectedAppKeys: $selectedAppKeys,
-				panelMinHeight: panelMinHeight,
-				onPrimaryAction: {
-					confirmationMode = .upload
-					confirmationVisible = true
-				},
-				onSecondaryAction: {
-					confirmationMode = .download
-					confirmationVisible = true
-				},
-				onQueueItemsRemoved: { removedItems in
-					restoreQueueItemsToUpdates(removedItems)
-				}
-			)
-		}
+		InspectorUpdatesQueuePanelView(
+			tab: $rightTab,
+			notice: $queueNotice,
+			queueItems: $queueItems,
+			resultsItems: $resultsItems,
+			selectedAppKeys: $selectedAppKeys,
+			panelMinHeight: panelMinHeight,
+			onPrimaryAction: {
+				confirmationMode = .upload
+				confirmationVisible = true
+			},
+			onSecondaryAction: {
+				confirmationMode = .download
+				confirmationVisible = true
+			},
+			onQueueItemsRemoved: { removedItems in
+				restoreQueueItemsToUpdates(removedItems)
+			}
+		)
+	}
 
 	@ViewBuilder
 	private func downloadPanelView(panelMinHeight: CGFloat) -> some View {
@@ -471,6 +593,23 @@ struct UpdatesView: View {
 }
 
 extension UpdatesView {
+	fileprivate func selectAllUpdatableApps(
+		from displayedApps: [UemApplication]
+	) {
+		let updatableKeys =
+			displayedApps
+			.filter { $0.hasUpdate ?? false }
+			.map(appKey)
+		guard !updatableKeys.isEmpty else { return }
+		let updatableSet = Set(updatableKeys)
+		let allAlreadySelected = updatableSet.isSubset(of: selectedAppKeys)
+		if allAlreadySelected {
+			selectedAppKeys.subtract(updatableSet)
+		} else {
+			selectedAppKeys.formUnion(updatableSet)
+		}
+	}
+
 	fileprivate func toggleSelection(for app: UemApplication) {
 		guard app.hasUpdate ?? false else { return }
 		let key = appKey(app)
@@ -481,21 +620,31 @@ extension UpdatesView {
 		}
 	}
 
-		fileprivate func addToQueue(_ app: UemApplication, showNotice: Bool = true)
-		{
-			guard app.hasUpdate ?? false else { return }
-			let key = appKey(app)
+fileprivate func addToQueue(
+	_ app: UemApplication,
+	showNotice: Bool = true,
+	notifyBadge: Bool = true
+)
+	{
+		guard app.hasUpdate ?? false else { return }
+		let key = appKey(app)
 		guard !queueItems.contains(where: { $0.id == key }) else {
 			if showNotice {
 				showQueueNotice("Already in queue", isDuplicate: true)
 			}
 			return
-			}
-			queueItems.append(queueItem(from: app))
-			queuedSourceAppsByKey[key] = app
-			inspector.notifyQueueAdded()
-			uemApps.removeAll { appKey($0) == key }
-			selectedAppKeys.remove(key)
+		}
+		let wasQueueEmpty = queueItems.isEmpty
+		queueItems.append(queueItem(from: app))
+		queuedSourceAppsByKey[key] = app
+		if notifyBadge {
+			inspector.notifyQueueAdded(
+				by: 1,
+				triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
+			)
+		}
+		uemApps.removeAll { appKey($0) == key }
+		selectedAppKeys.remove(key)
 		if showNotice {
 			showQueueNotice("Added to queue", isDuplicate: false)
 		}
@@ -506,9 +655,14 @@ extension UpdatesView {
 			selectedAppKeys.contains(appKey($0)) && ($0.hasUpdate ?? false)
 		}
 		guard !selectedApps.isEmpty else { return }
+		let wasQueueEmpty = queueItems.isEmpty
 		for app in selectedApps {
-			addToQueue(app, showNotice: false)
+			addToQueue(app, showNotice: false, notifyBadge: false)
 		}
+		inspector.notifyQueueAdded(
+			by: selectedApps.count,
+			triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
+		)
 		if selectedApps.count == 1 {
 			showQueueNotice("Added to queue", isDuplicate: false)
 		} else {
@@ -519,79 +673,87 @@ extension UpdatesView {
 		}
 	}
 
-		fileprivate func removeFromQueue(_ app: UemApplication) {
-			let key = appKey(app)
-			let removedItems = queueItems.filter { $0.id == key }
-			withAnimation(.easeInOut(duration: 0.2)) {
-				queueItems.removeAll { $0.id == key }
-			}
-			restoreQueueItemsToUpdates(removedItems)
+	fileprivate func removeFromQueue(_ app: UemApplication) {
+		let key = appKey(app)
+		let removedItems = queueItems.filter { $0.id == key }
+		withAnimation(.easeInOut(duration: 0.2)) {
+			queueItems.removeAll { $0.id == key }
 		}
+		restoreQueueItemsToUpdates(removedItems)
+	}
 
-		fileprivate func restoreQueueItemsToUpdates(_ removedItems: [CaskApplication]) {
-			guard !removedItems.isEmpty else { return }
-			var restored: [UemApplication] = []
+	fileprivate func restoreQueueItemsToUpdates(
+		_ removedItems: [CaskApplication]
+	) {
+		guard !removedItems.isEmpty else { return }
+		var restored: [UemApplication] = []
 
-			for item in removedItems {
-				let key = item.id
-				guard !uemApps.contains(where: { appKey($0) == key }) else { continue }
-
-				if let source = queuedSourceAppsByKey.removeValue(forKey: key) {
-					restored.append(source)
-				} else {
-					restored.append(rebuildUemAppFromQueueItem(item, key: key))
-				}
+		for item in removedItems {
+			let key = item.id
+			guard !uemApps.contains(where: { appKey($0) == key }) else {
+				continue
 			}
 
-			guard !restored.isEmpty else { return }
-			withAnimation(.easeInOut(duration: 0.2)) {
-				uemApps.insert(contentsOf: restored, at: 0)
+			if let source = queuedSourceAppsByKey.removeValue(forKey: key) {
+				restored.append(source)
+			} else {
+				restored.append(rebuildUemAppFromQueueItem(item, key: key))
 			}
 		}
 
-		fileprivate func rebuildUemAppFromQueueItem(_ item: CaskApplication, key: String) -> UemApplication {
-			UemApplication(
-				applicationName: item.displayName,
-				bundleId: item.token,
-				appVersion: item.version,
-				actualFileVersion: item.version,
-				appType: nil,
-				status: nil,
-				platform: nil,
-				supportedModels: nil,
-				assignmentStatus: nil,
-				categoryList: nil,
-				smartGroups: nil,
-				isReimbursable: nil,
-				applicationSource: nil,
-				locationGroupId: nil,
-				rootLocationGroupName: item.desc,
-				organizationGroupUuid: nil,
-				largeIconUri: nil,
-				mediumIconUri: nil,
-				smallIconUri: nil,
-				pushMode: nil,
-				appRank: nil,
-				assignedDeviceCount: nil,
-				installedDeviceCount: nil,
-				notInstalledDeviceCount: nil,
-				autoUpdateVersion: nil,
-				enableProvisioning: nil,
-				isDependencyFile: nil,
-				contentGatewayId: nil,
-				iconFileName: nil,
-				applicationFileName: item.url,
-				metadataFileName: nil,
-				numericId: nil,
-				uuid: key,
-				isSelected: false,
-				hasUpdate: true,
-				isLatest: nil,
-				wasMatched: nil,
-				updatedApplicationGuid: nil,
-				updatedApplication: item
-			)
+		guard !restored.isEmpty else { return }
+		withAnimation(.easeInOut(duration: 0.2)) {
+			uemApps.insert(contentsOf: restored, at: 0)
 		}
+		expandActionsTrigger &+= 1
+	}
+
+	fileprivate func rebuildUemAppFromQueueItem(
+		_ item: CaskApplication,
+		key: String
+	) -> UemApplication {
+		UemApplication(
+			applicationName: item.displayName,
+			bundleId: item.token,
+			appVersion: item.version,
+			actualFileVersion: item.version,
+			appType: nil,
+			status: nil,
+			platform: nil,
+			supportedModels: nil,
+			assignmentStatus: nil,
+			categoryList: nil,
+			smartGroups: nil,
+			isReimbursable: nil,
+			applicationSource: nil,
+			locationGroupId: nil,
+			rootLocationGroupName: item.desc,
+			organizationGroupUuid: nil,
+			largeIconUri: nil,
+			mediumIconUri: nil,
+			smallIconUri: nil,
+			pushMode: nil,
+			appRank: nil,
+			assignedDeviceCount: nil,
+			installedDeviceCount: nil,
+			notInstalledDeviceCount: nil,
+			autoUpdateVersion: nil,
+			enableProvisioning: nil,
+			isDependencyFile: nil,
+			contentGatewayId: nil,
+			iconFileName: nil,
+			applicationFileName: item.url,
+			metadataFileName: nil,
+			numericId: nil,
+			uuid: key,
+			isSelected: false,
+			hasUpdate: true,
+			isLatest: nil,
+			wasMatched: nil,
+			updatedApplicationGuid: nil,
+			updatedApplication: item
+		)
+	}
 
 	fileprivate func appKey(_ app: UemApplication) -> String {
 		if let uuid = app.uuid, !uuid.isEmpty {
@@ -626,12 +788,33 @@ extension UpdatesView {
 	}
 }
 
+private struct CloudQueryBadgeIcon: View {
+	let size: CGFloat
+
+	var body: some View {
+		ZStack(alignment: .bottomTrailing) {
+			Image(systemName: "icloud")
+				.font(.system(size: size, weight: .semibold))
+
+			ZStack {
+				Circle()
+					.fill(.thinMaterial)
+					.frame(width: size * 0.7, height: size * 0.7)
+				Image(systemName: "magnifyingglass")
+					.font(.system(size: size * 0.42, weight: .semibold))
+			}
+			.offset(x: size * 0.14, y: size * 0.14)
+		}
+	}
+}
+
 private struct AnimatedAppCard: View {
 	let app: UemApplication
 	let delay: Double
 	let isSelected: Bool
 	let onToggleSelect: (() -> Void)?
 	let onDetails: (() -> Void)?
+	let onAddToQueue: (() -> Void)?
 	@State private var isVisible = false
 
 	var body: some View {
@@ -639,7 +822,8 @@ private struct AnimatedAppCard: View {
 			item: app,
 			isSelected: isSelected,
 			onToggleSelect: onToggleSelect,
-			onDetails: onDetails
+			onDetails: onDetails,
+			onAddToQueue: onAddToQueue
 		)
 		.opacity(isVisible ? 1 : 0)
 		.offset(y: isVisible ? 0 : 8)
@@ -657,14 +841,14 @@ private struct GlassSwitchToggleStyle: ToggleStyle {
 	@Environment(\.controlSize) private var controlSize
 	@Environment(\.colorScheme) private var colorScheme
 	#if os(macOS)
-	@Environment(\.controlActiveState) private var controlActiveState
+		@Environment(\.controlActiveState) private var controlActiveState
 	#endif
 
 	private var isWindowActive: Bool {
 		#if os(macOS)
-		return controlActiveState == .active
+			return controlActiveState == .active
 		#else
-		return true
+			return true
 		#endif
 	}
 
@@ -694,13 +878,20 @@ private struct GlassSwitchToggleStyle: ToggleStyle {
 			isFocused: isWindowActive,
 			isEnabled: true
 		)
-		let knobShadow = GlassThemeTokens.shadow(for: context, elevation: .small)
+		let knobShadow = GlassThemeTokens.shadow(
+			for: context,
+			elevation: .small
+		)
 
 		ZStack(alignment: .leading) {
 			track
 				.frame(width: trackSize.width, height: trackSize.height)
 			Circle()
-				.fill(GlassThemeTokens.windowBackgroundBase(for: context).opacity(isOn ? 0.98 : 0.9))
+				.fill(
+					GlassThemeTokens.windowBackgroundBase(for: context).opacity(
+						isOn ? 0.98 : 0.9
+					)
+				)
 				.frame(width: knobDiameter, height: knobDiameter)
 				.shadow(
 					color: knobShadow.color,
@@ -728,10 +919,17 @@ private struct GlassSwitchToggleStyle: ToggleStyle {
 				style: .regular,
 				context: context,
 				fillColor: GlassThemeTokens.controlBackgroundBase(for: context),
-				fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: context),
+				fillOpacity: GlassThemeTokens.panelBaseTintOpacity(
+					for: context
+				),
 				surfaceOpacity: 1
 			)
-			.glassCompatBorder(in: shape, context: context, role: .standard, lineWidth: 0.8)
+			.glassCompatBorder(
+				in: shape,
+				context: context,
+				role: .standard,
+				lineWidth: 0.8
+			)
 	}
 
 	private var trackDimensions: CGSize {
@@ -769,21 +967,277 @@ private struct GlassSwitchToggleStyle: ToggleStyle {
 	}
 }
 
+@available(macOS 26.0, iOS 16.0, *)
+private struct ActionButtonsGlass: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+	let externalExpandTrigger: Int
+
+	@State private var isClearExpanded = false
+	@State private var expandedPadding: CGFloat = 0
+	@State private var expandedOpacity: Double = 1.0
+	
+	@State private var phase: CGFloat = 0
+	
+	@Namespace private var namespace
+
+	var body: some View {
+		//GlassEffectContainer(spacing: 10) {
+			HStack(spacing: 10) {
+				Button(action: {
+					guard isEnabled else { return }
+					onPrimary()
+					expandClearIfNeeded()
+				}) {
+					HStack(spacing: 5) {
+						QueryUEMBadgeIcon(size: 11)
+						Text("Query")
+							.font(.system(size: 12, weight: .regular))
+					}
+					.padding(.horizontal, 8)
+					.padding(.vertical, 3)
+				}
+				.buttonStyle(.glassProminent)
+				.controlSize(.small)
+				.buttonBorderShape(.capsule)
+				.disabled(!isEnabled)
+				.accessibilityLabel(primaryTitle)
+				.glassEffectID("glassPrimary", in: namespace)
+
+				if isClearExpanded {
+						Button(action: {
+							onSecondary()
+							collapseExpanded()
+						}) {
+							Image(systemName: "xmark")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.liquidNoticeStyle(isVisible: isClearExpanded, phase: phase)
+						.opacity(expandedOpacity)
+						.padding(.leading, expandedPadding)
+						.buttonStyle(.glass)
+						.controlSize(.large)
+						.buttonBorderShape(.automatic)
+						.disabled(!isEnabled)
+						.accessibilityLabel(secondaryTitle)
+						.glassEffectID("glassSecondary", in: namespace)
+
+						.onAppear {
+							withAnimation(.bouncy(duration: 0.2, extraBounce: 0.28)) {
+								phase = 1
+							}
+						}
+				}
+			}
+		//}
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.onChange(of: externalExpandTrigger) { _, _ in
+			expandClearIfNeeded()
+		}
+	}
+
+	private func expandClearIfNeeded() {
+		guard !isClearExpanded else { return }
+		withAnimation(.bouncy(duration: 0.3, extraBounce: 0.08)) {
+			isClearExpanded = true
+		}
+	}
+
+	private func collapseExpanded() {
+
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.05))
+			withAnimation(.easeInOut(duration: 0.1)) {
+				phase = 2
+			}
+			try? await Task.sleep(for: .seconds(0.05))
+			withAnimation(.easeOut(duration: 0.12)) {
+				phase = 0
+				isClearExpanded = false
+			}
+		}
+
+		//		withAnimation(.bouncy(duration: 0.28, extraBounce: 0.06)) {
+		//			isClearExpanded.toggle()
+		//		}
+	}
+}
+
+private struct ActionButtonsAvailabilityAdapter: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let externalExpandTrigger: Int
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+
+	var body: some View {
+		#if os(macOS)
+			if #available(macOS 26.0, *) {
+				ActionButtonsGlass(
+					primaryTitle: primaryTitle,
+					secondaryTitle: secondaryTitle,
+					isEnabled: isEnabled,
+					onPrimary: onPrimary,
+					onSecondary: onSecondary,
+					externalExpandTrigger: externalExpandTrigger
+				)
+			} else {
+				ActionButtonsFallback(
+					primaryTitle: primaryTitle,
+					secondaryTitle: secondaryTitle,
+					isEnabled: isEnabled,
+					externalExpandTrigger: externalExpandTrigger,
+					onPrimary: onPrimary,
+					onSecondary: onSecondary
+				)
+			}
+		#else
+			ExpandingButtons_PrebigSurFallback(
+				primaryTitle: primaryTitle,
+				secondaryTitle: secondaryTitle,
+				isEnabled: isEnabled,
+				onPrimary: onPrimary,
+				onSecondary: onSecondary
+			)
+		#endif
+	}
+}
+
+private struct ActionButtonsFallback: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let externalExpandTrigger: Int
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+
+	@State private var isClearExpanded = false
+
+	var body: some View {
+		HStack(spacing: 16) {
+			Button {
+				guard isEnabled else { return }
+				onPrimary()
+				expandClearIfNeeded()
+			} label: {
+				HStack(spacing: 5) {
+					QueryUEMBadgeIcon(size: 11)
+					Text("Query")
+						.font(.system(size: 12, weight: .regular))
+				}
+				.padding(.horizontal, 8)
+				.padding(.vertical, 3)
+			}
+			.nativeActionButtonStyle(.primary, controlSize: .small)
+			.buttonBorderShape(.capsule)
+			.disabled(!isEnabled)
+			.accessibilityLabel(primaryTitle)
+
+			if isClearExpanded {
+				Button {
+					guard isEnabled else { return }
+					onSecondary()
+					collapseExpanded()
+				} label: {
+					Image(systemName: "xmark")
+						.font(.system(size: 11, weight: .regular))
+						.padding(.horizontal, -5)
+						.padding(.vertical, 2)
+				}
+				.nativeActionButtonStyle(.secondary, controlSize: .large)
+				.buttonBorderShape(.automatic)
+				.disabled(!isEnabled)
+				.accessibilityLabel(secondaryTitle)
+				.transition(.move(edge: .trailing).combined(with: .opacity))
+			}
+		}
+		.onChange(of: externalExpandTrigger) { _, _ in
+			expandClearIfNeeded()
+		}
+	}
+
+	private func collapseExpanded() {
+		withAnimation(.easeOut(duration: 0.15)) {
+			isClearExpanded = false
+		}
+	}
+
+	private func expandClearIfNeeded() {
+		guard !isClearExpanded else { return }
+		withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+			isClearExpanded = true
+		}
+	}
+}
+
+private struct QueryUEMBadgeIcon: View {
+	let size: CGFloat
+
+	var body: some View {
+		ZStack(alignment: .bottomTrailing) {
+			Image(systemName: "icloud")
+				.font(.system(size: size, weight: .semibold))
+
+			ZStack {
+				Circle()
+					.fill(.thinMaterial)
+					.frame(width: size * 0.7, height: size * 0.7)
+				Image(systemName: "magnifyingglass")
+					.font(.system(size: size * 0.42, weight: .semibold))
+			}
+			.offset(x: size * 0.14, y: size * 0.14)
+		}
+	}
+}
+
+struct LiquidNoticeModifier: ViewModifier {
+	let isVisible: Bool
+	let phase: CGFloat // 0...1 (drive with animation)
+
+	func body(content: Content) -> some View {
+		if #available(macOS 26.0, iOS 26.0, *) {
+			content
+				.scaleEffect(0.9 + (0.16 * phase))
+				.blur(radius: (1 - phase) * 6)             // unblur on appear
+				.opacity(isVisible ? (0.82 + 0.18 * phase) : 0)
+				//.glassEffect(.clear)
+		} else {
+			content
+				.scaleEffect(0.9 + (0.16 * phase))
+				.blur(radius: (1 - phase) * 4)
+				.opacity(isVisible ? (0.85 + 0.15 * phase) : 0)
+		}
+	}
+}
+
+extension View {
+	func liquidNoticeStyle(isVisible: Bool, phase: CGFloat) -> some View {
+		modifier(LiquidNoticeModifier(isVisible: isVisible, phase: phase))
+	}
+}
+
 #Preview {
 	UpdatesView(model: .sample)
 		.environmentObject(InspectorCoordinator())
 		.environmentObject(LocalCatalog())
 		.frame(width: 700, height: 400)
-			.background {
-				JuiceGradient()
-					.frame(maxWidth: .infinity)
-					.frame(height: 500)
-					.mask(
-						LinearGradient(
-							stops: JuiceBackgroundStyle.v1.legacyTopGradientMaskStops,
-							startPoint: .top,
-							endPoint: .bottom
-						)
+		.background {
+			JuiceGradient()
+				.frame(maxWidth: .infinity)
+				.frame(height: 500)
+				.mask(
+					LinearGradient(
+						stops: JuiceBackgroundStyle.v1
+							.legacyTopGradientMaskStops,
+						startPoint: .top,
+						endPoint: .bottom
+					)
 				)
 				.ignoresSafeArea(edges: .top)
 		}

@@ -90,26 +90,38 @@ struct AppDetailContent: View {
 							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
 					}
 				)
-			}
-				HStack {
-					Spacer()
-					Button("Close") {
-						if let onClose {
-							onClose()
-						} else {
-							dismiss()
-						}
-					}
-					.nativeActionButtonStyle(.secondary, controlSize: .large)
-					Button("Add to Queue") {
-						onAddToQueue?()
-						if onClose == nil {
-							dismiss()
-						}
-					}
-					.nativeActionButtonStyle(.primary, controlSize: .large)
 				}
-			.padding()
+					HStack {
+						Spacer()
+						Button {
+							if let onClose {
+								onClose()
+							} else {
+								dismiss()
+							}
+						} label: {
+							Image(systemName: "xmark")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.nativeActionButtonStyle(.secondary, controlSize: .large)
+						.buttonBorderShape(.automatic)
+						Button {
+							onAddToQueue?()
+							if onClose == nil {
+								dismiss()
+							}
+						} label: {
+							Image(systemName: "plus")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.nativeActionButtonStyle(.primary, controlSize: .large)
+						.buttonBorderShape(.automatic)
+					}
+				.padding()
 		}
 		//.padding(5)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -753,25 +765,37 @@ struct ImportAppDetailContent: View {
 							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
 					}
 				)
-			}
-				HStack {
-					Spacer()
-					Button("Close") {
-						if let onClose {
-							onClose()
-						} else {
-							dismiss()
-						}
-					}
-					.nativeActionButtonStyle(.secondary, controlSize: .large)
-					Button("Add to Queue") {
-						onAddToQueue?()
-						if onClose == nil {
-							dismiss()
-						}
-					}
-					.nativeActionButtonStyle(.primary, controlSize: .large)
 				}
+					HStack {
+						Spacer()
+						Button {
+							if let onClose {
+								onClose()
+							} else {
+								dismiss()
+							}
+						} label: {
+							Image(systemName: "xmark")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.nativeActionButtonStyle(.secondary, controlSize: .large)
+						.buttonBorderShape(.automatic)
+						Button {
+							onAddToQueue?()
+							if onClose == nil {
+								dismiss()
+							}
+						} label: {
+							Image(systemName: "plus")
+								.font(.system(size: 11, weight: .regular))
+								.padding(.horizontal, -5)
+								.padding(.vertical, 2)
+						}
+						.nativeActionButtonStyle(.primary, controlSize: .large)
+						.buttonBorderShape(.automatic)
+					}
 			.padding()
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)

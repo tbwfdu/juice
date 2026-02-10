@@ -190,6 +190,8 @@ final class InspectorCoordinator: ObservableObject {
 	@Published var content: AnyView = AnyView(EmptyView())
 	@Published var isPinned = false
 	@Published private(set) var queueAddCounter: Int = 0
+	@Published private(set) var queueAddLastIncrement: Int = 1
+	@Published private(set) var queueAddAttentionCounter: Int = 0
 
 	func show<Content: View>(_ content: Content) {
 		withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
@@ -210,8 +212,16 @@ final class InspectorCoordinator: ObservableObject {
 		}
 	}
 
-	func notifyQueueAdded() {
+	func notifyQueueAdded(
+		by count: Int = 1,
+		triggerInspectorAttention: Bool = false
+	) {
+		guard count > 0 else { return }
+		queueAddLastIncrement = count
 		queueAddCounter += 1
+		if triggerInspectorAttention {
+			queueAddAttentionCounter += 1
+		}
 	}
 }
 
@@ -352,6 +362,8 @@ struct InspectorControl: View {
 	@State private var badgeOffset: CGFloat = 6
 	@State private var badgeOpacity: Double = 0
 	@State private var badgeTask: Task<Void, Never>?
+	@State private var attentionScale: CGFloat = 1
+	@State private var attentionRotation: Double = 0
 
 	@Namespace var controls
 
@@ -397,9 +409,14 @@ struct InspectorControl: View {
 				}
 				queueAddBadge
 			}
+			.scaleEffect(attentionScale)
+			.rotationEffect(.degrees(attentionRotation))
 			.background(WindowFocusReader { focusObserver.attach($0) })
 			.onChange(of: inspector.queueAddCounter) { _, _ in
 				triggerQueueBadge()
+			}
+			.onChange(of: inspector.queueAddAttentionCounter) { _, _ in
+				triggerInspectorAttention()
 			}
 		} else {
 			// Fallback container for platforms prior to macOS 26 / iOS 26
@@ -452,22 +469,29 @@ struct InspectorControl: View {
 				}
 				queueAddBadge
 			}
+			.scaleEffect(attentionScale)
+			.rotationEffect(.degrees(attentionRotation))
 			.onChange(of: inspector.queueAddCounter) { _, _ in
 				triggerQueueBadge()
+			}
+			.onChange(of: inspector.queueAddAttentionCounter) { _, _ in
+				triggerInspectorAttention()
 			}
 		}
 	}
 
 	private var queueAddBadge: some View {
+		let badgeCount = max(1, inspector.queueAddLastIncrement)
+		let textColor: Color = colorScheme == .light ? .white : .black
 		let glassState = GlassStateContext(
 			colorScheme: colorScheme,
 			isFocused: focusObserver.isFocused
 		)
 		return Group {
 			if showQueueBadge {
-				Text("+1")
+				Text("+\(badgeCount)")
 					.font(.system(size: 12, weight: .bold))
-					.foregroundStyle(GlassThemeTokens.textPrimary(for: glassState))
+					.foregroundStyle(textColor)
 					.padding(.horizontal, 6)
 					.padding(.vertical, 2)
 					.background(
@@ -487,7 +511,7 @@ struct InspectorControl: View {
 		badgeTask?.cancel()
 		showQueueBadge = true
 		badgeScale = 0.6
-		badgeOffset = 6
+		badgeOffset = 15
 		badgeOpacity = 0
 		withAnimation(.easeOut(duration: 0.16)) {
 			badgeOpacity = 1
@@ -504,6 +528,30 @@ struct InspectorControl: View {
 		badgeTask = Task { @MainActor in
 			try? await Task.sleep(nanoseconds: 900_000_000)
 			showQueueBadge = false
+		}
+	}
+
+	private func triggerInspectorAttention() {
+		attentionScale = 1
+		attentionRotation = 0
+
+		withAnimation(.spring(response: 0.24, dampingFraction: 0.62)) {
+			attentionScale = 1.12
+			attentionRotation = -3
+		}
+
+		withAnimation(.easeInOut(duration: 0.09).delay(0.1)) {
+			attentionRotation = 3
+		}
+
+		withAnimation(.easeInOut(duration: 0.09).delay(0.19)) {
+			attentionRotation = -1.5
+		}
+
+		withAnimation(.spring(response: 0.28, dampingFraction: 0.72).delay(0.28))
+		{
+			attentionScale = 1
+			attentionRotation = 0
 		}
 	}
 
