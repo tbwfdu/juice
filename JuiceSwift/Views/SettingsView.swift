@@ -76,7 +76,7 @@ struct SettingsView: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 12) {
-			SettingsGlassPanel {
+				SettingsGlassPanel {
 				VStack(alignment: .leading, spacing: 12) {
 					VStack(alignment: .leading, spacing: 4) {
 						Text("Settings")
@@ -92,8 +92,8 @@ struct SettingsView: View {
 				}
 				.frame(maxWidth: .infinity, alignment: .topLeading)
 				.padding(.top, 14)
+				}
 			}
-		}
 		.padding(.horizontal, 14)
 		.padding(.bottom, 14)
 		.frame(
@@ -146,7 +146,7 @@ struct SettingsView: View {
 	}
 
 	private var singlePageContent: some View {
-		ScrollView {
+			ScrollView {
 			VStack(alignment: .leading, spacing: 14) {
 				if !isConfigured {
 					SettingsInfoBar(
@@ -321,10 +321,12 @@ struct SettingsView: View {
 					}
 					.padding(.top, 8)
 				}
+				}
+				.padding(.bottom, 8)
 			}
-			.padding(.bottom, 8)
+			.padding(.top, -20)
+			.panelContentScrollChrome()
 		}
-	}
 
 	private var canRemoveEnvironment: Bool {
 		draftEnvironments.count > 1
@@ -545,6 +547,8 @@ struct SettingsView: View {
 			}
 			.padding(.bottom, 8)
 		}
+		.padding(.top, -20)
+		.panelContentScrollChrome()
 		.background(Color.clear)
 	}
 
@@ -615,6 +619,8 @@ struct SettingsView: View {
 			}
 			.padding(.bottom, 8)
 		}
+		.padding(.top, -20)
+		.panelContentScrollChrome()
 		.background(Color.clear)
 	}
 
@@ -638,6 +644,8 @@ struct SettingsView: View {
 			}
 			.padding(.bottom, 8)
 		}
+		.padding(.top, -20)
+		.panelContentScrollChrome()
 		.background(Color.clear)
 	}
 

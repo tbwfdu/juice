@@ -48,4 +48,53 @@ extension LinearGradient {
 			endPoint: .bottomTrailing
 		)
 	}
+
+	static var juiceLeadingDuo: LinearGradient {
+		LinearGradient(
+			stops: [
+				.init(color: Color(hex: "#FCB900"), location: 0.0),
+				.init(color: Color(hex: "#FC642D"), location: 1.0)
+			],
+			startPoint: .topLeading,
+			endPoint: .bottomTrailing
+		)
+	}
+
+	static var navSelection: LinearGradient {
+		LinearGradient(
+			stops: [
+				.init(color: Color(hex: "#E24A1C"), location: 0.0),
+				.init(color: Color(hex: "#DC1A78"), location: 1.0)
+			],
+			startPoint: .topLeading,
+			endPoint: .bottomTrailing
+		)
+	}
+}
+
+extension RadialGradient {
+	static var navSelection: RadialGradient {
+		RadialGradient(
+			stops: [
+				.init(color: Color(hex: "#E24A1C"), location: 0.0),
+				.init(color: Color(hex: "#DC1A78"), location: 1.0)
+			],
+			center: .topLeading,
+			startRadius: 2,
+			endRadius: 26
+		)
+	}
+
+	static var navSelectionWithJuiceAccent: RadialGradient {
+		RadialGradient(
+			stops: [
+				.init(color: Color(hex: "#E24A1C"), location: 0.0),
+				.init(color: Color(hex: "#DC1A78"), location: 0.6),
+				.init(color: Color(hex: "#FF2E92"), location: 1.0)
+			],
+			center: .topLeading,
+			startRadius: 2,
+			endRadius: 26
+		)
+	}
 }

@@ -50,9 +50,9 @@ struct LandingView: View {
             HStack(spacing: 18) {
                 Text("Juice")
                     .font(
-                        .system(size: 96, weight: .bold, design: .default)
+						.system(size: 96, weight: .bold)
                     )
-                    
+					.tracking(-4.5)
                     .foregroundStyle(.primary)
                 Image("JuiceLogo")
                     .resizable()

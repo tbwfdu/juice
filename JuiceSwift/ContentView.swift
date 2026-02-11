@@ -5,9 +5,11 @@ struct ContentView: View {
     private let nonLandingBackgroundStyle = JuiceBackgroundStyle.v2
 	private let useAlternativeOverlayToolbarControls = true
 	private let navWidthRange: ClosedRange<CGFloat> = 220...420
+	private let inspectorWidthRange: ClosedRange<CGFloat> = 320...500
 
     @Environment(\.colorScheme) private var colorScheme
 	@AppStorage("juice.navigationPanelWidth") private var storedNavigationWidth: Double = 280
+	@AppStorage("juice.inspectorPanelWidth") private var storedInspectorWidth: Double = 400
     @State private var selection: NavigationItem? = .landing
     private let model = PageViewData.instance
     @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
@@ -77,10 +79,10 @@ struct ContentView: View {
 						}
 						Spacer()
 					}
-					.animation(
-						.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.24),
-						value: isNavigationPresented
-					)
+						.animation(
+							.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.18),
+							value: isNavigationPresented
+						)
 					.zIndex(99)
 
 			// Floating Inspector Control
@@ -95,10 +97,10 @@ struct ContentView: View {
 							.transition(outerControlMorphTransition)
 					}
 				}
-				.animation(
-					.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.24),
-					value: inspector.isPresented
-				)
+					.animation(
+						.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.18),
+						value: inspector.isPresented
+					)
 				.zIndex(99)
 			}
 
@@ -114,10 +116,12 @@ struct ContentView: View {
 					panelWidth: navigationWidth,
 					widthRange: navWidthRange,
 					isPresented: isNavigationPresented,
-				onWidthChange: { newWidth in
-					navigationWidth = newWidth
-					storedNavigationWidth = Double(newWidth)
-				},
+					onWidthChange: { newWidth in
+						navigationWidth = newWidth
+					},
+					onResizeEnded: { finalWidth in
+						storedNavigationWidth = Double(finalWidth)
+					},
 					onDismiss: {
 						isNavigationPresented = false
 					}
@@ -128,10 +132,14 @@ struct ContentView: View {
 					content: inspector.content,
 				hasContent: inspector.hasContent,
 				isPresented: inspector.isPresented,
-				widthRange: 400...500,
+				panelWidth: inspectorWidth,
+				widthRange: inspectorWidthRange,
 				isPinned: $inspector.isPinned,
 				onWidthChange: { newWidth in
 					inspectorWidth = newWidth
+				},
+				onResizeEnded: { finalWidth in
+					storedInspectorWidth = Double(finalWidth)
 				},
 					onDismiss: {
 						guard !inspector.isPinned else { return }
@@ -165,21 +173,16 @@ struct ContentView: View {
         })
 		.onAppear {
 			navigationWidth = clampNavigationWidth(CGFloat(storedNavigationWidth))
+			inspectorWidth = clampInspectorWidth(CGFloat(storedInspectorWidth))
 		}
-        .overlay {
-			let glassState = GlassStateContext(
-				colorScheme: colorScheme,
-				isFocused: windowFocusObserver.isFocused
-			)
-            GlassThemeTokens.windowBackgroundBase(for: glassState)
-                .opacity(windowFocusObserver.isFocused ? 0 : (colorScheme == .light ? 0.10 : 0.12))
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-        }
-	}
+		}
 
 	private func clampNavigationWidth(_ width: CGFloat) -> CGFloat {
 		max(navWidthRange.lowerBound, min(navWidthRange.upperBound, width))
+	}
+
+	private func clampInspectorWidth(_ width: CGFloat) -> CGFloat {
+		max(inspectorWidthRange.lowerBound, min(inspectorWidthRange.upperBound, width))
 	}
 
 	@ViewBuilder
@@ -201,7 +204,7 @@ struct ContentView: View {
 	private func coordinatePanelTransition(open target: PendingPanelOpen) {
 		pendingPanelOpen = target
 		panelTransitionTask?.cancel()
-		let collapseDelayNanoseconds: UInt64 = 32_000_000
+		let collapseDelayNanoseconds: UInt64 = 16_000_000
 
 		// Start collapse animation immediately for whichever panel is open.
 		isNavigationPresented = false
@@ -276,8 +279,8 @@ struct JuiceGradient: View {
 
 private func navPanelAnimation(expanding: Bool) -> Animation {
 	expanding
-		? .spring(response: 0.52, dampingFraction: 0.72)
-		: .spring(response: 0.40, dampingFraction: 0.86)
+		? .spring(response: 0.36, dampingFraction: 0.78)
+		: .spring(response: 0.28, dampingFraction: 0.9)
 }
 
 private var outerControlMorphTransition: AnyTransition {
@@ -310,21 +313,22 @@ private struct OuterControlMorphState: ViewModifier {
 
 private struct InspectorOverlayView: View {
 	@Environment(\.colorScheme) private var colorScheme
-	private let inspectorHorizontalInset: CGFloat = 8
     let content: AnyView
     let hasContent: Bool
     let isPresented: Bool
+	let panelWidth: CGFloat
     let widthRange: ClosedRange<CGFloat>
 	let isPinned: Binding<Bool>
     let onWidthChange: (CGFloat) -> Void
+	let onResizeEnded: ((CGFloat) -> Void)?
 	let onDismiss: () -> Void
-    @State private var measuredWidth: CGFloat = 0
+	@State private var resizeStartWidth: CGFloat?
+	@State private var isResizing = false
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
 		let glassState = GlassStateContext(colorScheme: colorScheme, isFocused: true)
-        let paddedWidth = measuredWidth > 0 ? (measuredWidth + (inspectorHorizontalInset * 2)) : widthRange.lowerBound
-        let clampedWidth = max(widthRange.lowerBound, min(widthRange.upperBound, paddedWidth))
+        let clampedWidth = max(widthRange.lowerBound, min(widthRange.upperBound, panelWidth))
         let hiddenOffset = clampedWidth + 40
 
 		ZStack(alignment: .topTrailing) {
@@ -338,30 +342,22 @@ private struct InspectorOverlayView: View {
 					.allowsHitTesting(true)
 			}
 
-			VStack(alignment: .leading, spacing: 0) {
-				if hasContent {
-					content
-						.background(
-							GeometryReader { proxy in
-								Color.clear
-									.preference(key: InspectorContentWidthKey.self, value: proxy.size.width)
-							}
-						)
-				} else {
-					VStack(alignment: .leading, spacing: 6) {
-						Text("Inspector")
-							.font(.system(size: 16, weight: .semibold))
-						Text("Select an item to see details.")
-							.font(.system(size: 12, weight: .medium))
-							.foregroundStyle(.secondary)
+				VStack(alignment: .leading, spacing: 0) {
+					if hasContent {
+						content
+					} else {
+						
 					}
-					.padding(.top, 6)
 				}
-			}
-			.padding(.horizontal, inspectorHorizontalInset)
-			.padding(.vertical, 20)
-			.frame(width: clampedWidth)
-			.frame(maxHeight: .infinity, alignment: .top)
+				.transaction { transaction in
+					if isResizing {
+						transaction.animation = nil
+					}
+				}
+				.padding(.horizontal, 8)
+				.padding(.vertical, 20)
+				.frame(width: clampedWidth)
+				.frame(maxHeight: .infinity, alignment: .top)
 			.background {
 				Color.clear
 					.glassCompatSurface(
@@ -391,7 +387,7 @@ private struct InspectorOverlayView: View {
 						isPinned.wrappedValue.toggle()
 					} label: {
 						Image(systemName: isPinned.wrappedValue ? "pin.fill" : "pin")
-							.font(.system(size: 14, weight: .regular))
+							.font(.system(size: 12, weight: .regular))
 							.frame(width: 28, height: 22)
 							.rotationEffect(.degrees(isPinned.wrappedValue ? 0 : 30))
 							.foregroundStyle(isPinned.wrappedValue ? Color.accentColor : .secondary)
@@ -425,40 +421,54 @@ private struct InspectorOverlayView: View {
 				.blendMode(.screen)
 				.allowsHitTesting(false)
 			)
-			.glassCompatShadow(context: glassState, elevation: .panel)
-			.padding(.top, 8)
-			.padding(.trailing, 8)
-			.padding(.bottom, 8)
+				.glassCompatShadow(context: glassState, elevation: .panel)
+				.overlay(alignment: .leading) {
+					VStack {
+						Spacer(minLength: 0)
+						Capsule(style: .continuous)
+							.fill(.secondary.opacity(0.22))
+							.frame(width: 4, height: 72)
+							.padding(.leading, 2)
+							.contentShape(Rectangle())
+							.gesture(
+								DragGesture(minimumDistance: 0, coordinateSpace: .global)
+									.onChanged { value in
+										if resizeStartWidth == nil {
+											resizeStartWidth = panelWidth
+											isResizing = true
+										}
+										let baseWidth = resizeStartWidth ?? panelWidth
+										let nextWidth = baseWidth - value.translation.width
+										let clampedNextWidth = max(widthRange.lowerBound, min(widthRange.upperBound, nextWidth))
+										onWidthChange(clampedNextWidth)
+									}
+									.onEnded { value in
+										let baseWidth = resizeStartWidth ?? panelWidth
+										let nextWidth = baseWidth - value.translation.width
+										let finalWidth = max(widthRange.lowerBound, min(widthRange.upperBound, nextWidth))
+										onWidthChange(finalWidth)
+										onResizeEnded?(finalWidth)
+										resizeStartWidth = nil
+										isResizing = false
+									}
+							)
+						Spacer(minLength: 0)
+					}
+				}
+				.padding(.top, 8)
+				.padding(.trailing, 8)
+				.padding(.bottom, 8)
+			// Composite into one layer so initial present animates panel + content together.
+			.compositingGroup()
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-			.opacity(isPresented ? 1 : 0)
-			.offset(x: isPresented ? 0 : hiddenOffset)
-			.allowsHitTesting(isPresented)
-			.animation(.easeInOut(duration: 0.25), value: isPresented)
+				.opacity(isPresented ? 1 : 0)
+				.offset(x: isPresented ? 0 : hiddenOffset)
+				.allowsHitTesting(isPresented)
+				.animation(.easeInOut(duration: 0.18), value: isPresented)
 			.onTapGesture {
-				// Consume taps inside the panel so they don't dismiss it.
-			}
+					// Consume taps inside the panel so they don't dismiss it.
+				}
 		}
-		.onPreferenceChange(InspectorContentWidthKey.self) { newWidth in
-			guard newWidth > 0 else { return }
-			if newWidth != measuredWidth {
-				measuredWidth = newWidth
-			}
-			let nextWidth = max(
-				widthRange.lowerBound,
-				min(widthRange.upperBound, newWidth + (inspectorHorizontalInset * 2))
-			)
-			onWidthChange(nextWidth)
-		}
-    }
-}
-
-private struct InspectorContentWidthKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        let next = nextValue()
-        if next > 0 {
-            value = next
-        }
     }
 }
 
@@ -468,8 +478,10 @@ private struct NavigationOverlayView: View {
 	let widthRange: ClosedRange<CGFloat>
 	let isPresented: Bool
 	let onWidthChange: (CGFloat) -> Void
+	let onResizeEnded: ((CGFloat) -> Void)?
 	let onDismiss: () -> Void
 	@State private var resizeStartWidth: CGFloat?
+	@State private var isResizing = false
 
 	var body: some View {
 		let clampedWidth = max(widthRange.lowerBound, min(widthRange.upperBound, panelWidth))
@@ -490,6 +502,11 @@ private struct NavigationOverlayView: View {
 				onCollapse: { onDismiss() },
 				panelWidth: clampedWidth
 			)
+				.transaction { transaction in
+					if isResizing {
+						transaction.animation = nil
+					}
+				}
 				.overlay(alignment: .trailing) {
 					VStack {
 						Spacer(minLength: 0)
@@ -499,18 +516,25 @@ private struct NavigationOverlayView: View {
 							.padding(.trailing, 2)
 							.contentShape(Rectangle())
 							.gesture(
-								DragGesture(minimumDistance: 0)
+								DragGesture(minimumDistance: 0, coordinateSpace: .global)
 									.onChanged { value in
 										if resizeStartWidth == nil {
-											resizeStartWidth = clampedWidth
+											resizeStartWidth = panelWidth
+											isResizing = true
 										}
-										let baseWidth = resizeStartWidth ?? clampedWidth
+										let baseWidth = resizeStartWidth ?? panelWidth
 										let nextWidth = baseWidth + value.translation.width
 										let clampedNextWidth = max(widthRange.lowerBound, min(widthRange.upperBound, nextWidth))
-										onWidthChange(round(clampedNextWidth))
+										onWidthChange(clampedNextWidth)
 									}
-									.onEnded { _ in
+									.onEnded { value in
+										let baseWidth = resizeStartWidth ?? panelWidth
+										let nextWidth = baseWidth + value.translation.width
+										let finalWidth = max(widthRange.lowerBound, min(widthRange.upperBound, nextWidth))
+										onWidthChange(finalWidth)
+										onResizeEnded?(finalWidth)
 										resizeStartWidth = nil
+										isResizing = false
 									}
 							)
 						Spacer(minLength: 0)
@@ -523,7 +547,7 @@ private struct NavigationOverlayView: View {
 					.opacity(isPresented ? 1 : 0)
 					.offset(x: isPresented ? 0 : -hiddenOffset)
 					.allowsHitTesting(isPresented)
-					.animation(.easeInOut(duration: 0.25), value: isPresented)
+					.animation(.easeInOut(duration: 0.18), value: isPresented)
 					.onTapGesture {
 						// Consume taps inside the panel so they don't dismiss it.
 					}
@@ -676,6 +700,13 @@ private struct InspectorOverlayToolbarControl: View {
 	@ObservedObject var inspector: InspectorCoordinator
 	@Binding var columnVisibility: NavigationSplitViewVisibility
 	@StateObject private var focusObserver = WindowFocusObserver()
+	@State private var showQueueBadge = false
+	@State private var badgeScale: CGFloat = 0.6
+	@State private var badgeOffset: CGFloat = 6
+	@State private var badgeOpacity: Double = 0
+	@State private var badgeTask: Task<Void, Never>?
+	@State private var attentionScale: CGFloat = 1
+	@State private var attentionRotation: Double = 0
 
 	private var glassState: GlassStateContext {
 		GlassStateContext(
@@ -687,37 +718,119 @@ private struct InspectorOverlayToolbarControl: View {
 	var body: some View {
 		let _ = columnVisibility
 		let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-		Button {
-			withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-				if inspector.isPresented {
-					inspector.hide(resetContent: false)
-				} else {
-					inspector.isPresented = true
+		return ZStack(alignment: .topTrailing) {
+			Button {
+				withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+					if inspector.isPresented {
+						inspector.hide(resetContent: false)
+					} else {
+						inspector.isPresented = true
+					}
 				}
+			} label: {
+				Image(systemName: inspector.isPresented ? "sidebar.right" : "sidebar.right")
+					.symbolVariant(inspector.isPresented ? .fill : .none)
+					.font(.system(size: 14, weight: .regular))
+					.frame(width: 28, height: 22)
+					.contentShape(shape)
 			}
-		} label: {
-			Image(systemName: inspector.isPresented ? "sidebar.right" : "sidebar.right")
-				.symbolVariant(inspector.isPresented ? .fill : .none)
-				.font(.system(size: 14, weight: .regular))
-				.frame(width: 28, height: 22)
-				.contentShape(shape)
+			.buttonStyle(.plain)
+			.background {
+				Color.clear
+					.glassCompatSurface(
+						in: shape,
+						style: .clear,
+						context: glassState,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
+						surfaceOpacity: 1
+					)
+			}
+			.clipShape(shape)
+			.glassCompatBorder(in: shape, context: glassState, role: .standard)
+			.glassCompatShadow(context: glassState, elevation: .small)
+			.background(WindowFocusReader { focusObserver.attach($0) })
+			queueAddBadge
 		}
-		.buttonStyle(.plain)
-		.background {
-			Color.clear
-				.glassCompatSurface(
-					in: shape,
-					style: .clear,
-					context: glassState,
-					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
-					fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
-					surfaceOpacity: 1
-				)
+		.scaleEffect(attentionScale)
+		.rotationEffect(.degrees(attentionRotation))
+		.onChange(of: inspector.queueAddCounter) { _, _ in
+			triggerQueueBadge()
 		}
-		.clipShape(shape)
-		.glassCompatBorder(in: shape, context: glassState, role: .standard)
-		.glassCompatShadow(context: glassState, elevation: .small)
-		.background(WindowFocusReader { focusObserver.attach($0) })
+		.onChange(of: inspector.queueAddAttentionCounter) { _, _ in
+			triggerInspectorAttention()
+		}
+	}
+
+	private var queueAddBadge: some View {
+		let badgeCount = max(1, inspector.queueAddLastIncrement)
+		let textColor: Color = colorScheme == .light ? .white : .black
+		return Group {
+			if showQueueBadge {
+				Text("+\(badgeCount)")
+					.font(.system(size: 12, weight: .bold))
+					.foregroundStyle(textColor)
+					.padding(.horizontal, 6)
+					.padding(.vertical, 2)
+					.background(
+						Capsule()
+							.fill(Color.accentColor)
+							.glassCompatShadow(context: glassState, elevation: .small)
+					)
+					.scaleEffect(badgeScale)
+					.opacity(badgeOpacity)
+					.offset(x: 4, y: badgeOffset)
+					.allowsHitTesting(false)
+			}
+		}
+	}
+
+	private func triggerQueueBadge() {
+		badgeTask?.cancel()
+		showQueueBadge = true
+		badgeScale = 0.6
+		badgeOffset = 15
+		badgeOpacity = 0
+		withAnimation(.easeOut(duration: 0.16)) {
+			badgeOpacity = 1
+			badgeScale = 1.15
+			badgeOffset = 2
+		}
+		withAnimation(.easeInOut(duration: 0.14).delay(0.16)) {
+			badgeScale = 1.0
+		}
+		withAnimation(.easeIn(duration: 0.6).delay(0.25)) {
+			badgeOpacity = 0
+			badgeOffset = -16
+		}
+		badgeTask = Task { @MainActor in
+			try? await Task.sleep(nanoseconds: 900_000_000)
+			showQueueBadge = false
+		}
+	}
+
+	private func triggerInspectorAttention() {
+		attentionScale = 1
+		attentionRotation = 0
+
+		withAnimation(.spring(response: 0.24, dampingFraction: 0.62)) {
+			attentionScale = 1.12
+			attentionRotation = -3
+		}
+
+		withAnimation(.easeInOut(duration: 0.09).delay(0.1)) {
+			attentionRotation = 3
+		}
+
+		withAnimation(.easeInOut(duration: 0.09).delay(0.19)) {
+			attentionRotation = -1.5
+		}
+
+		withAnimation(.spring(response: 0.28, dampingFraction: 0.72).delay(0.28))
+		{
+			attentionScale = 1
+			attentionRotation = 0
+		}
 	}
 }
 

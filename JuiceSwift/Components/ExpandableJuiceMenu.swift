@@ -9,9 +9,12 @@ import SwiftUI
 
 // Temporary compatibility aliases during naming migration.
 typealias ExpandableJuiceMenu_PrebigSurFallback = ExpandableJuiceMenuFallback
-typealias ExpandableJuiceMenu_AvailabilityAdapter = ExpandableJuiceMenuAvailabilityAdapter
-typealias ExpandingJuiceButtons_AvailabilityAdapter = ExpandingJuiceButtonsAvailabilityAdapter
-typealias ExpandingJuiceButtons_PrebigSurFallback = ExpandingJuiceButtonsFallback
+typealias ExpandableJuiceMenu_AvailabilityAdapter =
+	ExpandableJuiceMenuAvailabilityAdapter
+typealias ExpandingJuiceButtons_AvailabilityAdapter =
+	ExpandingJuiceButtonsAvailabilityAdapter
+typealias ExpandingJuiceButtons_PrebigSurFallback =
+	ExpandingJuiceButtonsFallback
 
 @available(macOS 26.0, *)
 struct ExpandableJuiceMenu: View {
@@ -244,9 +247,9 @@ private final class WindowClickMonitorView: NSView {
 	private func startMonitoring() {
 		stopMonitoring()
 		guard window != nil else { return }
-			monitor = NSEvent.addLocalMonitorForEvents(matching: [
-				.leftMouseUp, .rightMouseUp,
-			]) { [weak self] event in
+		monitor = NSEvent.addLocalMonitorForEvents(matching: [
+			.leftMouseUp, .rightMouseUp,
+		]) { [weak self] event in
 			guard let self else { return event }
 			guard self.isExpanded, let window = self.window,
 				event.window === window
@@ -381,7 +384,7 @@ struct ExpandingButtonsGlass: View {
 
 	var body: some View {
 		VStack {
-			Button(action: {expandActions()}) {
+			Button(action: { expandActions() }) {
 				Text("Open")
 					.font(.system(size: 12, weight: .regular))
 					.padding(.horizontal, 0)
@@ -389,7 +392,7 @@ struct ExpandingButtonsGlass: View {
 			}
 			.buttonStyle(.glassProminent)
 			.controlSize(.large)
-			
+
 			ZStack {
 				GlassEffectContainer(spacing: glassSpacing) {
 					HStack(spacing: buttonSpacing) {
@@ -420,7 +423,7 @@ struct ExpandingButtonsGlass: View {
 						}
 					}
 					.frame(width: 150, alignment: .trailing)
-					
+
 					//				HStack {
 					//					Spacer()
 					//					ZStack(alignment: .trailing) {
@@ -448,8 +451,9 @@ struct ExpandingButtonsGlass: View {
 			//				collapseExpanded()
 			//			}
 			//		)
-			
-		}}
+
+		}
+	}
 
 	private func toggleExpanded() {
 		if isExpanded {
@@ -955,39 +959,75 @@ struct ExpandingJuiceButtonsFallback: View {
 		@State private var isAllExpanded: Bool = false
 		var body: some View {
 			ZStack {
-				GlassEffectContainer(spacing: 40.0) {
-					VStack(spacing: 40.0) {
-						if isAllExpanded && isExpanded {
-							Image(systemName: "scribble.variable")
-								.frame(width: 80.0, height: 80.0)
-								.font(.system(size: 36))
-								.glassEffect()
-								.glassEffectID("pencil", in: namespace)
-						}
+				GlassEffectContainer(spacing: 5) {
+					HStack(spacing: 5.0) {
 						if isExpanded {
-							Image(systemName: "eraser.fill")
-								.frame(width: 80.0, height: 80.0)
-								.font(.system(size: 36))
-								.glassEffect()
-								.glassEffectID("eraser", in: namespace)
-						}
-						Button("Toggle") {
-							withAnimation(.bouncy) {
-								isExpanded.toggle()
-							}
-							Task { @MainActor in
-								try? await Task.sleep(for: .seconds(0.2))
+							Button(action: {
 								withAnimation(.bouncy) {
-									isAllExpanded.toggle()
+									isExpanded.toggle()
 								}
+								Task { @MainActor in
+									try? await Task.sleep(for: .seconds(0.2))
+									withAnimation(.bouncy) {
+										isAllExpanded.toggle()
+									}
+								}
+							}) {
+								Image(systemName: "scribble.variable")
+									.frame(width: 10, height: 10)
+									.padding(2)
 							}
+							.buttonStyle(.glass)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
 						}
-						.buttonStyle(.glass)
+						if isAllExpanded && isExpanded {
+							Button(action: {
+								withAnimation(.bouncy) {
+									isExpanded.toggle()
+								}
+								Task { @MainActor in
+									try? await Task.sleep(for: .seconds(0.2))
+									withAnimation(.bouncy) {
+										isAllExpanded.toggle()
+									}
+								}
+							}) {
+								Image(systemName: "eraser.fill")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.glass)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+						if !isAllExpanded && !isExpanded {
+							Button(action: {
+								withAnimation(.bouncy) {
+									isExpanded.toggle()
+								}
+								Task { @MainActor in
+									try? await Task.sleep(for: .seconds(0.2))
+									withAnimation(.bouncy) {
+										isAllExpanded.toggle()
+									}
+								}
+							}) {
+								Image(systemName: "ellipsis")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.glass)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
 					}.frame(
-						alignment: .init(horizontal: .center, vertical: .bottom)
+						alignment: .init(
+							horizontal: .trailing,
+							vertical: .bottom
+						)
 					)
 				}
-
 			}
 			.frame(width: 300, height: 300, alignment: .bottom)
 			.preferredColorScheme(.light)
@@ -1001,9 +1041,7 @@ struct ExpandingJuiceButtonsFallback: View {
 				.ignoresSafeArea()
 			)
 		}
-
 	}
-
 	return PreviewHost()
 }
 

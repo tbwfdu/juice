@@ -51,51 +51,117 @@ private func softenedDetailBadgeShadow(
 private func cardActionsButtons(
 	onDetails: (() -> Void)?,
 	onAddToQueue: (() -> Void)?
-	
+
 ) -> some View {
-//
-		if #available(macOS 26.0, *) {
-			@State var hoverGlassSpacing:CGFloat = 0
-			ZStack {
-				GlassEffectContainer(spacing: hoverGlassSpacing) {
-					HStack(spacing: 4) {
+	CardActionsMenu(
+		onDetails: onDetails,
+		onAddToQueue: onAddToQueue
+	)
+	.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+}
+
+private struct CardActionsMenu: View {
+	let onDetails: (() -> Void)?
+	let onAddToQueue: (() -> Void)?
+
+	@State private var isExpanded = false
+	@State private var isAllExpanded = false
+
+	private var actionCount: Int {
+		var count = 0
+		if onDetails != nil { count += 1 }
+		if onAddToQueue != nil { count += 1 }
+		return count
+	}
+
+	var body: some View {
+		ZStack(alignment: .topTrailing) {
+			Color.clear
+				.contentShape(Rectangle())
+				.onTapGesture {
+					collapse()
+				}
+				.allowsHitTesting(isExpanded || isAllExpanded)
+
+			if #available(macOS 26.0, *) {
+				GlassEffectContainer(spacing: 5) {
+					HStack(spacing: 5) {
+						if isExpanded {
+							if let onDetails {
+								Button(action: {
+									onDetails()
+									collapse()
+								}) {
+									Image(systemName: "magnifyingglass")
+										.frame(width: 10, height: 10)
+										.padding(2)
+								}
+								.buttonStyle(.glass)
+								.controlSize(.mini)
+								.buttonBorderShape(.circle)
+							}
+							if isAllExpanded, let onAddToQueue {
+								Button(action: {
+									onAddToQueue()
+									collapse()
+								}) {
+									Image(systemName: "plus")
+										.frame(width: 10, height: 10)
+										.padding(2)
+								}
+								.buttonStyle(.glass)
+								.controlSize(.mini)
+								.buttonBorderShape(.circle)
+							}
+						} else {
+							Button(action: {
+								expand()
+							}) {
+								Image(systemName: "ellipsis")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.glass)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+					}
+					.frame(alignment: .init(horizontal: .trailing, vertical: .bottom))
+				}
+			} else {
+				HStack(spacing: 5) {
+					if isExpanded {
 						if let onDetails {
-							Button(action: onDetails) {
+							Button(action: {
+								onDetails()
+								collapse()
+							}) {
 								Image(systemName: "magnifyingglass")
 									.frame(width: 10, height: 10)
 									.padding(2)
 							}
+							.buttonStyle(.bordered)
 							.controlSize(.mini)
 							.buttonBorderShape(.circle)
 						}
-						if let onAddToQueue {
-							Button(action: onAddToQueue) {
+						if isAllExpanded, let onAddToQueue {
+							Button(action: {
+								onAddToQueue()
+								collapse()
+							}) {
 								Image(systemName: "plus")
 									.frame(width: 10, height: 10)
 									.padding(2)
 							}
+							.buttonStyle(.bordered)
 							.controlSize(.mini)
 							.buttonBorderShape(.circle)
 						}
-					}
-				}
-			}
-		} else {
-			HStack(spacing: 4) {
-				if let onDetails {
-					Button(action: onDetails) {
-						Image(systemName: "magnifyingglass")
-							.frame(width: 10, height: 10)
-							.padding(2)
-					}
-					.buttonStyle(.bordered)
-					.controlSize(.mini)
-					.buttonBorderShape(.circle)
-				}
-				if let onAddToQueue {
-					Button(action: onAddToQueue) {
-						Button(action: {}) {
-							Image(systemName: "plus")
+					} else {
+						Button(action: {
+							expand()
+						}) {
+							Image(systemName: "ellipsis")
 								.frame(width: 10, height: 10)
 								.padding(2)
 						}
@@ -106,8 +172,35 @@ private func cardActionsButtons(
 				}
 			}
 		}
+		.frame(
+			width: isExpanded ? CGFloat(max(actionCount, 1)) * 26 + 4 : 26,
+			height: 26,
+			alignment: .trailing
+		)
+		.animation(.bouncy(duration: 0.26, extraBounce: 0.08), value: isExpanded)
 	}
-//}
+
+	private func expand() {
+		withAnimation(.bouncy(duration: 0.26, extraBounce: 0.08)) {
+			isExpanded = true
+		}
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.12))
+			guard isExpanded else { return }
+			withAnimation(.bouncy(duration: 0.24, extraBounce: 0.08)) {
+				isAllExpanded = true
+			}
+		}
+	}
+
+	private func collapse() {
+		guard isExpanded || isAllExpanded else { return }
+		withAnimation(.bouncy(duration: 0.22, extraBounce: 0.04)) {
+			isExpanded = false
+			isAllExpanded = false
+		}
+	}
+}
 
 struct AppDetailCard: View {
 	// MARK: - Inputs
@@ -143,7 +236,7 @@ struct AppDetailCard: View {
 			isFocused: true
 		)
 		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
-		return VStack(alignment: .leading, spacing: 8) {
+		return VStack(alignment: .leading, spacing: 4) {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
 					IconByFiletype(
@@ -182,7 +275,7 @@ struct AppDetailCard: View {
 						.frame(maxWidth: .infinity, alignment: .leading)
 						.clipped()
 						.font(.system(.footnote, weight: .regular))
-						.foregroundStyle(.tertiary)
+						.foregroundStyle(.primary)
 					HStack(spacing: 4) {
 						Text(item.appVersion)
 							.frame(alignment: .leading)
@@ -191,14 +284,14 @@ struct AppDetailCard: View {
 							.font(.system(.caption, weight: .medium))
 							.foregroundStyle(
 								(item.hasUpdate ?? false)
-									? .tertiary : .secondary
+									? .primary : .primary
 							)
 							.strikethrough(item.hasUpdate ?? false)
 						if item.hasUpdate ?? false {
 							Image(systemName: "arrow.forward")
 								.frame(alignment: .leading)
 								.font(.system(.caption, weight: .semibold))
-								.foregroundColor(.secondary)
+								.foregroundColor(.primary)
 							if let newVersion = item.updatedApplication?
 								.version, !newVersion.isEmpty
 							{
@@ -207,7 +300,7 @@ struct AppDetailCard: View {
 									.clipped()
 									.lineLimit(1)
 									.font(.system(.caption, weight: .semibold))
-									.foregroundStyle(.secondary)
+									.foregroundStyle(.primary)
 							}
 						}
 					}
@@ -220,39 +313,44 @@ struct AppDetailCard: View {
 				}
 				Spacer(minLength: 0)
 			}
-			FlowLayout(spacing: 6, rowSpacing: 6) {
-				if item.wasMatched ?? false {
-					if item.hasUpdate ?? false {
-						Pill("Has Update", color: .orange)
+			ScrollView(.horizontal, showsIndicators: false) {
+				LazyHStack(spacing: 6) {
+					if item.wasMatched ?? false {
+						if item.hasUpdate ?? false {
+							Pill("Has Update", color: .orange)
+						} else {
+							Pill("Up To Date", color: .green)
+								.onAppearUnlessPreview {
+									printStruct(item)
+								}
+						}
 					} else {
-						Pill("Up To Date", color: .green).onAppearUnlessPreview
-						{
-							printStruct(item)
+						if item.wasMatched == false {
+							Pill("No Matches", color: .gray)
 						}
 					}
-				} else {
-					if item.wasMatched == false {
-						Pill("No Matches", color: .gray)
+					if item.status != "Active" {
+						Pill("Inactive", color: .gray)
+					}
+
+					let installedCount = item.installedDeviceCount ?? 0
+					if installedCount == 0 {
+						Pill("Installs: \(installedCount)", color: .blue)
+					}
+					let assignedCount = item.assignedDeviceCount ?? 0
+					if assignedCount == 0 {
+						Pill("Assigned: \(assignedCount)", color: .blue)
+					}
+					let smartGroupCount = item.smartGroups?.count ?? 0
+					if smartGroupCount > 0 {
+						Pill("Smart Groups: \(smartGroupCount)", color: .blue)
 					}
 				}
-				if item.status != "Active" {
-					Pill("Inactive", color: .gray)
-				}
-
-				let installedCount = item.installedDeviceCount ?? 0
-				if installedCount == 0 {
-					Pill("Installs: \(installedCount)", color: .blue)
-				}
-				let assignedCount = item.assignedDeviceCount ?? 0
-				if assignedCount == 0 {
-					Pill("Assigned: \(assignedCount)", color: .blue)
-				}
-				let smartGroupCount = item.smartGroups?.count ?? 0
-				if smartGroupCount > 0 {
-					Pill("Smart Groups: \(smartGroupCount)", color: .blue)
-				}
+				.frame(maxWidth: .infinity, alignment: .leading)
 			}
-			Spacer(minLength: 0)
+			.frame(height: 24, alignment: .topLeading)
+			.padding(.top, -4)
+			.padding(.bottom, -4)
 		}
 	}
 
@@ -263,12 +361,7 @@ struct AppDetailCard: View {
 			isFocused: true
 		)
 		//let badgeShadow = softenedDetailBadgeShadow(for: glassState)
-		let cardBaseColor = GlassThemeTokens.controlBackgroundBase(
-			for: glassState
-		)
-		let cardFillOpacity = GlassThemeTokens.panelBaseTintOpacity(
-			for: glassState
-		)
+		let cardBaseColor: Color = colorScheme == .dark ? .black : .white
 		let hoverBorder = shape.strokeBorder(
 			LinearGradient.juice,
 			lineWidth: 1.5,
@@ -277,22 +370,49 @@ struct AppDetailCard: View {
 			LinearGradient.juice,
 			lineWidth: 2
 		)
+		let alwaysVisibleBorderColor = GlassThemeTokens.textPrimary(
+			for: glassState
+		)
+		.opacity(colorScheme == .dark ? 0.14 : 0.10)
+		let alwaysVisibleBorder = shape.strokeBorder(
+			alwaysVisibleBorderColor,
+			lineWidth: 0.7
+		)
+		let liquidBorder = shape.strokeBorder(
+			LinearGradient(
+				colors: [
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.12 : 0.085),
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.045 : 0.03),
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			),
+			lineWidth: 0.75
+		)
+		let liquidInnerHighlight = shape.inset(by: 1.2).strokeBorder(
+			GlassThemeTokens.textPrimary(for: glassState)
+				.opacity(colorScheme == .dark ? 0.05 : 0.035),
+			lineWidth: 0.55
+		)
 
 		// Container styling is centralized here so inner content stays data-focused.
 		return
 			content
+			.frame(maxHeight: .infinity, alignment: .topLeading)
 			.padding(.horizontal, 12)
 			.padding(.vertical, 14)
-			.glassCompatSurface(
-				in: shape,
-				style: .clear,
-				context: glassState,
-				fillColor: cardBaseColor,
-				fillOpacity: cardFillOpacity,
-				surfaceOpacity: 1
+			.background(shape.fill(cardBaseColor))
+			.overlay(alwaysVisibleBorder)
+			.overlay(liquidBorder)
+			.overlay(liquidInnerHighlight)
+			.shadow(
+				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+				radius: 3,
+				x: 0,
+				y: 1.5
 			)
-			.glassCompatBorder(in: shape, context: glassState, role: .standard)
-			.glassCompatShadow(context: glassState, elevation: .card)
 			.clipShape(shape)
 			.overlay(
 				Group {
@@ -303,6 +423,7 @@ struct AppDetailCard: View {
 					}
 				}
 			)
+			.compositingGroup()
 			.frame(minWidth: 250)
 			.frame(idealWidth: 275)
 			.frame(maxWidth: 400)
@@ -330,7 +451,7 @@ struct AppDetailCard: View {
 					isHovered = hovering
 				}
 			}
-			.frame(height: 150)
+			.frame(height: 110)
 			.onAppearUnlessPreview {
 
 				//			let v = ProcessInfo.processInfo.operatingSystemVersion
@@ -410,7 +531,7 @@ struct ImportAppDetailCard: View {
 			isFocused: true
 		)
 		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
-		return VStack(alignment: .leading, spacing: 8) {
+		return VStack(alignment: .leading, spacing: 4) {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
 					ImportAppIconView(item: item)
@@ -448,14 +569,14 @@ struct ImportAppDetailCard: View {
 						.clipped()
 						.lineLimit(1)
 						.font(.system(.footnote, weight: .regular))
-						.foregroundStyle(.tertiary)
+						.foregroundStyle(.primary)
 					let hasVersion = (resolvedVersion ?? "").isEmpty == false
 					let versionText =
 						hasVersion
 						? "Version \(resolvedVersion ?? "")" : "Version"
 					Text(versionText)
 						.font(.system(.caption, weight: .medium))
-						.foregroundStyle(.secondary)
+						.foregroundStyle(.primary)
 						.lineLimit(1)
 						.opacity(hasVersion ? 1 : 0)
 					LocalFileSizeInlineView(
@@ -468,24 +589,29 @@ struct ImportAppDetailCard: View {
 				}
 				Spacer(minLength: 0)
 			}
-			FlowLayout(spacing: 6, rowSpacing: 6) {
-				if item.hasMetadata {
-					Pill("Metadata", color: .green)
+			ScrollView(.horizontal, showsIndicators: false) {
+				LazyHStack(spacing: 6) {
+					if item.hasMetadata {
+						Pill("Metadata", color: .green)
+					}
+					if (item.matchingRecipeId ?? "").isEmpty == false
+						|| (item.macApplication?.matchingRecipeId ?? "").isEmpty
+							== false
+					{
+						Pill("Recipe", color: .orange)
+					}
+					if item.macApplication != nil {
+						Pill("Catalog", color: .blue)
+					} else {
+						Pill("Filesystem", color: .gray)
+					}
+					Pill(fileTypeLabel, color: .orange)
 				}
-				if (item.matchingRecipeId ?? "").isEmpty == false
-					|| (item.macApplication?.matchingRecipeId ?? "").isEmpty
-						== false
-				{
-					Pill("Recipe", color: .orange)
-				}
-				if item.macApplication != nil {
-					Pill("Catalog", color: .blue)
-				} else {
-					Pill("Filesystem", color: .gray)
-				}
-				Pill(fileTypeLabel, color: .orange)
+				.frame(maxWidth: .infinity, alignment: .leading)
 			}
-			Spacer(minLength: 0)
+			.frame(height: 24, alignment: .topLeading)
+			.padding(.top, -4)
+			.padding(.bottom, -4)
 		}
 	}
 
@@ -496,12 +622,7 @@ struct ImportAppDetailCard: View {
 			isFocused: true
 		)
 		//let badgeShadow = softenedDetailBadgeShadow(for: glassState)
-		let cardBaseColor = GlassThemeTokens.controlBackgroundBase(
-			for: glassState
-		)
-		let cardFillOpacity = GlassThemeTokens.panelBaseTintOpacity(
-			for: glassState
-		)
+		let cardBaseColor: Color = colorScheme == .dark ? .black : .white
 		let hoverBorder = shape.strokeBorder(
 			LinearGradient.juice,
 			lineWidth: 1.5
@@ -510,22 +631,49 @@ struct ImportAppDetailCard: View {
 			LinearGradient.juice,
 			lineWidth: 2
 		)
+		let alwaysVisibleBorderColor = GlassThemeTokens.textPrimary(
+			for: glassState
+		)
+		.opacity(colorScheme == .dark ? 0.14 : 0.10)
+		let alwaysVisibleBorder = shape.strokeBorder(
+			alwaysVisibleBorderColor,
+			lineWidth: 0.7
+		)
+		let liquidBorder = shape.strokeBorder(
+			LinearGradient(
+				colors: [
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.12 : 0.085),
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.045 : 0.03),
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			),
+			lineWidth: 0.75
+		)
+		let liquidInnerHighlight = shape.inset(by: 1.2).strokeBorder(
+			GlassThemeTokens.textPrimary(for: glassState)
+				.opacity(colorScheme == .dark ? 0.05 : 0.035),
+			lineWidth: 0.55
+		)
 
 		// Container styling is centralized here so inner content stays data-focused.
 		return
 			content
+			.frame(maxHeight: .infinity, alignment: .topLeading)
 			.padding(.horizontal, 12)
 			.padding(.vertical, 14)
-			.glassCompatSurface(
-				in: shape,
-				style: .clear,
-				context: glassState,
-				fillColor: cardBaseColor,
-				fillOpacity: cardFillOpacity,
-				surfaceOpacity: 1
+			.background(shape.fill(cardBaseColor))
+			.overlay(alwaysVisibleBorder)
+			.overlay(liquidBorder)
+			.overlay(liquidInnerHighlight)
+			.shadow(
+				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+				radius: 3,
+				x: 0,
+				y: 1.5
 			)
-			.glassCompatBorder(in: shape, context: glassState, role: .standard)
-			.glassCompatShadow(context: glassState, elevation: .card)
 			.clipShape(shape)
 			.overlay(
 				Group {
@@ -536,6 +684,7 @@ struct ImportAppDetailCard: View {
 					}
 				}
 			)
+			.compositingGroup()
 			.frame(minWidth: 250)
 			.frame(idealWidth: 275)
 			.frame(maxWidth: 400)
@@ -558,7 +707,7 @@ struct ImportAppDetailCard: View {
 					isHovered = hovering
 				}
 			}
-			.frame(height: 135)
+			.frame(height: 110)
 	}
 
 	private var resolvedVersion: String? {
@@ -587,7 +736,6 @@ struct ImportAppDetailCard: View {
 		}
 	}
 }
-
 
 #Preview {
 	let exampleAppItem = UemApplication(
@@ -660,15 +808,22 @@ struct ImportAppDetailCard: View {
 		updatedApplication: nil
 	)
 	let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-	ZStack {
-		if #available(macOS 26.0, iOS 26.0, *) {
-			GlassEffectContainer {
-				shape
-					.fill(Color.clear)
-					.glassEffect(.regular, in: shape)
+	VStack {
+		ZStack {
+			if #available(macOS 26.0, iOS 26.0, *) {
+				GlassEffectContainer {
+					shape
+						.fill(Color.clear)
+						.glassEffect(.regular, in: shape)
+				}
+				AppDetailCard(
+					item: exampleAppItem,
+					onDetails: {},
+					onAddToQueue: {}
+				)
 			}
-			AppDetailCard(item: exampleAppItem, onDetails: {}, onAddToQueue: {})
 		}
+
 	}
 	.frame(width: 400)
 	.background {
@@ -685,4 +840,3 @@ struct ImportAppDetailCard: View {
 			.ignoresSafeArea(edges: .top)
 	}
 }
-

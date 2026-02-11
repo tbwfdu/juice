@@ -125,8 +125,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 								action: onQueueAction,
 								bottomActions: bottomActions,
 								content: queueContent,
-								isActionDisabled: queueIsEmpty,
-								centerEmptyContent: true
+								isActionDisabled: queueIsEmpty
 							)
 							.transition(tabTransition(for: .queue))
 						} else {
@@ -137,13 +136,12 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 								action: onResultsAction,
 								bottomActions: nil,
 								content: resultsContent,
-								isActionDisabled: resultsIsEmpty,
-								centerEmptyContent: false
+								isActionDisabled: resultsIsEmpty
 							)
 							.transition(tabTransition(for: .results))
 						}
 					}
-					.animation(.easeInOut(duration: 0.18), value: tab)
+					.animation(.easeInOut(duration: 0.12), value: tab)
 				}
 			}
 
@@ -198,8 +196,6 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 			}
 			scheduleNoticeDismiss(for: newNotice)
 		}
-		// Keep a consistent panel width and ensure it hugs the right edge on resize
-		.frame(maxWidth: 400)
 		.frame(maxHeight: .infinity, alignment: .top)
 		.frame(maxWidth: .infinity, alignment: .trailing)
 	}
@@ -217,104 +213,68 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 		action: @escaping () -> Void,
 		bottomActions: AnyView?,
 		@ViewBuilder content: @escaping () -> Content,
-		isActionDisabled: Bool,
-		centerEmptyContent: Bool = false
+		isActionDisabled: Bool
 	) -> some View {
-		VStack(alignment: .leading, spacing: 12) {
-			HStack {
-				VStack(alignment: .leading, spacing: 0) {
-					Text(title)
-						.font(.title.weight(.semibold))
-					Text(countText)
-						.font(.subheadline)
-						.foregroundStyle(.secondary)
+		let titleBlock = VStack(alignment: .leading, spacing: 0) {
+			Text(title)
+				.font(.title2.weight(.semibold))
+				.lineLimit(1)
+				.minimumScaleFactor(0.85)
+				.truncationMode(.tail)
+			Text(countText)
+				.font(.subheadline)
+				.foregroundStyle(.secondary)
+				.lineLimit(1)
+				.truncationMode(.tail)
+		}
+		return VStack(alignment: .leading, spacing: 12) {
+			ViewThatFits(in: .horizontal) {
+				HStack(alignment: .top, spacing: 8) {
+					titleBlock
+					Spacer(minLength: 8)
+					headerActions(actionTitle: actionTitle, action: action, isPinned: isPinned, isActionDisabled: isActionDisabled)
 				}
-				Spacer()
-				if #available(macOS 26.0, iOS 26.0, *) {
+				VStack(alignment: .leading, spacing: 10) {
+					titleBlock
 					HStack(spacing: 8) {
-						if !actionTitle.isEmpty {
-							Button {
-								action()
-							} label: {
-								Image(
-									systemName: "trash"
-								)
-							}
-							.buttonStyle(.plain)
-							.controlSize(.large)
-							.buttonBorderShape(.circle)
-						}
-						if let isPinned {
-							Button {
-								isPinned.wrappedValue.toggle()
-							} label: {
-								Image(
-									systemName: isPinned.wrappedValue
-										? "pin.fill" : "pin"
-								)
-							}
-							.buttonStyle(.plain)
-							.controlSize(.large)
-							.buttonBorderShape(.circle)
-							.tint(
-								isPinned.wrappedValue ? .accentColor : .secondary
-							)
-							.rotationEffect(
-								.degrees(isPinned.wrappedValue ? 0 : 30)
-							)
-							.animation(
-								.easeInOut(duration: 0.18),
-								value: isPinned.wrappedValue
-							)
-							.padding(.top, 2)
-						}
-					}
-				} else {
-					HStack(spacing: 8) {
-							if !actionTitle.isEmpty {
-								Button(actionTitle, action: action)
-									.nativeActionButtonStyle(.primary, controlSize: .large)
-									.disabled(isActionDisabled)
-							}
-							if let isPinned {
-								if isPinned.wrappedValue {
-									Button(action: { isPinned.wrappedValue.toggle() }) {
-										Image(
-											systemName: "pin.fill"
-										)
-									}
-									.rotationEffect(.degrees(30))
-									.nativeActionButtonStyle(.primary, controlSize: .large)
-									.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
-								} else {
-									Button(action: { isPinned.wrappedValue.toggle() }) {
-										Image(
-											systemName: "pin"
-										)
-									}
-									.rotationEffect(.degrees(0))
-									.nativeActionButtonStyle(.secondary, controlSize: .large)
-									.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
-								}
-								}
+						Spacer(minLength: 0)
+						headerActions(actionTitle: actionTitle, action: action, isPinned: isPinned, isActionDisabled: isActionDisabled)
 					}
 				}
 			}
 			.padding(.horizontal, 5)
 			.padding(.top, 20)
+			.padding(.bottom, 0)
+			
 			ZStack(alignment: .bottomTrailing) {
-				if centerEmptyContent && isActionDisabled {
+				ScrollView {
 					content()
-						.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-						.padding(.vertical, 14)
+						//.padding(.vertical, 14)
 						.padding(.horizontal, 10)
-				} else {
-					ScrollView {
-							content()
-								.padding(.vertical, 14)
-								.padding(.horizontal, 10)
-					}
 				}
+					.safeAreaInset(edge: .top) {
+						Color.clear.frame(height: 20)
+					}
+					.safeAreaInset(edge: .bottom) {
+						Color.clear.frame(height: 20)
+					}
+					// Modern Margin Handling: Keeps scrollbars at edge while content is inset
+					.contentMargins(.bottom, bottomActions != nil ? 60 : 20, for: .scrollContent)
+					.contentMargins(.trailing, 8, for: .scrollIndicators)
+					// The Transparency-Safe Fade
+					.mask {
+					LinearGradient(
+						stops: [
+							.init(color: .clear, location: 0),
+							.init(color: .black, location: 0.022), // Top fade
+							.init(color: .black, location: 0.965), // Bottom fade start
+							.init(color: .clear, location: 1.0)   // Bottom fade end
+						],
+						startPoint: .top,
+						endPoint: .bottom
+					)
+				}
+				
 				if let bottomActions {
 					bottomActions
 						.padding(.trailing, 18)
@@ -323,8 +283,80 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 			}
 			.frame(maxHeight: .infinity)
 			.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-			// This "expands" container that holds the list items
 			.padding(-16)
+		}
+	}
+
+	@ViewBuilder
+	private func headerActions(
+		actionTitle: String,
+		action: @escaping () -> Void,
+		isPinned: Binding<Bool>?,
+		isActionDisabled: Bool
+	) -> some View {
+		if !queueIsEmpty {
+			
+			if #available(macOS 26.0, iOS 26.0, *) {
+				HStack(spacing: 8) {
+					if !actionTitle.isEmpty {
+						Button {
+							action()
+						} label: {
+							Image(systemName: "trash")
+						}
+						.buttonStyle(.plain)
+						.controlSize(.large)
+						.buttonBorderShape(.circle)
+					}
+					if let isPinned {
+						Button {
+							isPinned.wrappedValue.toggle()
+						} label: {
+							Image(systemName: isPinned.wrappedValue ? "pin.fill" : "pin")
+								.font(.system(size: 11, weight: .semibold))
+						}
+						.buttonStyle(.plain)
+						.controlSize(.large)
+						.buttonBorderShape(.circle)
+						.tint(isPinned.wrappedValue ? .accentColor : .secondary)
+						.rotationEffect(.degrees(isPinned.wrappedValue ? 0 : 30))
+						.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+						.padding(.top, 2)
+					}
+				}.padding(.top, 16)
+//					.border(.red, width: 2)
+					.fixedSize(horizontal: true, vertical: false)
+					.layoutPriority(1)
+			} else {
+				HStack(spacing: 8) {
+					if !actionTitle.isEmpty {
+						Button(actionTitle, action: action)
+							.nativeActionButtonStyle(.primary, controlSize: .large)
+							.disabled(isActionDisabled)
+					}
+					if let isPinned {
+						if isPinned.wrappedValue {
+							Button(action: { isPinned.wrappedValue.toggle() }) {
+								Image(systemName: "pin.fill")
+									.font(.system(size: 10, weight: .semibold))
+							}
+							.rotationEffect(.degrees(30))
+							.nativeActionButtonStyle(.primary, controlSize: .large)
+							.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+						} else {
+							Button(action: { isPinned.wrappedValue.toggle() }) {
+								Image(systemName: "pin")
+									.font(.system(size: 10, weight: .semibold))
+							}
+							.rotationEffect(.degrees(0))
+							.nativeActionButtonStyle(.secondary, controlSize: .large)
+							.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+						}
+					}
+				}
+				.fixedSize(horizontal: true, vertical: false)
+				.layoutPriority(1)
+			}
 		}
 	}
 
@@ -425,11 +457,11 @@ extension QueuePanelContent {
 
 private enum MacNotificationAnimation {
 	static var animation: Animation {
-		.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.28)
+		.timingCurve(0.22, 0.88, 0.3, 1.0, duration: 0.22)
 	}
 
-	static let entryStagger: Double = 0.035
-	static let exitDuration: UInt64 = 280_000_000
+	static let entryStagger: Double = 0.025
+	static let exitDuration: UInt64 = 220_000_000
 
 	static var transition: AnyTransition {
 		.asymmetric(
@@ -786,6 +818,25 @@ private struct RightPanelView_PreviewWrapper: View {
 			url: "https://example.com/Outlook.pkg",
 			version: "16.95.0"
 		),
+		CaskApplication(
+			token: "omnissa-horizon-client1",
+			fullToken: "omnissa-horizon-client1",
+			name: ["Omnissa Horizon Client1"],
+			desc: "Virtual machine client for macOS1",
+			url: "https://download31.omnissa.com/Omnissa-Horizon-Client.pkg",
+			version: "8.16.1",
+			autoUpdates: true,
+			matchingRecipeId:
+				"com.github.dataJAR-recipes.munki.Omnissa Horizon Client"
+		),
+		CaskApplication(
+			token: "microsoft-outlook3",
+			fullToken: "microsoft-outlook3",
+			name: ["Microsoft Outlook3"],
+			desc: "Email and calendar3",
+			url: "https://example.com/Outlook.pkg",
+			version: "16.95.0"
+		),
 	]
 
 	private let sampleResults: [CaskApplication] = [
@@ -838,7 +889,7 @@ private struct RightPanelView_PreviewWrapper: View {
 		}
 		.padding()
 		.background(JuiceGradient())
-		.frame(width: 420, height: 620)
+		.frame(width: 420, height: 520)
 		.task {
 			guard showsNoticeDemo, !demoTaskStarted else { return }
 			demoTaskStarted = true
@@ -1002,7 +1053,7 @@ private struct QueuePanelContentInspectorPreview: View {
 				}
 			}
 		}
-		.frame(width: 920, height: 600)
+		.frame(width: 920, height: 400)
 		.padding(10)
 	}
 }
@@ -1088,20 +1139,13 @@ struct InspectorSearchQueuePanelView: View {
 			)
 		) {
 			AnyView(
-				Group {
-					if queueItems.isEmpty {
-						EmptyQueueContentUnavailableView(message: "Search for some Apps to get started")
-							.frame(maxWidth: .infinity, minHeight: 220)
-							.padding(.bottom, 100)
-					} else {
-						LazyVStack(spacing: 8) {
-							ForEach(queueItems) { item in
-								AppDetailListItem(item: item, label: "Version")
-									.transition(.opacity.combined(with: .move(edge: .top)))
+				LazyVStack(spacing: 8) {
+					ForEach(queueItems) { item in
+						AppDetailListItem(item: item, label: "Version")
+							.transition(.opacity.combined(with: .move(edge: .top)))
 							}
-						}
-					}
 				}
+				.padding(.leading, 10)
 			)
 		} resultsContent: {
 			AnyView(LazyVStack(spacing: 8) {
@@ -1109,11 +1153,11 @@ struct InspectorSearchQueuePanelView: View {
 					AppDetailListItem(item: item, label: "Version")
 						.transition(.opacity.combined(with: .move(edge: .top)))
 				}
-			})
+			}
+			.padding(.leading, 10))
 		}
 		.frame(alignment: .leading)
 		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
 		.frame(maxWidth: .infinity, alignment: .trailing)
 		.background(Color.clear)
 	}
@@ -1135,7 +1179,7 @@ struct InspectorUpdatesQueuePanelView: View {
 		QueuePanelContent(
 			tab: $tab,
 			notice: $notice,
-			queueTitle: "Updates Queue",
+			queueTitle: "Queue",
 			resultsTitle: "Results",
 			queueCountText: "\(queueItems.count) selected",
 			resultsCountText: "\(resultsItems.count) processed",
@@ -1167,23 +1211,16 @@ struct InspectorUpdatesQueuePanelView: View {
 			)
 		) {
 			AnyView(
-				Group {
-					if queueItems.isEmpty {
-						EmptyQueueContentUnavailableView(message: "Query UEM find updates to add them here")
-							.frame(maxWidth: .infinity, minHeight: 220)
-							.padding(.bottom, 100)
-					} else {
-						LazyVStack(spacing: 8) {
-							ForEach(queueItems) { item in
-								AppDetailListItem(
-									item: item,
-									label: "New Version"
-								)
-								.transition(.opacity.combined(with: .move(edge: .top)))
-							}
-						}
+				LazyVStack(spacing: 8) {
+					ForEach(queueItems) { item in
+						AppDetailListItem(
+							item: item,
+							label: "New Version"
+						)
+						.transition(.opacity.combined(with: .move(edge: .top)))
 					}
 				}
+				.padding(.leading, 10)
 			)
 		} resultsContent: {
 			AnyView(
@@ -1196,10 +1233,10 @@ struct InspectorUpdatesQueuePanelView: View {
 						.transition(.opacity.combined(with: .move(edge: .top)))
 					}
 				}
+				.padding(.leading, 10)
 			)
 		}
 		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
 		.frame(maxWidth: .infinity, alignment: .trailing)
 	}
 }
@@ -1217,7 +1254,7 @@ struct InspectorImportQueuePanelView: View {
 	var body: some View {
 		QueuePanelContent(
 			tab: $tab,
-			queueTitle: "Applications Queue",
+			queueTitle: "Queue",
 			resultsTitle: "Results",
 			queueCountText: "\(queueItems.count) items",
 			resultsCountText: "\(resultsItems.count) completed",
@@ -1248,20 +1285,13 @@ struct InspectorImportQueuePanelView: View {
 			)
 		) {
 			AnyView(
-				Group {
-					if queueItems.isEmpty {
-						EmptyQueueContentUnavailableView(message: "Import some Apps and add them to queue to see them here")
-							.frame(maxWidth: .infinity, minHeight: 220)
-							.padding(.bottom, 100)
-					} else {
-						LazyVStack(spacing: 8) {
-							ForEach(queueItems) { item in
-								ImportAppDetailListItem(item: item, label: "Version")
-									.transition(.opacity.combined(with: .move(edge: .top)))
-							}
-						}
+				LazyVStack(spacing: 8) {
+					ForEach(queueItems) { item in
+						ImportAppDetailListItem(item: item, label: "Version")
+							.transition(.opacity.combined(with: .move(edge: .top)))
 					}
 				}
+				.padding(.leading, 10)
 			)
 		} resultsContent: {
 			AnyView(
@@ -1271,10 +1301,10 @@ struct InspectorImportQueuePanelView: View {
 							.transition(.opacity.combined(with: .move(edge: .top)))
 					}
 				}
+				.padding(.leading, 10)
 			)
 		}
 		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
 		.frame(maxWidth: .infinity, alignment: .trailing)
 	}
 }

@@ -114,7 +114,6 @@ struct DownloadQueuePanelContent: View {
 			)
 		}
 		.frame(minHeight: panelMinHeight, maxHeight: .infinity, alignment: .top)
-		.frame(width: 400, alignment: .center)
 		.frame(maxWidth: .infinity, alignment: .trailing)
 		.onAppearUnlessPreview {
 			model.startIfNeeded()

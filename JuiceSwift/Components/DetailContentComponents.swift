@@ -28,11 +28,11 @@ struct AppDetailContent: View {
 	// MARK: - Body
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 20) {
+		VStack(alignment: .leading, spacing: 14) {
 			ZStack(alignment: .top) {
 				// Scroll content sits below a pinned header; header height is measured dynamically.
-				ScrollView {
-					VStack(alignment: .leading, spacing: 18) {
+					ScrollView {
+					VStack(alignment: .leading, spacing: 12) {
 						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
 							detailGrid(rows: overviewRows)
 						}
@@ -73,16 +73,16 @@ struct AppDetailContent: View {
 							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
 					}
-					.padding(.top, headerHeight + 4)
-				}
-				.contentMargins(.top, headerHeight + 4, for: .scrollIndicators)
-				.contentMargins(.all, 10, for: .scrollContent)
+						.padding(.top, headerHeight + 2)
+					}
+					.panelContentScrollChrome(topInset: 0, bottomContentInset: 20)
+					.contentMargins(.top, headerHeight + 2, for: .scrollIndicators)
+					.contentMargins(.horizontal, 0, for: .scrollContent)
 				.frame(maxHeight: .infinity, alignment: .top)
 				.layoutPriority(1)
 
 				VStack(spacing: 0) {
 					header
-					Divider()
 				}
 				.background(
 					GeometryReader { proxy in
@@ -121,13 +121,17 @@ struct AppDetailContent: View {
 						.nativeActionButtonStyle(.primary, controlSize: .large)
 						.buttonBorderShape(.automatic)
 					}
-				.padding()
-		}
+					.padding(.horizontal, 12)
+					.padding(.top, 4)
+					.padding(.bottom, 12)
+			}
+		.padding(.top, 24)
 		//.padding(5)
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+		.clipped()
 		//.border(Color(.red), width: 1)
 		.background(WindowFocusReader { focusObserver.attach($0) })
-		.frame(minWidth: 400, minHeight: 520)
+			.frame(minHeight: 420, alignment: .top)
 		//.border(Color(.blue), width: 1)
 		.background(Color.clear)
 		.presentationBackground(.clear)
@@ -146,18 +150,20 @@ struct AppDetailContent: View {
 							.fill(Color.clear)
 							.glassEffect(.regular, in: shape)
 					}
-					HStack(alignment: .top, spacing: 4) {
+					HStack(alignment: .top, spacing: 8) {
 						IconByFiletype(applicationFileName: item.applicationFileName)
-						VStack(alignment: .leading, spacing: 6) {
+						VStack(alignment: .leading, spacing: 4) {
 							Text(item.applicationName)
-								.font(.title2.weight(.semibold))
+								.font(.system(.callout, weight: .semibold))
 								.foregroundStyle(.primary)
+								.lineLimit(2)
+								.minimumScaleFactor(0.85)
 							
 							Text(item.rootLocationGroupName ?? "Unknown location group")
-								.font(.system(size: 13, weight: .medium))
+								.font(.footnote.weight(.regular))
 								.foregroundStyle(.secondary)
 							
-							FlowLayout(spacing: 8, rowSpacing: 8) {
+							FlowLayout(spacing: 6, rowSpacing: 6) {
 								if item.hasUpdate ?? false {
 									Pill("Has Update", color: .orange)
 								}
@@ -173,47 +179,51 @@ struct AppDetailContent: View {
 							}
 						}
 						Spacer()
-						VStack(alignment: .trailing, spacing: 2) {
+						VStack(alignment: .trailing, spacing: 1) {
 							Text("Current Version")
-								.font(.subheadline.weight(.medium))
+								.font(.caption.weight(.medium))
 								.foregroundStyle(.secondary)
-								.padding(.top, 6)
+								.padding(.top, 2)
 							Text(item.appVersion)
-								.font(.subheadline.weight(.regular)).lineLimit(1)
+								.font(.footnote.weight(.regular))
+								.lineLimit(1)
 								.foregroundStyle(.secondary)
 							if let newVersion = item.updatedApplication?.version,
 							   !newVersion.isEmpty
 							{
 							  Text("Latest Version")
-								  .font(.subheadline.weight(.medium))
+								  .font(.caption.weight(.medium))
 								  .foregroundStyle(.secondary)
 							  Text(newVersion)
 								  .foregroundStyle(.secondary)
-								  .font(.subheadline.weight(.semibold)).lineLimit(1)
-								  .frame(maxWidth: 120, alignment: .trailing)
+								  .font(.footnote.weight(.semibold))
+								  .lineLimit(1)
+								  .frame(maxWidth: 110, alignment: .trailing)
 							}
 						}
 					}
-					.padding(20)
+				.padding(12)
 				}
 				.overlay(shape.strokeBorder(.white.opacity(0.15)))
 				.clipShape(shape)
-				.frame(maxHeight: 120)
+				.frame(maxHeight: 100)
 			} else {
 				// Fallback: mimic the glass look with a rounded background material
 				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
-				HStack(alignment: .top, spacing: 4) {
+				HStack(alignment: .top, spacing: 8) {
 					IconByFiletype(applicationFileName: item.applicationFileName)
-					VStack(alignment: .leading, spacing: 6) {
+					VStack(alignment: .leading, spacing: 4) {
 						Text(item.applicationName)
-							.font(.title2.weight(.semibold))
+							.font(.system(.callout, weight: .semibold))
 							.foregroundStyle(.primary)
+							.lineLimit(2)
+							.minimumScaleFactor(0.85)
 						
 						Text(item.rootLocationGroupName ?? "Unknown location group")
-							.font(.system(size: 13, weight: .medium))
+							.font(.footnote.weight(.regular))
 							.foregroundStyle(.secondary)
 						
-						FlowLayout(spacing: 8, rowSpacing: 8) {
+						FlowLayout(spacing: 6, rowSpacing: 6) {
 							if item.hasUpdate ?? false {
 								Pill("Has Update", color: .orange)
 							}
@@ -229,28 +239,30 @@ struct AppDetailContent: View {
 						}
 					}
 					Spacer()
-					VStack(alignment: .trailing, spacing: 2) {
+					VStack(alignment: .trailing, spacing: 1) {
 						Text("Current Version")
-							.font(.subheadline.weight(.medium))
+							.font(.caption.weight(.medium))
 							.foregroundStyle(.secondary)
-							.padding(.top, 6)
+							.padding(.top, 2)
 						Text(item.appVersion)
-							.font(.subheadline.weight(.regular)).lineLimit(1)
+							.font(.footnote.weight(.regular))
+							.lineLimit(1)
 							.foregroundStyle(.secondary)
 						if let newVersion = item.updatedApplication?.version,
 						   !newVersion.isEmpty
 						{
 						  Text("Latest Version")
-							  .font(.subheadline.weight(.medium))
+							  .font(.caption.weight(.medium))
 							  .foregroundStyle(.secondary)
 						  Text(newVersion)
 							  .foregroundStyle(.secondary)
-							  .font(.subheadline.weight(.semibold)).lineLimit(1)
-							  .frame(maxWidth: 120, alignment: .trailing)
+							  .font(.footnote.weight(.semibold))
+							  .lineLimit(1)
+							  .frame(maxWidth: 110, alignment: .trailing)
 						}
 					}
 				}
-				.padding(10)
+				.padding(12)
 				.background(
 					shape
 						.fill(.ultraThinMaterial)
@@ -291,12 +303,12 @@ struct AppDetailContent: View {
 				value: item.organizationGroupUuid ?? "Not available"
 			),
 			DetailContentRow(label: "App File", value: item.applicationFileName),
-			DetailContentRow(label: "File Size") {
-				RemoteFileSizeValueView(
-					urlString: item.updatedApplication?.url,
-					font: .callout.weight(.medium)
-				)
-			},
+				DetailContentRow(label: "File Size") {
+					RemoteFileSizeValueView(
+						urlString: item.updatedApplication?.url,
+						font: .footnote.weight(.medium)
+					)
+				},
 			DetailContentRow(
 				label: "Metadata File",
 				value: item.metadataFileName ?? "Not available"
@@ -347,13 +359,13 @@ struct AppDetailContent: View {
 			ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
 				HStack(alignment: .top, spacing: 10) {
 					Text(row.label)
-						.font(.callout.weight(.medium))
+						.font(.footnote.weight(.medium))
 						.foregroundStyle(.secondary)
-						.lineLimit(1)
+						.lineLimit(2)
 						.frame(
-							minWidth: 100,
-							idealWidth: 120,
-							maxWidth: 140,
+							minWidth: 64,
+							idealWidth: 78,
+							maxWidth: 96,
 							alignment: .leading
 						)
 					if let valueView = row.valueView {
@@ -361,21 +373,17 @@ struct AppDetailContent: View {
 							.frame(maxWidth: .infinity, alignment: .leading)
 					} else {
 						Text(row.value ?? "")
-							.font(.callout.weight(.medium))
+							.font(.footnote.weight(.regular))
 							.foregroundStyle(.primary)
 							.frame(maxWidth: .infinity, alignment: .leading)
-							.lineLimit(1)
+							.lineLimit(2)
 					}
 				}
-				.padding(.vertical, 6)
+				.padding(.vertical, 5)
 				.padding(.horizontal, 8)
-				.background(
-					index.isMultiple(of: 2)
-						? Color.black.opacity(0.03) : Color.clear
-				)
+				.background(Color.clear)
 			}
 		}
-		.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 	}
 
 	private func matchedCatalogRows(for app: CaskApplication) -> [DetailContentRow] {
@@ -411,12 +419,13 @@ struct AppDetailContent: View {
 			ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
 				HStack(alignment: .top, spacing: 12) {
 					Text(row.label)
-						.font(.callout.weight(.medium))
+						.font(.footnote.weight(.medium))
 						.foregroundStyle(.secondary)
+						.lineLimit(2)
 						.frame(
-							minWidth: 100,
-							idealWidth: 120,
-							maxWidth: 140,
+							minWidth: 64,
+							idealWidth: 78,
+							maxWidth: 96,
 							alignment: .leading
 						)
 
@@ -441,22 +450,18 @@ struct AppDetailContent: View {
 							.frame(maxWidth: .infinity, alignment: .leading)
 						} else {
 							Text(value)
-								.font(.callout.weight(.medium))
+								.font(.footnote.weight(.regular))
 								.foregroundStyle(.primary)
 								.lineLimit(2)
 								.frame(maxWidth: .infinity, alignment: .leading)
 						}
 					}
 				}
-				.padding(.vertical, 6)
+				.padding(.vertical, 5)
 				.padding(.horizontal, 8)
-				.background(
-					index.isMultiple(of: 2)
-						? Color.black.opacity(0.03) : Color.clear
-				)
+				.background(Color.clear)
 			}
 		}
-		.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 	}
 
 	private func matchScoreColor(score: Int) -> Color {
@@ -527,26 +532,26 @@ private struct DetailContentRow: Identifiable {
 
 private struct DetailContentDisclosureStyle: DisclosureGroupStyle {
 	func makeBody(configuration: Configuration) -> some View {
-		VStack(alignment: .leading, spacing: 6) {
+		VStack(alignment: .leading, spacing: 4) {
 			Button {
-				withAnimation(.easeInOut(duration: 0.2)) {
+				withAnimation(.easeInOut(duration: 0.14)) {
 					configuration.isExpanded.toggle()
 				}
 			} label: {
-				HStack(spacing: 10) {
+				HStack(spacing: 8) {
 					configuration.label
-						.font(.system(size: 16, weight: .bold))
+						.font(.system(size: 13, weight: .semibold))
 						.foregroundStyle(.primary)
 					Spacer()
 					Image(
 						systemName: configuration.isExpanded
 							? "chevron.down" : "chevron.right"
 					)
-					.font(.system(size: 13, weight: .semibold))
+					.font(.system(size: 11, weight: .semibold))
 					.foregroundStyle(.secondary)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
-				.padding(.vertical, 6)
+				.padding(.vertical, 4)
 				.padding(.trailing, 12)
 				.contentShape(Rectangle())
 			}
@@ -725,10 +730,10 @@ struct ImportAppDetailContent: View {
 	// MARK: - Body
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 20) {
+		VStack(alignment: .leading, spacing: 14) {
 			ZStack(alignment: .top) {
-				ScrollView {
-					VStack(alignment: .leading, spacing: 18) {
+					ScrollView {
+					VStack(alignment: .leading, spacing: 12) {
 						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
 							detailGrid(rows: overviewRows)
 						}
@@ -748,16 +753,16 @@ struct ImportAppDetailContent: View {
 							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
 					}
-					.padding(.top, headerHeight + 4)
-				}
-				.contentMargins(.top, headerHeight + 4, for: .scrollIndicators)
-				.contentMargins(.all, 10, for: .scrollContent)
+						.padding(.top, headerHeight + 2)
+					}
+					.panelContentScrollChrome(topInset: 0, bottomContentInset: 20)
+					.contentMargins(.top, headerHeight + 2, for: .scrollIndicators)
+					.contentMargins(.horizontal, 0, for: .scrollContent)
 				.frame(maxHeight: .infinity, alignment: .top)
 				.layoutPriority(1)
 
 				VStack(spacing: 0) {
 					header
-					Divider()
 				}
 				.background(
 					GeometryReader { proxy in
@@ -796,11 +801,15 @@ struct ImportAppDetailContent: View {
 						.nativeActionButtonStyle(.primary, controlSize: .large)
 						.buttonBorderShape(.automatic)
 					}
-			.padding()
+				.padding(.horizontal, 12)
+				.padding(.top, 4)
+				.padding(.bottom, 12)
 		}
-		.frame(maxWidth: .infinity, maxHeight: .infinity)
+		.padding(.top, 24)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+		.clipped()
 		.background(WindowFocusReader { focusObserver.attach($0) })
-		.frame(minWidth: 400, minHeight: 520)
+		.frame(minHeight: 420, alignment: .top)
 		.background(Color.clear)
 		.presentationBackground(.clear)
 		.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
@@ -821,14 +830,16 @@ struct ImportAppDetailContent: View {
 					HStack(alignment: .top, spacing: 8) {
 						ImportAppIconView(item: item)
 							.frame(width: 32, height: 32)
-						VStack(alignment: .leading, spacing: 6) {
+						VStack(alignment: .leading, spacing: 4) {
 							Text(item.displayTitle)
-								.font(.title2.weight(.semibold))
+								.font(.system(.callout, weight: .semibold))
 								.foregroundStyle(.primary)
+								.lineLimit(2)
+								.minimumScaleFactor(0.85)
 							Text(item.queueSubtitle)
-								.font(.system(size: 13, weight: .medium))
+								.font(.footnote.weight(.regular))
 								.foregroundStyle(.secondary)
-							FlowLayout(spacing: 8, rowSpacing: 8) {
+							FlowLayout(spacing: 6, rowSpacing: 6) {
 								if item.hasMetadata {
 									Pill("Metadata", color: .green)
 								}
@@ -841,43 +852,45 @@ struct ImportAppDetailContent: View {
 							}
 						}
 						Spacer()
-						VStack(alignment: .trailing, spacing: 2) {
+						VStack(alignment: .trailing, spacing: 1) {
 							Text("Version")
-								.font(.subheadline.weight(.medium))
+								.font(.caption.weight(.medium))
 								.foregroundStyle(.secondary)
-								.padding(.top, 6)
+								.padding(.top, 2)
 							Text(resolvedVersion ?? "Not available")
-								.font(.subheadline.weight(.regular))
+								.font(.footnote.weight(.regular))
 								.lineLimit(1)
 								.foregroundStyle(.secondary)
 							Text("File Size")
-								.font(.subheadline.weight(.medium))
+								.font(.caption.weight(.medium))
 								.foregroundStyle(.secondary)
 							LocalFileSizeValueView(
 								filePath: item.fullFilePath,
 								cachedBytes: item.cachedFileSizeBytes,
-								font: .subheadline.weight(.semibold)
+								font: .footnote.weight(.semibold)
 							)
 						}
 					}
-					.padding(20)
+					.padding(12)
 				}
 				.overlay(shape.strokeBorder(.white.opacity(0.15)))
 				.clipShape(shape)
-				.frame(maxHeight: 120)
+					.frame(maxHeight: 100)
 			} else {
 				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
 				HStack(alignment: .top, spacing: 8) {
 					ImportAppIconView(item: item)
 						.frame(width: 32, height: 32)
-					VStack(alignment: .leading, spacing: 6) {
+					VStack(alignment: .leading, spacing: 4) {
 						Text(item.displayTitle)
-							.font(.title2.weight(.semibold))
+							.font(.system(.callout, weight: .semibold))
 							.foregroundStyle(.primary)
+							.lineLimit(2)
+							.minimumScaleFactor(0.85)
 						Text(item.queueSubtitle)
-							.font(.system(size: 13, weight: .medium))
+							.font(.footnote.weight(.regular))
 							.foregroundStyle(.secondary)
-						FlowLayout(spacing: 8, rowSpacing: 8) {
+						FlowLayout(spacing: 6, rowSpacing: 6) {
 							if item.hasMetadata {
 								Pill("Metadata", color: .green)
 							}
@@ -890,26 +903,26 @@ struct ImportAppDetailContent: View {
 						}
 					}
 					Spacer()
-					VStack(alignment: .trailing, spacing: 2) {
+					VStack(alignment: .trailing, spacing: 1) {
 						Text("Version")
-							.font(.subheadline.weight(.medium))
+							.font(.caption.weight(.medium))
 							.foregroundStyle(.secondary)
-							.padding(.top, 6)
+							.padding(.top, 2)
 						Text(resolvedVersion ?? "Not available")
-							.font(.subheadline.weight(.regular))
+							.font(.footnote.weight(.regular))
 							.lineLimit(1)
 							.foregroundStyle(.secondary)
 						Text("File Size")
-							.font(.subheadline.weight(.medium))
+							.font(.caption.weight(.medium))
 							.foregroundStyle(.secondary)
 						LocalFileSizeValueView(
 							filePath: item.fullFilePath,
 							cachedBytes: item.cachedFileSizeBytes,
-							font: .subheadline.weight(.semibold)
+							font: .footnote.weight(.semibold)
 						)
 					}
 				}
-				.padding(10)
+				.padding(12)
 				.background(
 					shape
 						.fill(.ultraThinMaterial)
@@ -926,13 +939,13 @@ struct ImportAppDetailContent: View {
 			DetailContentRow(label: "File Name", value: item.fileName),
 			DetailContentRow(label: "File Extension", value: item.fileExtension),
 			DetailContentRow(label: "Full Path", value: item.fullFilePath),
-			DetailContentRow(label: "File Size") {
-				LocalFileSizeValueView(
-					filePath: item.fullFilePath,
-					cachedBytes: item.cachedFileSizeBytes,
-					font: .callout.weight(.medium)
-				)
-			},
+				DetailContentRow(label: "File Size") {
+					LocalFileSizeValueView(
+						filePath: item.fullFilePath,
+						cachedBytes: item.cachedFileSizeBytes,
+						font: .footnote.weight(.medium)
+					)
+				},
 			DetailContentRow(label: "Type", value: fileTypeLabel),
 			DetailContentRow(label: "Metadata Detected", value: item.hasMetadata ? "Yes" : "No"),
 			DetailContentRow(label: "Bundle ID", value: bundleIdValue),
@@ -1007,34 +1020,30 @@ struct ImportAppDetailContent: View {
 			ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
 				HStack(alignment: .top, spacing: 10) {
 					Text(row.label)
-						.font(.callout.weight(.medium))
+						.font(.footnote.weight(.medium))
 						.foregroundStyle(.secondary)
-						.lineLimit(1)
+						.lineLimit(2)
 						.frame(
-							minWidth: 100,
-							idealWidth: 120,
-							maxWidth: 140,
+							minWidth: 64,
+							idealWidth: 78,
+							maxWidth: 96,
 							alignment: .leading
 						)
 					if let valueView = row.valueView {
 						valueView
 							.frame(maxWidth: .infinity, alignment: .leading)
 					} else {
-						Text(row.value ?? "")
-							.font(.callout.weight(.medium))
-							.foregroundStyle(.primary)
-							.frame(maxWidth: .infinity, alignment: .leading)
-							.lineLimit(2)
+							Text(row.value ?? "")
+								.font(.footnote.weight(.regular))
+								.foregroundStyle(.primary)
+								.frame(maxWidth: .infinity, alignment: .leading)
+								.lineLimit(2)
 					}
 				}
-				.padding(.vertical, 6)
+				.padding(.vertical, 5)
 				.padding(.horizontal, 8)
-				.background(
-					index.isMultiple(of: 2)
-						? Color.black.opacity(0.03) : Color.clear
-				)
+				.background(Color.clear)
 			}
 		}
-		.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 	}
 }

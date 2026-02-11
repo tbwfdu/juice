@@ -14,6 +14,7 @@ struct AppDetailListItem: View {
 
 	let item: CaskApplication
 	let label: String
+	@Environment(\.colorScheme) private var colorScheme
 
 	private enum PillKey: String, CaseIterable {
 		case recipe
@@ -31,80 +32,108 @@ struct AppDetailListItem: View {
 	// MARK: - Content Layout
 
 	private var content: some View {
-		VStack{ 
-			HStack(alignment: .top, spacing: 12) {
+		VStack(alignment: .leading, spacing: 4) {
+			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .bottomLeading) {
 					IconByFiletype(applicationFileName: item.iconSource)
 				}
-				VStack(alignment: .leading, spacing: 0) {
+				VStack(alignment: .leading, spacing: 2) {
 					Text(item.displayName)
-						.font(.title3.weight(.semibold))
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.font(.system(.callout, weight: .semibold))
 						.lineLimit(1)
 					Text(item.desc ?? "")
-						.font(.body)
-						.foregroundStyle(.secondary)
-						.lineLimit(2)
-				}
-				Spacer()
-				VStack(alignment: .listRowSeparatorTrailing, spacing: 0) {
-					Text(label)
-						.font(.subheadline.weight(.semibold))
-						.foregroundStyle(.secondary)
-						.multilineTextAlignment(.trailing)
-						.padding(.vertical, 2)
-					Text(item.version)
-						.font(.body.weight(.regular))
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.font(.system(.footnote, weight: .regular))
+						.foregroundStyle(.primary)
 						.lineLimit(1)
-						.multilineTextAlignment(.trailing)
-
-					RemoteFileSizeInlineView(
+					HStack(spacing: 4) {
+						Text(item.version)
+							.frame(alignment: .leading)
+							.clipped()
+							.lineLimit(1)
+							.font(.system(.caption, weight: .medium))
+							.foregroundStyle(.primary)
+					}
+					RemoteFileSizeInlineHorizontalView(
 						urlString: item.url,
-						label: "Size",
-						labelFont: .subheadline.weight(.semibold),
-						valueFont: .callout.weight(.regular)
+						label: "Size:",
+						labelFont: .system(size: 10, weight: .medium),
+						valueFont: .system(size: 10, weight: .medium)
 					)
 				}
-				.frame(minWidth: 80, alignment: .trailing)
-				.frame(maxWidth: 100, alignment: .trailing)
+				Spacer(minLength: 0)
 			}
-			if !pillDescriptors.isEmpty {
-				FlowLayout(spacing: 6, rowSpacing: 6) {
+			ScrollView(.horizontal, showsIndicators: false) {
+				LazyHStack(spacing: 6) {
 					ForEach(pillDescriptors) { pill in
 						Pill(pill.title, color: pill.color)
 					}
 				}
+				.frame(maxWidth: .infinity, alignment: .leading)
 			}
+			.frame(height: 24, alignment: .topLeading)
+			.padding(.top, -4)
+			.padding(.bottom, -4)
 		}
 		.padding(.horizontal, 12)
-		.padding(.vertical, 10)
+		.padding(.vertical, 14)
 	}
 
 	var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-		return Group {
-			if #available(macOS 26.0, iOS 26.0, *) {
-				GlassEffectContainer {
-					content
-						.glassEffect(.regular, in: shape)
-				}
-				.clipShape(shape)
-				.shadow(color: Color.black.opacity(0.06), radius: 2, x: 0, y: 1)
-			} else {
-				content
-					.background(.ultraThinMaterial, in: shape)
-					.overlay(
-						shape.strokeBorder(.white.opacity(0.08))
-					)
-					.clipShape(shape)
-					.shadow(
-						color: Color.black.opacity(0.06),
-						radius: 2,
-						x: 0,
-						y: 1
-					)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		let cardBaseColor: Color = colorScheme == .dark ? .black : .white
+		let alwaysVisibleBorderColor = GlassThemeTokens.textPrimary(
+			for: glassState
+		)
+		.opacity(colorScheme == .dark ? 0.14 : 0.10)
+		let alwaysVisibleBorder = shape.strokeBorder(
+			alwaysVisibleBorderColor,
+			lineWidth: 0.7
+		)
+		let liquidBorder = shape.strokeBorder(
+			LinearGradient(
+				colors: [
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.12 : 0.085),
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.045 : 0.03),
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			),
+			lineWidth: 0.75
+		)
+		let liquidInnerHighlight = shape.inset(by: 1.2).strokeBorder(
+			GlassThemeTokens.textPrimary(for: glassState)
+				.opacity(colorScheme == .dark ? 0.05 : 0.035),
+			lineWidth: 0.55
+		)
+
+		return content
+			.background(shape.fill(cardBaseColor))
+			.overlay(alwaysVisibleBorder)
+			.overlay(liquidBorder)
+			.overlay(liquidInnerHighlight)
+			.shadow(
+				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+				radius: 3,
+				x: 0,
+				y: 1.5
+			)
+			.clipShape(shape)
+			.contentShape(shape)
+			.overlay(alignment: .topTrailing) {
+				QueueRowEllipsisButton()
+					.padding(.top, 8)
+					.padding(.trailing, 8)
 			}
-		}
-		.contentShape(shape)
 	}
 
 	private struct PillDescriptor: Identifiable {
@@ -155,86 +184,123 @@ struct ImportAppDetailListItem: View {
 
 	let item: ImportedApplication
 	let label: String
+	@Environment(\.colorScheme) private var colorScheme
 
 	// MARK: - Content Layout
 
 	private var content: some View {
-		VStack {
-			HStack(alignment: .top, spacing: 12) {
+		VStack(alignment: .leading, spacing: 4) {
+			HStack(alignment: .top, spacing: 8) {
 				ImportAppIconView(item: item)
 					.frame(width: 32, height: 32)
-				VStack(alignment: .leading, spacing: 0) {
+				VStack(alignment: .leading, spacing: 2) {
 					Text(item.displayTitle)
-						.font(.title3.weight(.semibold))
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.font(.system(.callout, weight: .semibold))
 						.lineLimit(1)
-					Text(item.queueSubtitle)
-						.font(.body)
-						.foregroundStyle(.secondary)
-						.lineLimit(2)
-				}
-				Spacer()
-				VStack(alignment: .listRowSeparatorTrailing, spacing: 0) {
-					Text(label)
-						.font(.subheadline.weight(.semibold))
-						.foregroundStyle(.secondary)
-						.multilineTextAlignment(.trailing)
-						.padding(.vertical, 2)
+					Text(item.displaySubtitle)
+						.frame(maxWidth: .infinity, alignment: .leading)
+						.clipped()
+						.lineLimit(1)
+						.font(.system(.footnote, weight: .regular))
+						.foregroundStyle(.primary)
 					let hasVersion = (resolvedVersion ?? "").isEmpty == false
-					let versionText = hasVersion ? (resolvedVersion ?? "") : "Not available"
+					let versionText =
+						hasVersion
+						? "Version \(resolvedVersion ?? "")" : "Version"
 					Text(versionText)
-						.font(.body.weight(.regular))
+						.font(.system(.caption, weight: .medium))
 						.lineLimit(1)
-						.multilineTextAlignment(.trailing)
+						.foregroundStyle(.primary)
 						.opacity(hasVersion ? 1 : 0)
 					LocalFileSizeInlineView(
 						filePath: item.fullFilePath,
 						cachedBytes: item.cachedFileSizeBytes,
-						label: "Size",
-						labelFont: .subheadline.weight(.semibold),
-						valueFont: .callout.weight(.regular)
+						label: "Size:",
+						labelFont: .system(size: 10, weight: .medium),
+						valueFont: .system(size: 10, weight: .medium)
 					)
 				}
-				.frame(minWidth: 80, alignment: .trailing)
-				.frame(maxWidth: 100, alignment: .trailing)
+				Spacer(minLength: 0)
 			}
-			FlowLayout(spacing: 6, rowSpacing: 6) {
-				if item.hasMetadata {
-					Pill("Metadata", color: .green)
+			ScrollView(.horizontal, showsIndicators: false) {
+				LazyHStack(spacing: 6) {
+					if item.hasMetadata {
+						Pill("Metadata", color: .green)
+					}
+					if (item.matchingRecipeId ?? "").isEmpty == false || (item.macApplication?.matchingRecipeId ?? "").isEmpty == false {
+						Pill("Recipe", color: .orange)
+					}
+					if item.macApplication != nil {
+						Pill("Catalog", color: .blue)
+					} else {
+						Pill("Filesystem", color: .gray)
+					}
+					Pill(fileTypeLabel, color: .orange)
 				}
-				if (item.matchingRecipeId ?? "").isEmpty == false || (item.macApplication?.matchingRecipeId ?? "").isEmpty == false {
-					Pill("Recipe", color: .orange)
-				}
-				if item.macApplication != nil {
-					Pill("Catalog", color: .blue)
-				} else {
-					Pill("Filesystem", color: .gray)
-				}
-				Pill(fileTypeLabel, color: .blue)
+				.frame(maxWidth: .infinity, alignment: .leading)
 			}
+			.frame(height: 24, alignment: .topLeading)
+			.padding(.top, -4)
+			.padding(.bottom, -4)
 		}
 		.padding(.horizontal, 12)
-		.padding(.vertical, 10)
+		.padding(.vertical, 14)
 	}
 
 	var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-		return Group {
-			if #available(macOS 26.0, iOS 26.0, *) {
-				GlassEffectContainer {
-					content
-						.glassEffect(.regular, in: shape)
-				}
-				.clipShape(shape)
-				.shadow(color: Color.black.opacity(0.06), radius: 2, x: 0, y: 1)
-			} else {
-				content
-					.background(.ultraThinMaterial, in: shape)
-					.overlay(shape.strokeBorder(.white.opacity(0.08)))
-					.clipShape(shape)
-					.shadow(color: Color.black.opacity(0.06), radius: 2, x: 0, y: 1)
+		let glassState = GlassStateContext(
+			colorScheme: colorScheme,
+			isFocused: true
+		)
+		let cardBaseColor: Color = colorScheme == .dark ? .black : .white
+		let alwaysVisibleBorderColor = GlassThemeTokens.textPrimary(
+			for: glassState
+		)
+		.opacity(colorScheme == .dark ? 0.14 : 0.10)
+		let alwaysVisibleBorder = shape.strokeBorder(
+			alwaysVisibleBorderColor,
+			lineWidth: 0.7
+		)
+		let liquidBorder = shape.strokeBorder(
+			LinearGradient(
+				colors: [
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.12 : 0.085),
+					GlassThemeTokens.textPrimary(for: glassState)
+						.opacity(colorScheme == .dark ? 0.045 : 0.03),
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			),
+			lineWidth: 0.75
+		)
+		let liquidInnerHighlight = shape.inset(by: 1.2).strokeBorder(
+			GlassThemeTokens.textPrimary(for: glassState)
+				.opacity(colorScheme == .dark ? 0.05 : 0.035),
+			lineWidth: 0.55
+		)
+
+		return content
+			.background(shape.fill(cardBaseColor))
+			.overlay(alwaysVisibleBorder)
+			.overlay(liquidBorder)
+			.overlay(liquidInnerHighlight)
+			.shadow(
+				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+				radius: 3,
+				x: 0,
+				y: 1.5
+			)
+			.clipShape(shape)
+			.contentShape(shape)
+			.overlay(alignment: .topTrailing) {
+				QueueRowEllipsisButton()
+					.padding(.top, 8)
+					.padding(.trailing, 8)
 			}
-		}
-		.contentShape(shape)
 	}
 
 	private var resolvedVersion: String? {
@@ -258,6 +324,104 @@ struct ImportAppDetailListItem: View {
 		case ".dmg": return ".dmg"
 		case ".zip": return ".zip"
 		default: return "file"
+		}
+	}
+}
+
+private struct QueueRowEllipsisButton: View {
+	@State private var isExpanded = false
+	@State private var isAllExpanded = false
+
+	var body: some View {
+		Group {
+			if #available(macOS 26.0, iOS 26.0, *) {
+				HStack(spacing: 5) {
+					if isExpanded {
+						Button(action: { collapse() }) {
+							Image(systemName: "magnifyingglass")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.glass)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+
+						if isAllExpanded {
+							Button(action: { collapse() }) {
+								Image(systemName: "plus")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.glass)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+					} else {
+						Button(action: { expand() }) {
+							Image(systemName: "ellipsis")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.glass)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+					}
+				}
+			} else {
+				HStack(spacing: 5) {
+					if isExpanded {
+						Button(action: { collapse() }) {
+							Image(systemName: "magnifyingglass")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.bordered)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+
+						if isAllExpanded {
+							Button(action: { collapse() }) {
+								Image(systemName: "plus")
+									.frame(width: 10, height: 10)
+									.padding(2)
+							}
+							.buttonStyle(.bordered)
+							.controlSize(.mini)
+							.buttonBorderShape(.circle)
+						}
+					} else {
+						Button(action: { expand() }) {
+							Image(systemName: "ellipsis")
+								.frame(width: 10, height: 10)
+								.padding(2)
+						}
+						.buttonStyle(.bordered)
+						.controlSize(.mini)
+						.buttonBorderShape(.circle)
+					}
+				}
+			}
+		}
+		.frame(
+			width: isExpanded ? (isAllExpanded ? 56 : 30) : 26,
+			height: 26,
+			alignment: .trailing
+		)
+		.animation(.bouncy(duration: 0.22, extraBounce: 0.08), value: isExpanded)
+		.animation(.bouncy(duration: 0.22, extraBounce: 0.08), value: isAllExpanded)
+	}
+
+	private func expand() {
+		withAnimation(.bouncy(duration: 0.22, extraBounce: 0.08)) {
+			isExpanded = true
+			isAllExpanded = true
+		}
+	}
+
+	private func collapse() {
+		withAnimation(.bouncy(duration: 0.2, extraBounce: 0.04)) {
+			isExpanded = false
+			isAllExpanded = false
 		}
 	}
 }

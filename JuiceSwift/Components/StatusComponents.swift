@@ -11,7 +11,6 @@ import SwiftUI
 // Used by: detail cards, queue rows, and dashboard-like sections.
 
 public struct Pill: View {
-	@Environment(\.colorScheme) private var colorScheme
     private let value: String
     private let color: Color?
 
@@ -22,7 +21,6 @@ public struct Pill: View {
 
 	    public var body: some View {
 	        let shape = Capsule(style: .continuous)
-			let context = GlassStateContext(colorScheme: colorScheme, isFocused: true)
 			let tone = color ?? .accentColor
 	        Text(value)
             .foregroundStyle(tone).opacity(0.8)
@@ -30,15 +28,7 @@ public struct Pill: View {
             .padding(.vertical, 2)
             .padding(.horizontal, 6)
             .background {
-					Color.clear
-						.glassCompatSurface(
-							in: shape,
-							style: .clear,
-							context: context,
-							fillColor: tone,
-							fillOpacity: 0.16,
-							surfaceOpacity: 1
-						)
+					shape.fill(tone.opacity(0.16))
 	            }
 	            .overlay {
 	                shape.strokeBorder(tone.opacity(0.22), lineWidth: 0.8)
@@ -143,11 +133,7 @@ struct ThinkingIndicator: View {
 	let phrases: [String]
 	let iconName: String
 
-	@State private var phase = false
-	@State private var phraseIndex = 0
-	@State private var phraseTask: Task<Void, Never>?
-	@State private var bounceTask: Task<Void, Never>?
-	@State private var bounceAmount: CGFloat = 0
+	@State private var startTime = Date.timeIntervalSinceReferenceDate
 
 	init(phrases: [String], iconName: String = "sparkles") {
 		self.phrases = phrases
@@ -155,99 +141,82 @@ struct ThinkingIndicator: View {
 	}
 
 	var body: some View {
-		HStack(spacing: 10) {
-			Image(systemName: iconName)
-				.font(.system(size: 16, weight: .medium))
-				.foregroundStyle(iconGradient)
-				.scaleEffect(phase ? 1.1 : 0.95)
-				.opacity(phase ? 0.85 : 1)
-				.animation(
-					.easeInOut(duration: 0.7).repeatForever(autoreverses: true),
-					value: phase
-				)
+		TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { context in
+			let elapsed = context.date.timeIntervalSinceReferenceDate - startTime
+			let phraseDuration: TimeInterval = 2.0
+			let phraseProgress = (elapsed.truncatingRemainder(dividingBy: phraseDuration))
+				/ phraseDuration
+			let phrase = phrase(at: elapsed, phraseDuration: phraseDuration)
+			let pulse = pulseValue(elapsed: elapsed, duration: 0.7)
+			let bounce = phraseBounce(phraseProgress: phraseProgress)
 
-			HStack(spacing: 0) {
-				ForEach(Array(currentPhrase.enumerated()), id: \.offset) { index, letter in
-					Text(String(letter))
-						.font(.system(size: 13, weight: .medium))
-						.foregroundStyle(.primary)
-						.hueRotation(.degrees(phase ? 220 : 0))
-						.opacity(phase ? 0.35 : 0.8)
-						.scaleEffect(
-							(phase ? 1.12 : 1) * (1 + 0.12 * bounceAmount),
-							anchor: .bottom
+			HStack(spacing: 10) {
+				Image(systemName: iconName)
+					.font(.system(size: 16, weight: .medium))
+					.foregroundStyle(iconGradient)
+					.scaleEffect(0.95 + (0.15 * pulse))
+					.opacity(1.0 - (0.15 * pulse))
+
+				HStack(spacing: 0) {
+					ForEach(Array(phrase.enumerated()), id: \.offset) { index, letter in
+						animatedLetter(
+							index: index,
+							letter: letter,
+							elapsed: elapsed,
+							bounce: bounce
 						)
-						.offset(y: (phase ? -1 : 0) + (-4 * bounceAmount))
-						.animation(
-							.easeInOut(duration: 0.6)
-								.repeatForever(autoreverses: true)
-								.delay(Double(index) * 0.03),
-							value: phase
-						)
-						.animation(
-							.interpolatingSpring(stiffness: 160, damping: 16)
-								.delay(Double(index) * 0.05),
-							value: bounceAmount
-						)
+					}
 				}
 			}
 		}
 		.onAppearUnlessPreview {
-			phase.toggle()
-			triggerBounce()
-			startPhraseCycle()
-		}
-		.onDisappear {
-			phraseTask?.cancel()
-			phraseTask = nil
-			bounceTask?.cancel()
-			bounceTask = nil
+			startTime = Date.timeIntervalSinceReferenceDate
 		}
 	}
 
-	private var currentPhrase: String {
+	private func phrase(at elapsed: TimeInterval, phraseDuration: TimeInterval) -> String {
 		guard !phrases.isEmpty else { return "Thinking" }
-		return phrases[phraseIndex % phrases.count]
+		let index = Int(elapsed / phraseDuration) % phrases.count
+		return phrases[index]
 	}
 
 	private var iconGradient: LinearGradient {
-//		LinearGradient(
-//			colors: [
-//				Color.blue.opacity(0.55),
-//				Color.indigo.opacity(0.55)
-//			],
-//			startPoint: .topLeading,
-//			endPoint: .bottomTrailing
-//		)
 		LinearGradient.juice
 	}
 
-	private func startPhraseCycle() {
-		phraseTask?.cancel()
-		guard phrases.count > 1 else { return }
-		phraseTask = Task { @MainActor in
-			while !Task.isCancelled {
-				try? await Task.sleep(nanoseconds: 2_000_000_000)
-				withAnimation(.easeInOut(duration: 0.25)) {
-					phraseIndex = (phraseIndex + 1) % phrases.count
-				}
-				triggerBounce()
-			}
-		}
+	private func pulseValue(elapsed: TimeInterval, duration: TimeInterval) -> Double {
+		let phase = (elapsed / duration) * (.pi * 2)
+		return (sin(phase) + 1) * 0.5
 	}
 
-	private func triggerBounce() {
-		bounceTask?.cancel()
-		bounceTask = Task { @MainActor in
-			withAnimation(.easeInOut(duration: 0.2)) {
-				bounceAmount = 1
-			}
-			try? await Task.sleep(nanoseconds: 220_000_000)
-			withAnimation(.easeInOut(duration: 0.3)) {
-				bounceAmount = 0
-			}
-		}
+	private func phraseBounce(phraseProgress: Double) -> Double {
+		let peak: Double = 0.08
+		let width: Double = 0.13
+		let distance = abs(phraseProgress - peak)
+		let normalized = max(0.0, 1.0 - (distance / width))
+		return normalized * normalized
 	}
+
+	private func animatedLetter(
+		index: Int,
+		letter: Character,
+		elapsed: TimeInterval,
+		bounce: Double
+	) -> some View {
+		let stagger = Double(index) * 0.03
+		let letterPulse = pulseValue(elapsed: elapsed - stagger, duration: 0.6)
+		let scale = (1.0 + (0.12 * letterPulse)) * (1 + (0.12 * bounce))
+		let offset = (-1.0 * letterPulse) + (-4.0 * bounce)
+		let opacity = 0.8 - (0.45 * letterPulse)
+
+		return Text(String(letter))
+			.font(.system(size: 13, weight: .medium))
+			.foregroundStyle(.primary)
+			.hueRotation(.degrees(220 * letterPulse))
+			.opacity(opacity)
+			.scaleEffect(scale, anchor: .bottom)
+			.offset(y: offset)
+		}
 }
 
 #Preview {

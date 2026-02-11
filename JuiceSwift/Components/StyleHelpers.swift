@@ -66,6 +66,104 @@ extension View {
 			}
 		}
 	}
+
+	@ViewBuilder
+	func juiceGradientGlassProminentButtonStyle(
+		controlSize: ControlSize = .large
+	) -> some View {
+		if #available(macOS 26.0, iOS 26.0, *) {
+			self
+				.buttonStyle(.glassProminent)
+				.controlSize(controlSize)
+				.buttonBorderShape(.capsule)
+				.modifier(JuiceGradientProminentSurfaceModifier())
+		} else {
+			self
+				.buttonStyle(.borderedProminent)
+				.controlSize(controlSize)
+				.buttonBorderShape(.capsule)
+				.tint(Color(hex: "#DC1A78"))
+				.foregroundStyle(.white)
+		}
+	}
+}
+
+@available(macOS 26.0, iOS 26.0, *)
+private struct JuiceGradientProminentSurfaceModifier: ViewModifier {
+	#if os(macOS)
+	@Environment(\.controlActiveState) private var controlActiveState
+	#endif
+
+	private var isUnfocused: Bool {
+		#if os(macOS)
+			controlActiveState != .key
+		#else
+			false
+		#endif
+	}
+
+	func body(content: Content) -> some View {
+		styled(content: content)
+			.foregroundStyle(.white)
+			.tint(Color(hex: "#FC642D"))
+			.background {
+				let shape = Capsule(style: .continuous)
+				ZStack {
+					shape
+						.fill(
+							isUnfocused
+								? RadialGradient(
+									stops: [
+										.init(color: Color(hex: "#FCB900"), location: 0.0),
+										.init(color: Color(hex: "#FC642D"), location: 0.58),
+										.init(color: Color(hex: "#E24A1C"), location: 1.0),
+									],
+									center: .topLeading,
+									startRadius: 2,
+									endRadius: 120
+								)
+								: RadialGradient(
+									stops: [
+										.init(color: Color(hex: "#FF2E92"), location: 0.0),
+										.init(color: Color(hex: "#DC1A78"), location: 0.34),
+										.init(color: Color(hex: "#7A2BFF"), location: 0.68),
+										.init(color: Color(hex: "#004CFF"), location: 1.0),
+									],
+									center: .topLeading,
+									startRadius: 2,
+									endRadius: 120
+								)
+						)
+						.opacity(isUnfocused ? 0.32 : 0.30)
+					shape
+						.fill(Color.black.opacity(isUnfocused ? 0.20 : 0.0))
+					shape
+						.fill(
+							LinearGradient(
+								colors: [
+									.white.opacity(isUnfocused ? 0.10 : 0.22),
+									.white.opacity(0.0)
+								],
+								startPoint: .top,
+								endPoint: .bottom
+							)
+						)
+						.scaleEffect(x: 1, y: 0.55, anchor: .top)
+					shape
+						.strokeBorder(.white.opacity(isUnfocused ? 0.12 : 0.18), lineWidth: 0.8)
+				}
+				.shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
+			}
+	}
+
+	@ViewBuilder
+	private func styled(content: Content) -> some View {
+		if isUnfocused {
+			content.buttonStyle(.glass)
+		} else {
+			content.buttonStyle(.glassProminent)
+		}
+	}
 }
 
 struct JuiceButtons {
@@ -632,6 +730,31 @@ extension View {
 
 	func glassPanelStyle(cornerRadius: CGFloat = 14) -> some View {
 		modifier(GlassPanelStyleModifier(cornerRadius: cornerRadius))
+	}
+
+	/// Applies the shared queue-panel scroll chrome:
+	/// top safe-area spacing, bottom content inset, and fade mask.
+	func panelContentScrollChrome(
+		topInset: CGFloat = 20,
+		bottomContentInset: CGFloat = 20
+	) -> some View {
+		self
+			.safeAreaInset(edge: .top) {
+				Color.clear.frame(height: topInset)
+			}
+			.contentMargins(.bottom, bottomContentInset, for: .scrollContent)
+			.mask {
+				LinearGradient(
+					stops: [
+						.init(color: .clear, location: 0),
+						.init(color: .black, location: 0.022),
+						.init(color: .black, location: 0.965),
+						.init(color: .clear, location: 1.0)
+					],
+					startPoint: .top,
+					endPoint: .bottom
+				)
+			}
 	}
 }
 

@@ -57,7 +57,7 @@ struct MetadataEditSheet: View {
 			metadataHeaderGrid
 				.padding(.horizontal, 10)
 			Divider()
-			ScrollView {
+				ScrollView {
 				// Editable sections are grouped to mirror queue-review flow.
 				VStack(alignment: .leading, spacing: 16) {
 					recipeSection
@@ -65,11 +65,13 @@ struct MetadataEditSheet: View {
 					scriptsSection
 						.padding(.horizontal, 10)
 					//metadataForm
+					}
+					.padding(.vertical, 4)
 				}
-				.padding(.vertical, 4)
-			}
-				footer
-			}
+				.padding(.top, -8)
+				.panelContentScrollChrome(topInset: 8, bottomContentInset: 20)
+					footer
+				}
 			.padding(20)
 			.frame(minWidth: 600, minHeight: 560)
 			.glassCompatSurface(

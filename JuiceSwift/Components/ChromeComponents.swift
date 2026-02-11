@@ -71,7 +71,7 @@ struct NavigationMenu: View {
 	    var body: some View {
 		let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
 		return VStack(spacing: 0) {
-			VStack(alignment: .leading, spacing: 6) {
+			VStack(alignment: .leading, spacing: 3) {
 				ForEach(NavigationItem.mainCases) { item in
 					navItemButton(item)
 				}
@@ -145,11 +145,14 @@ struct NavigationMenu: View {
 	@ViewBuilder
 	private func navItemButton(_ item: NavigationItem) -> some View {
 		let isSelected = selection == item
-		let rowShape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+		let rowShape = RoundedRectangle(cornerRadius: 7, style: .continuous)
+		let useGradientSelection = isSelected
 		#if os(macOS)
 		let selectedForeground = Color(nsColor: .alternateSelectedControlTextColor)
-		let selectedBackground = Color(nsColor: .controlAccentColor)
 		let hoveredBackground = Color(nsColor: .controlColor).opacity(0.22)
+		let selectedGlassTint = colorScheme == .light
+			? Color(nsColor: .controlBackgroundColor).opacity(0.78)
+			: Color(nsColor: .windowBackgroundColor).opacity(0.82)
 		#else
 		let selectedForeground = GlassThemeTokens.textPrimary(for: glassState)
 		let selectedBackground = GlassThemeTokens.selectedChipFill(for: glassState)
@@ -161,18 +164,27 @@ struct NavigationMenu: View {
 		Button {
 			selection = item
 		} label: {
-			HStack(spacing: 10) {
+			HStack(spacing: 7) {
 				Image(systemName: item.systemImage)
-					.font(.system(size: 16, weight: .regular))
-					.foregroundStyle(iconForeground)
+					.font(.system(size: 13, weight: .regular))
+					.foregroundStyle(useGradientSelection ? AnyShapeStyle(RadialGradient.navSelection) : AnyShapeStyle(iconForeground))
 				Text(item.title)
-					.font(.system(size: 14, weight: .regular))
-					.foregroundStyle(textForeground)
+					.font(.system(size: 12, weight: .regular))
+					.foregroundStyle(useGradientSelection ? AnyShapeStyle(RadialGradient.navSelection) : AnyShapeStyle(textForeground))
 				Spacer(minLength: 0)
 			}
-			.padding(.vertical, 10)
-			.padding(.horizontal, 8)
+			.padding(.vertical, 7)
+			.padding(.horizontal, 6)
 			.background(
+				ZStack {
+					#if os(macOS)
+					if isSelected {
+						rowShape.fill(.thinMaterial)
+						rowShape.fill(selectedGlassTint)
+					} else if hoveredItem == item {
+						rowShape.fill(hoveredBackground)
+					}
+					#else
 					rowShape
 						.fill(
 							isSelected
@@ -181,6 +193,8 @@ struct NavigationMenu: View {
 									? hoveredBackground
 									: .clear)
 						)
+					#endif
+				}
 				)
 		}
 		.buttonStyle(.plain)

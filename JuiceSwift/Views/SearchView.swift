@@ -57,6 +57,7 @@ struct SearchView: View {
     @State private var queueItems: [CaskApplication] = []
     @State private var resultsItems: [CaskApplication] = []
     @State private var queueNotice: QueuePanelContent<AnyView, AnyView>.Notice?
+	@State private var queueNoticeTask: Task<Void, Never>?
 	@State private var confirmationVisible = false
 	@State private var confirmationMode: ConfirmationActionMode = .upload
 	@StateObject private var downloadQueueModel = DownloadQueueViewModel()
@@ -163,6 +164,10 @@ struct SearchView: View {
 					confirmationVisible = false
 				}
 			)
+		}
+		.onDisappear {
+			queueNoticeTask?.cancel()
+			queueNoticeTask = nil
 		}
 	}
 
@@ -300,24 +305,34 @@ struct SearchView: View {
 		.layoutPriority(1)
 		.background {
 			let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-			Color.clear
-				.glassCompatSurface(
-					in: shape,
-					style: .regular,
-					context: glassState,
-					fillColor: panelBaseTintColor,
-					fillOpacity: min(1, glassBaseOpacity + panelNeutralOverlayOpacity),
-					surfaceOpacity: panelGlassOpacity
-				)
+			shape.fill(
+				panelBaseTintColor
+					.opacity(min(1, glassBaseOpacity + panelNeutralOverlayOpacity))
+			)
 		}
 		.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 		.overlay {
 			RoundedRectangle(cornerRadius: 14, style: .continuous)
 				.strokeBorder(panelBorderColor)
 		}
-		.glassCompatShadow(context: glassState, elevation: .card)
+		.shadow(
+			color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+			radius: 3,
+			x: 0,
+			y: 1.5
+		)
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.zIndex(1)
+		.overlay(alignment: .center) {
+			if let notice = queueNotice {
+				leftPanelQueueNotice(notice)
+					.transition(
+						.opacity.combined(with: .scale(scale: 0.96, anchor: .center))
+					)
+					.allowsHitTesting(false)
+			}
+		}
+		.animation(.bouncy(duration: 0.22, extraBounce: 0.08), value: queueNotice)
 
 		}
 			.overlayPreferenceValue(AutoSuggestAnchorKey.self) { anchor in
@@ -327,8 +342,8 @@ struct SearchView: View {
 					let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
 					let rowHeight: CGFloat = 52
 					ScrollViewReader { scrollProxy in
-						ScrollView(.vertical, showsIndicators: filteredResults.count > 1) {
-							VStack(alignment: .leading, spacing: 0) {
+							ScrollView(.vertical, showsIndicators: filteredResults.count > 1) {
+								VStack(alignment: .leading, spacing: 0) {
 										ForEach(Array(filteredResults.enumerated()), id: \.element.id) { index, app in
 											let isHighlighted = index == highlightedSuggestionIndex
 											let highlightFill = isHighlighted
@@ -370,10 +385,11 @@ struct SearchView: View {
 									)
 									.id(index)
 								}
+								}
 							}
-						}
-						.coordinateSpace(name: "suggestionsScroll")
-						.onPreferenceChange(SuggestionRowFrameKey.self) { frames in
+							.panelContentScrollChrome(topInset: 8, bottomContentInset: 12)
+							.coordinateSpace(name: "suggestionsScroll")
+							.onPreferenceChange(SuggestionRowFrameKey.self) { frames in
 							suggestionRowFrames = frames
 						}
 						.onChange(of: highlightedSuggestionIndex) { _, newValue in
@@ -429,7 +445,7 @@ struct SearchView: View {
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
 		InspectorSearchQueuePanelView(
 			tab: $rightTab,
-			notice: $queueNotice,
+			notice: .constant(nil),
 			queueItems: $queueItems,
 			resultsItems: $resultsItems,
 			panelMinHeight: panelMinHeight,
@@ -489,7 +505,6 @@ struct SearchView: View {
 	        let token = selected.fullToken.isEmpty ? selected.token : selected.fullToken
 	        if queueItems.contains(where: { $0.id == token }) {
 	            showQueueNotice("Already in queue", isDuplicate: true)
-				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
 	            resetSearchUI()
 	            return
 	        }
@@ -500,9 +515,6 @@ struct SearchView: View {
 				triggerInspectorAttention: wasQueueEmpty && !inspector.isPresented
 			)
 	        showQueueNotice("Added to queue", isDuplicate: false)
-			if inspector.isPresented || !wasQueueEmpty {
-				inspector.show(queuePanelView(panelMinHeight: panelMinHeightCache))
-			}
 	        resetSearchUI()
 	    }
 
@@ -519,8 +531,56 @@ struct SearchView: View {
     }
 
     private func showQueueNotice(_ message: String, isDuplicate: Bool) {
-        queueNotice = .init(message: message, isDuplicate: isDuplicate)
+		let notice = QueuePanelContent<AnyView, AnyView>.Notice(
+			message: message,
+			isDuplicate: isDuplicate
+		)
+		queueNoticeTask?.cancel()
+		withAnimation(.bouncy(duration: 0.2, extraBounce: 0.08)) {
+			queueNotice = notice
+		}
+		queueNoticeTask = Task { @MainActor in
+			try? await Task.sleep(nanoseconds: 1_500_000_000)
+			guard !Task.isCancelled else { return }
+			withAnimation(.easeInOut(duration: 0.14)) {
+				queueNotice = nil
+			}
+		}
     }
+
+	@ViewBuilder
+	private func leftPanelQueueNotice(
+		_ notice: QueuePanelContent<AnyView, AnyView>.Notice
+	) -> some View {
+		let shape = Capsule()
+		HStack(spacing: 8) {
+			Image(
+				systemName: notice.isDuplicate
+					? "exclamationmark.triangle.fill"
+					: "checkmark.circle.fill"
+			)
+			.foregroundStyle(notice.isDuplicate ? Color.orange : Color.green)
+			.font(.system(size: 14, weight: .bold))
+			Text(notice.message)
+				.font(.system(size: 13, weight: .semibold))
+				.foregroundStyle(.primary)
+		}
+		.padding(.horizontal, 16)
+		.padding(.vertical, 8)
+		.background {
+			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .clear,
+					context: glassState,
+					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+					fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
+					surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+				)
+				.glassCompatBorder(in: shape, context: glassState, role: .standard)
+				.glassCompatShadow(context: glassState, elevation: .panel)
+		}
+	}
 
     private func updateSuggestions() {
         searchTask?.cancel()

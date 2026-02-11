@@ -261,7 +261,7 @@ struct RemoteFileSizeInlineHorizontalView: View {
 		HStack(alignment: .center, spacing: 4) {
 			Text(label)
 				.font(labelFont)
-				.foregroundStyle(.secondary)
+				.foregroundStyle(.primary)
 			Group {
 				if loader.isLoading {
 					ProgressView()

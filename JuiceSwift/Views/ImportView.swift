@@ -186,25 +186,24 @@ struct ImportView: View {
 		.layoutPriority(1)
 		.background {
 			let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-			Color.clear
-				.glassCompatSurface(
-					in: shape,
-					style: .regular,
-					context: glassState,
-					fillColor: panelBaseTintColor,
-					fillOpacity: min(
-						1,
-						glassBaseOpacity + panelNeutralOverlayOpacity
-					),
-					surfaceOpacity: panelGlassOpacity
-				)
+			shape.fill(
+				panelBaseTintColor
+					.opacity(
+						min(1, glassBaseOpacity + panelNeutralOverlayOpacity)
+					)
+			)
 		}
 		.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 		.overlay {
 			RoundedRectangle(cornerRadius: 14, style: .continuous)
 				.strokeBorder(panelBorderColor)
 		}
-		.glassCompatShadow(context: glassState, elevation: .card)
+		.shadow(
+			color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
+			radius: 3,
+			x: 0,
+			y: 1.5
+		)
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.zIndex(1)
 	}
@@ -228,35 +227,20 @@ struct ImportView: View {
 
 				Spacer()
 
-				if #available(macOS 26.0, iOS 26.0, *) {
-					Button(action: {
-						selectFolder()
-						expandActionsTrigger &+= 1
-					}) {
-						Image(systemName: "plus")
-							.symbolRenderingMode(.hierarchical)
-							.symbolVariant(.none)
-							.fontWeight(.regular)
-							.padding(.horizontal, -5)
-							.padding(.vertical, 2)
-					}
-					.padding(1)
-					.buttonStyle(.glassProminent)
-					.controlSize(.large)
-				} else {
-					Button(action: {
-						selectFolder()
-						expandActionsTrigger &+= 1
-					}) {
-						Image(systemName: "plus")
-							.font(.system(size: 13, weight: .regular))
-							.padding(.horizontal, 6)
-							.padding(.vertical, 4)
-					}
-					.padding(1)
-					.nativeActionButtonStyle(.primary, controlSize: .large)
-					.frame(minWidth: 10)
+				Button(action: {
+					selectFolder()
+					expandActionsTrigger &+= 1
+				}) {
+					Image(systemName: "plus")
+						.symbolRenderingMode(.hierarchical)
+						.symbolVariant(.none)
+						.fontWeight(.regular)
+						.padding(.horizontal, -5)
+						.padding(.vertical, 2)
 				}
+				.padding(1)
+				.juiceGradientGlassProminentButtonStyle(controlSize: .large)
+				.frame(minWidth: 10)
 			}
 		}
 		.frame(minWidth: 300, alignment: .topLeading)
@@ -365,6 +349,7 @@ struct ImportView: View {
 			primaryTitle: "Scan",
 			secondaryTitle: "Clear",
 			isEnabled: true,
+			isPrimaryInProgress: isScanning,
 			isFolderSelected: selectedFolderURL != nil,
 			externalExpandTrigger: expandActionsTrigger,
 			onPrimary: {
@@ -405,16 +390,47 @@ struct ImportView: View {
 				}
 			}
 			Spacer(minLength: 1)
-			Button {
-				selectAllDiscoveredApps()
-			} label: {
-				Image(systemName: "checkmark.rectangle.stack")
-					.font(.system(size: 11, weight: .regular))
-					.padding(.horizontal, -3)
-					.padding(.vertical, 2)
-			}
-			.nativeActionButtonStyle(.secondary, controlSize: .large)
-			.disabled(importApps.isEmpty)
+			#if os(macOS)
+				if #available(macOS 26.0, *) {
+					Button {
+						selectAllDiscoveredApps()
+					} label: {
+						Image(systemName: "checkmark.rectangle.stack")
+							.font(.system(size: 11, weight: .regular))
+							.padding(.horizontal, -3)
+							.padding(.vertical, 2)
+					}
+					.padding(1)
+					.buttonStyle(.glass)
+					.controlSize(.large)
+					.buttonBorderShape(.automatic)
+					.disabled(importApps.isEmpty)
+				} else {
+					Button {
+						selectAllDiscoveredApps()
+					} label: {
+						Image(systemName: "checkmark.rectangle.stack")
+							.font(.system(size: 11, weight: .regular))
+							.padding(.horizontal, -3)
+							.padding(.vertical, 2)
+					}
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+					.buttonBorderShape(.automatic)
+					.disabled(importApps.isEmpty)
+				}
+			#else
+				Button {
+					selectAllDiscoveredApps()
+				} label: {
+					Image(systemName: "checkmark.rectangle.stack")
+						.font(.system(size: 11, weight: .regular))
+						.padding(.horizontal, -3)
+						.padding(.vertical, 2)
+				}
+				.nativeActionButtonStyle(.secondary, controlSize: .large)
+				.buttonBorderShape(.automatic)
+				.disabled(importApps.isEmpty)
+			#endif
 		}
 	}
 
@@ -443,7 +459,7 @@ struct ImportView: View {
 			)
 		} else if importApps.count > 0 {
 			ZStack(alignment: .bottom) {
-				ScrollView {
+					ScrollView {
 					FlowLayout(spacing: 6, rowSpacing: 6, rowAlignment: .center)
 					{
 						ForEach(
@@ -473,27 +489,60 @@ struct ImportView: View {
 					.padding(.horizontal, 6)
 					.background(Color.clear)
 					.frame(minWidth: 300)
-					.frame(idealWidth: 800)
-					.frame(maxWidth: 900)
-				}
-				.scrollContentBackground(.hidden)
-				.background(Color.clear)
-
-					if !selectedAppIds.isEmpty {
-						Button("Add Selected (\(selectedAppIds.count))") {
-							addSelectedToQueue()
-						}
-						.nativeActionButtonStyle(.secondary, controlSize: .large)
-						.padding(.trailing, 20)
-						.padding(.bottom, 16)
-						.glassCompatShadow(context: glassState, elevation: .card)
+						.frame(idealWidth: 800)
+						.frame(maxWidth: 900)
 					}
+					.panelContentScrollChrome(
+						topInset: 0,
+						bottomContentInset: !selectedAppIds.isEmpty ? 60 : 20
+					)
+					.scrollContentBackground(.hidden)
+					.background(Color.clear)
+
+						if !selectedAppIds.isEmpty {
+							Button("Add Selected (\(selectedAppIds.count))") {
+								addSelectedToQueue()
+							}
+							.nativeActionButtonStyle(.secondary, controlSize: .large)
+								.padding(.trailing, 20)
+								.padding(.bottom, 16)
+								.glassCompatShadow(context: glassState, elevation: .card)
+								.transition(
+									.asymmetric(
+										insertion: .modifier(
+											active: SelectionButtonTransitionState(
+												opacity: 0,
+												scale: 0.78,
+												blur: 10
+											),
+											identity: SelectionButtonTransitionState(
+												opacity: 1,
+												scale: 1,
+												blur: 0
+											)
+										),
+										removal: .modifier(
+											active: SelectionButtonTransitionState(
+												opacity: 0,
+												scale: 0.88,
+												blur: 10
+											),
+											identity: SelectionButtonTransitionState(
+												opacity: 1,
+												scale: 1,
+												blur: 0
+											)
+										)
+									)
+								)
+							}
+					}
+					.animation(.bouncy(duration: 0.28, extraBounce: 0.18), value: selectedAppIds.isEmpty)
+					.background(Color.clear)
+					.frame(maxHeight: 500)
+					.frame(minWidth: 500)
 			}
-			.background(Color.clear)
-			.frame(maxHeight: 500)
-			.frame(minWidth: 500)
 		}
-	}
 
 	@ViewBuilder
 	private func queuePanelView(panelMinHeight: CGFloat) -> some View {
@@ -530,17 +579,12 @@ struct ImportView: View {
 				item: app,
 				onAddToQueue: {
 					addToQueue(app)
-					selectedApp = nil
-					inspector.show(
-						queuePanelView(panelMinHeight: panelMinHeightCache)
-					)
 				},
 				onClose: {
 					selectedApp = nil
 					inspector.hide()
 				}
 			)
-			.padding(-20)
 		)
 	}
 
@@ -553,11 +597,6 @@ struct ImportView: View {
 				item: app,
 				onAddToQueue: {
 					addToQueue(app)
-					selectedApp = nil
-					showingDetails = false
-					inspector.show(
-						queuePanelView(panelMinHeight: panelMinHeightCache)
-					)
 				},
 				onClose: {
 					selectedApp = nil
@@ -565,7 +604,6 @@ struct ImportView: View {
 					inspector.hide()
 				}
 			)
-			.padding(-20)
 		)
 		DispatchQueue.main.async {
 			suppressQueueAutoShow = false
@@ -681,6 +719,7 @@ private struct ActionButtonsGlass: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isPrimaryInProgress: Bool
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
 	let externalExpandTrigger: Int
@@ -696,22 +735,29 @@ private struct ActionButtonsGlass: View {
 		ZStack {
 			GlassEffectContainer(spacing: glassSpacing) {
 				HStack(spacing: buttonSpacing) {
-					if isExpanded {
-						Button(action: onPrimary) {
+						if isExpanded {
+							Button(action: {
+								guard !isPrimaryInProgress else { return }
+								onPrimary()
+							}) {
 								HStack(spacing: 5) {
-									FolderScanBadgeIcon(size: 11)
+									FolderScanBadgeIcon(size: 11, isAnimating: isPrimaryInProgress)
 									Text("Scan")
 										.font(.system(size: 12, weight: .regular))
+										.opacity(isPrimaryInProgress ? 0 : 1)
+										.frame(width: isPrimaryInProgress ? 0 : nil, alignment: .leading)
 								}
-							.padding(.horizontal, 8)
-							.padding(.vertical, 3)
-						}
-							.buttonStyle(.glassProminent)
-							.controlSize(.small)
-							.buttonBorderShape(.capsule)
-						.disabled(!isEnabled)
-						.accessibilityLabel(primaryTitle)
-						.glassEffectID("glassPrimary", in: namespace)
+								.frame(width: isPrimaryInProgress ? 26 : 68, alignment: .center)
+								.animation(.easeInOut(duration: 0.22), value: isPrimaryInProgress)
+								.padding(.horizontal, 8)
+								.padding(.vertical, 3)
+							}
+								.juiceGradientGlassProminentButtonStyle(controlSize: .small)
+								.buttonBorderShape(.capsule)
+							.disabled(!isEnabled)
+							.allowsHitTesting(!isPrimaryInProgress)
+							.accessibilityLabel(primaryTitle)
+							.glassEffectID("glassPrimary", in: namespace)
 
 					}
 					if isAllExpanded && isExpanded {
@@ -781,6 +827,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isPrimaryInProgress: Bool
 	let isFolderSelected: Bool
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
@@ -789,22 +836,24 @@ private struct ActionButtonsAvailabilityAdapter: View {
 	var body: some View {
 		#if os(macOS)
 			if #available(macOS 26.0, *) {
-				ActionButtonsGlass(
-					primaryTitle: primaryTitle,
-					secondaryTitle: secondaryTitle,
-					isEnabled: isEnabled,
-					onPrimary: onPrimary,
-					onSecondary: onSecondary,
-					externalExpandTrigger: externalExpandTrigger
-				)
-			} else {
-				ActionButtonsFallback(
-					primaryTitle: primaryTitle,
-					secondaryTitle: secondaryTitle,
-					isEnabled: isEnabled,
-					externalExpandTrigger: externalExpandTrigger,
-					onPrimary: onPrimary,
-					onSecondary: onSecondary
+					ActionButtonsGlass(
+						primaryTitle: primaryTitle,
+						secondaryTitle: secondaryTitle,
+						isEnabled: isEnabled,
+						isPrimaryInProgress: isPrimaryInProgress,
+						onPrimary: onPrimary,
+						onSecondary: onSecondary,
+						externalExpandTrigger: externalExpandTrigger
+					)
+				} else {
+					ActionButtonsFallback(
+						primaryTitle: primaryTitle,
+						secondaryTitle: secondaryTitle,
+						isEnabled: isEnabled,
+						isPrimaryInProgress: isPrimaryInProgress,
+						externalExpandTrigger: externalExpandTrigger,
+						onPrimary: onPrimary,
+						onSecondary: onSecondary
 				)
 			}
 		#else
@@ -823,6 +872,7 @@ private struct ActionButtonsFallback: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isPrimaryInProgress: Bool
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
@@ -831,23 +881,28 @@ private struct ActionButtonsFallback: View {
 
 	var body: some View {
 		HStack(spacing: 16) {
-				if isExpanded {
-					Button {
-						guard isEnabled else { return }
-						onPrimary()
-					} label: {
-						HStack(spacing: 5) {
-							FolderScanBadgeIcon(size: 11)
-							Text("Scan")
-								.font(.system(size: 12, weight: .regular))
+					if isExpanded {
+						Button {
+							guard isEnabled, !isPrimaryInProgress else { return }
+							onPrimary()
+						} label: {
+							HStack(spacing: 5) {
+								FolderScanBadgeIcon(size: 11, isAnimating: isPrimaryInProgress)
+								Text("Scan")
+									.font(.system(size: 12, weight: .regular))
+									.opacity(isPrimaryInProgress ? 0 : 1)
+									.frame(width: isPrimaryInProgress ? 0 : nil, alignment: .leading)
+							}
+							.frame(width: isPrimaryInProgress ? 26 : 68, alignment: .center)
+							.animation(.easeInOut(duration: 0.22), value: isPrimaryInProgress)
+							.padding(.horizontal, 8)
+							.padding(.vertical, 3)
 						}
-						.padding(.horizontal, 8)
-						.padding(.vertical, 3)
-					}
-						.nativeActionButtonStyle(.primary, controlSize: .small)
-						.buttonBorderShape(.capsule)
-					.disabled(!isEnabled)
-					.accessibilityLabel(primaryTitle)
+							.juiceGradientGlassProminentButtonStyle(controlSize: .small)
+							.buttonBorderShape(.capsule)
+						.disabled(!isEnabled)
+						.allowsHitTesting(!isPrimaryInProgress)
+						.accessibilityLabel(primaryTitle)
 					Button {
 						guard isEnabled else { return }
 						onSecondary()
@@ -890,13 +945,30 @@ private struct ActionButtonsFallback: View {
 	}
 }
 
+private struct SelectionButtonTransitionState: ViewModifier {
+	let opacity: Double
+	let scale: CGFloat
+	let blur: CGFloat
+
+	func body(content: Content) -> some View {
+		content
+			.opacity(opacity)
+			.scaleEffect(scale, anchor: .center)
+			.blur(radius: blur)
+	}
+}
+
 private struct FolderScanBadgeIcon: View {
 	let size: CGFloat
+	let isAnimating: Bool
+	@State private var bounce = false
+	@State private var breathe = false
 
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
 			Image(systemName: "folder")
 				.font(.system(size: size, weight: .regular))
+				.scaleEffect(isAnimating && breathe ? 1.06 : 1)
 
 			ZStack {
 				Circle()
@@ -905,7 +977,39 @@ private struct FolderScanBadgeIcon: View {
 				Image(systemName: "magnifyingglass")
 					.font(.system(size: size * 0.42, weight: .semibold))
 			}
-			.offset(x: size * 0.14, y: size * 0.14)
+			.scaleEffect(isAnimating && bounce ? 1.16 : 1)
+			.offset(
+				x: size * 0.14,
+				y: size * 0.14 + (isAnimating && bounce ? -size * 0.06 : 0)
+			)
+		}
+		.onAppear {
+			updateAnimations()
+		}
+		.onChange(of: isAnimating) { _, _ in
+			updateAnimations()
+		}
+	}
+
+	private func updateAnimations() {
+		guard isAnimating else {
+			bounce = false
+			breathe = false
+			return
+		}
+		bounce = false
+		breathe = false
+		withAnimation(
+			.interpolatingSpring(stiffness: 260, damping: 13)
+				.repeatForever(autoreverses: true)
+		) {
+			bounce = true
+		}
+		withAnimation(
+			.easeInOut(duration: 1.15)
+				.repeatForever(autoreverses: true)
+		) {
+			breathe = true
 		}
 	}
 }

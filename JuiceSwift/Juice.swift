@@ -53,6 +53,8 @@ struct WindowConfigurator: NSViewRepresentable {
         private var observers: [NSObjectProtocol] = []
         private weak var configuredWindow: NSWindow?
         private var trafficLightRelativeOffsets: (mini: CGPoint, zoom: CGPoint)?
+        private var trafficLightCloseY: CGFloat?
+        private var initialReapplyTask: Task<Void, Never>?
         // Adjust these to tune the traffic-light insets from the top-left titlebar edge.
         private let trafficLightLeadingInset: CGFloat = 20
         private let trafficLightTopInset: CGFloat = 20
@@ -62,12 +64,17 @@ struct WindowConfigurator: NSViewRepresentable {
             if configuredWindow !== window {
                 configuredWindow = window
                 trafficLightRelativeOffsets = nil
+                trafficLightCloseY = nil
+                initialReapplyTask?.cancel()
+                stopObserving()
             }
             applyConfig()
+            scheduleInitialReapplyPasses()
             startObserving()
         }
 
         @MainActor deinit {
+            initialReapplyTask?.cancel()
             stopObserving()
         }
 
@@ -75,10 +82,11 @@ struct WindowConfigurator: NSViewRepresentable {
             guard let window = self.window else { return }
             window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
-            window.isMovableByWindowBackground = true
+            // Prevent dragging from any arbitrary point in the content area.
+            // Keep native window movement behavior scoped to titlebar/standard drag regions.
+            window.isMovableByWindowBackground = false
             window.isOpaque = false
             window.backgroundColor = .clear
-            applyTrafficLightInsets(in: window)
         }
 
         private func applyTrafficLightInsets(in window: NSWindow) {
@@ -104,28 +112,64 @@ struct WindowConfigurator: NSViewRepresentable {
                 )
             }
 
-            let closeY: CGFloat
-            if container.isFlipped {
-                closeY = trafficLightTopInset
-            } else {
-                closeY = max(0, container.bounds.height - close.frame.height - trafficLightTopInset)
+            if trafficLightCloseY == nil {
+                let initialCloseY: CGFloat
+                if container.isFlipped {
+                    initialCloseY = trafficLightTopInset
+                } else {
+                    initialCloseY = max(0, container.bounds.height - close.frame.height - trafficLightTopInset)
+                }
+                trafficLightCloseY = initialCloseY
             }
+            let closeY = trafficLightCloseY ?? close.frame.minY
 
-            close.setFrameOrigin(CGPoint(x: trafficLightLeadingInset, y: closeY))
+            // Keep this deterministic and non-animated so controls do not visibly jump.
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                context.allowsImplicitAnimation = false
 
-            if let offsets = trafficLightRelativeOffsets {
-                mini.setFrameOrigin(
+                close.setFrameOrigin(
                     CGPoint(
-                        x: trafficLightLeadingInset + offsets.mini.x,
-                        y: closeY + offsets.mini.y
+                        x: round(trafficLightLeadingInset),
+                        y: round(closeY)
                     )
                 )
-                zoom.setFrameOrigin(
-                    CGPoint(
-                        x: trafficLightLeadingInset + offsets.zoom.x,
-                        y: closeY + offsets.zoom.y
+
+                if let offsets = trafficLightRelativeOffsets {
+                    mini.setFrameOrigin(
+                        CGPoint(
+                            x: round(trafficLightLeadingInset + offsets.mini.x),
+                            y: round(closeY + offsets.mini.y)
+                        )
                     )
-                )
+                    zoom.setFrameOrigin(
+                        CGPoint(
+                            x: round(trafficLightLeadingInset + offsets.zoom.x),
+                            y: round(closeY + offsets.zoom.y)
+                        )
+                    )
+                }
+            }
+        }
+
+        private func scheduleInitialReapplyPasses() {
+            initialReapplyTask?.cancel()
+            initialReapplyTask = Task { @MainActor [weak self] in
+                // First couple of runloop/layout passes are where AppKit finalizes titlebar controls.
+                self?.applyConfig()
+                if let window = self?.window {
+                    self?.applyTrafficLightInsets(in: window)
+                }
+                try? await Task.sleep(nanoseconds: 16_000_000)   // ~1 frame
+                self?.applyConfig()
+                if let window = self?.window {
+                    self?.applyTrafficLightInsets(in: window)
+                }
+                try? await Task.sleep(nanoseconds: 90_000_000)   // post-layout settle
+                self?.applyConfig()
+                if let window = self?.window {
+                    self?.applyTrafficLightInsets(in: window)
+                }
             }
         }
 
@@ -134,13 +178,14 @@ struct WindowConfigurator: NSViewRepresentable {
             guard let window = self.window else { return }
             let center = NotificationCenter.default
             let names: [NSNotification.Name] = [
-                NSWindow.didBecomeKeyNotification,
-                NSWindow.didBecomeMainNotification
+                NSWindow.didEndLiveResizeNotification,
+                NSWindow.didResizeNotification,
+                NSWindow.didChangeScreenNotification
             ]
             observers = names.map { name in
                 center.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
                     Task { @MainActor in
-                        self?.applyConfig()
+                        self?.reapplyTrafficLightsIfStable()
                     }
                 }
             }
@@ -148,8 +193,18 @@ struct WindowConfigurator: NSViewRepresentable {
 
         private func stopObserving() {
             let center = NotificationCenter.default
-            for token in observers { center.removeObserver(token) }
+            for token in observers {
+                center.removeObserver(token)
+            }
             observers.removeAll()
+        }
+
+        private func reapplyTrafficLightsIfStable() {
+            guard let window = self.window else { return }
+            guard window.inLiveResize == false else { return }
+            guard window.contentView?.inLiveResize != true else { return }
+            applyConfig()
+            applyTrafficLightInsets(in: window)
         }
     }
 }

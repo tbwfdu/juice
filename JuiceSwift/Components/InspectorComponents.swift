@@ -194,7 +194,7 @@ final class InspectorCoordinator: ObservableObject {
 	@Published private(set) var queueAddAttentionCounter: Int = 0
 
 	func show<Content: View>(_ content: Content) {
-		withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+		withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
 			self.content = AnyView(content)
 			hasContent = true
 			isPresented = true
@@ -202,7 +202,7 @@ final class InspectorCoordinator: ObservableObject {
 	}
 
 	func hide(resetContent: Bool = true) {
-		withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+		withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
 			isPresented = false
 			isPinned = false
 			if resetContent {
