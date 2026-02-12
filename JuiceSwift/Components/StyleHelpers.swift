@@ -734,16 +734,19 @@ extension View {
 
 	/// Applies the shared queue-panel scroll chrome:
 	/// top safe-area spacing, bottom content inset, and fade mask.
+	@ViewBuilder
 	func panelContentScrollChrome(
 		topInset: CGFloat = 20,
-		bottomContentInset: CGFloat = 20
+		bottomContentInset: CGFloat = 20,
+		applyMask: Bool = true
 	) -> some View {
-		self
+		let chrome = self
 			.safeAreaInset(edge: .top) {
 				Color.clear.frame(height: topInset)
 			}
 			.contentMargins(.bottom, bottomContentInset, for: .scrollContent)
-			.mask {
+		if applyMask {
+			chrome.mask {
 				LinearGradient(
 					stops: [
 						.init(color: .clear, location: 0),
@@ -755,6 +758,9 @@ extension View {
 					endPoint: .bottom
 				)
 			}
+		} else {
+			chrome
+		}
 	}
 }
 

@@ -331,6 +331,7 @@ struct UpdatesView: View {
 			primaryTitle: "Query",
 			secondaryTitle: "Clear",
 			isEnabled: true,
+			isSecondaryEnabled: !isQueryingUem,
 			isPrimaryInProgress: isQueryingUem,
 			externalExpandTrigger: expandActionsTrigger,
 			onPrimary: {
@@ -358,6 +359,7 @@ struct UpdatesView: View {
 	}
 
 	private func clearQueriedApps() {
+		guard !isQueryingUem else { return }
 		withAnimation(.bouncy(duration: 0.3, extraBounce: 0.1)) {
 			uemApps.removeAll()
 		}
@@ -1151,6 +1153,7 @@ private struct ActionButtonsGlass: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
@@ -1193,6 +1196,7 @@ private struct ActionButtonsGlass: View {
 
 				if isClearExpanded {
 						Button(action: {
+							guard isSecondaryEnabled else { return }
 							onSecondary()
 							collapseExpanded()
 						}) {
@@ -1207,7 +1211,7 @@ private struct ActionButtonsGlass: View {
 						.buttonStyle(.glass)
 						.controlSize(.large)
 						.buttonBorderShape(.automatic)
-						.disabled(!isEnabled)
+						.disabled(!isEnabled || !isSecondaryEnabled)
 						.accessibilityLabel(secondaryTitle)
 						.glassEffectID("glassSecondary", in: namespace)
 
@@ -1256,6 +1260,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
@@ -1268,6 +1273,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 						primaryTitle: primaryTitle,
 						secondaryTitle: secondaryTitle,
 						isEnabled: isEnabled,
+						isSecondaryEnabled: isSecondaryEnabled,
 						isPrimaryInProgress: isPrimaryInProgress,
 						onPrimary: onPrimary,
 						onSecondary: onSecondary,
@@ -1278,6 +1284,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 						primaryTitle: primaryTitle,
 						secondaryTitle: secondaryTitle,
 						isEnabled: isEnabled,
+						isSecondaryEnabled: isSecondaryEnabled,
 						isPrimaryInProgress: isPrimaryInProgress,
 						externalExpandTrigger: externalExpandTrigger,
 						onPrimary: onPrimary,
@@ -1300,6 +1307,7 @@ private struct ActionButtonsFallback: View {
 	let primaryTitle: String
 	let secondaryTitle: String
 	let isEnabled: Bool
+	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
@@ -1334,7 +1342,7 @@ private struct ActionButtonsFallback: View {
 
 			if isClearExpanded {
 				Button {
-					guard isEnabled else { return }
+					guard isEnabled, isSecondaryEnabled else { return }
 					onSecondary()
 					collapseExpanded()
 				} label: {
@@ -1345,7 +1353,7 @@ private struct ActionButtonsFallback: View {
 				}
 				.nativeActionButtonStyle(.secondary, controlSize: .large)
 				.buttonBorderShape(.automatic)
-				.disabled(!isEnabled)
+				.disabled(!isEnabled || !isSecondaryEnabled)
 				.accessibilityLabel(secondaryTitle)
 				.transition(.move(edge: .trailing).combined(with: .opacity))
 			}

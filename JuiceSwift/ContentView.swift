@@ -354,8 +354,9 @@ private struct InspectorOverlayView: View {
 						transaction.animation = nil
 					}
 				}
-				.padding(.horizontal, 8)
-				.padding(.vertical, 20)
+				.padding(.horizontal, 0)
+				.padding(.top, 0)
+				.padding(.bottom, 0)
 				.frame(width: clampedWidth)
 				.frame(maxHeight: .infinity, alignment: .top)
 			.background {
@@ -463,12 +464,13 @@ private struct InspectorOverlayView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
 				.opacity(isPresented ? 1 : 0)
 				.offset(x: isPresented ? 0 : hiddenOffset)
-				.allowsHitTesting(isPresented)
-				.animation(.easeInOut(duration: 0.18), value: isPresented)
-			.onTapGesture {
+				.onTapGesture {
 					// Consume taps inside the panel so they don't dismiss it.
 				}
+				.allowsHitTesting(isPresented)
+				.animation(.easeInOut(duration: 0.18), value: isPresented)
 		}
+		.allowsHitTesting(isPresented)
     }
 }
 
@@ -546,12 +548,13 @@ private struct NavigationOverlayView: View {
 				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 					.opacity(isPresented ? 1 : 0)
 					.offset(x: isPresented ? 0 : -hiddenOffset)
-					.allowsHitTesting(isPresented)
-					.animation(.easeInOut(duration: 0.18), value: isPresented)
 					.onTapGesture {
 						// Consume taps inside the panel so they don't dismiss it.
 					}
+					.allowsHitTesting(isPresented)
+					.animation(.easeInOut(duration: 0.18), value: isPresented)
 		}
+		.allowsHitTesting(isPresented)
 	}
 }
 

@@ -10,6 +10,42 @@ import SwiftUI
 // Consolidated inspector detail content sheets for UEM/imported applications.
 // Used by: SearchView, UpdatesView, ImportView inspector panels.
 
+private struct DetailPinnedGlassSection<Content: View>: View {
+	let corners: CustomRoundedCorners.Corner
+	var cornerRadius: CGFloat = 20
+	var effectIsRegular: Bool = true
+	@ViewBuilder let content: () -> Content
+
+	var body: some View {
+		let shape = CustomRoundedCorners(radius: cornerRadius, corners: corners)
+		if #available(macOS 26.0, iOS 16.0, *) {
+			content()
+				.background {
+					GlassEffectContainer {
+						shape
+							.fill(Color.clear)
+							.glassEffect(effectIsRegular ? .regular : .clear, in: shape)
+					}
+				}
+				.overlay(shape.strokeBorder(.white.opacity(0.15)))
+				.clipShape(shape)
+		} else {
+			content()
+				.background(
+					Group {
+						if effectIsRegular {
+							shape.fill(.ultraThinMaterial)
+						} else {
+							shape.fill(Color.clear)
+						}
+					}
+					.overlay(shape.strokeBorder(.white.opacity(0.15)))
+				)
+				.clipShape(shape)
+		}
+	}
+}
+
 struct AppDetailContent: View {
 	// MARK: - Inputs
 
@@ -29,10 +65,11 @@ struct AppDetailContent: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
-			ZStack(alignment: .top) {
-				// Scroll content sits below a pinned header; header height is measured dynamically.
-					ScrollView {
-					VStack(alignment: .leading, spacing: 12) {
+			ZStack(alignment: .bottom) {
+				ZStack(alignment: .top) {
+					// Scroll content sits below a pinned header; header height is measured dynamically.
+						ScrollView {
+						VStack(alignment: .leading, spacing: 12) {
 						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
 							detailGrid(rows: overviewRows)
 						}
@@ -75,11 +112,19 @@ struct AppDetailContent: View {
 					}
 						.padding(.top, headerHeight + 2)
 					}
-					.panelContentScrollChrome(topInset: 0, bottomContentInset: 20)
-					.contentMargins(.top, headerHeight + 2, for: .scrollIndicators)
-					.contentMargins(.horizontal, 0, for: .scrollContent)
-				.frame(maxHeight: .infinity, alignment: .top)
-				.layoutPriority(1)
+						.panelContentScrollChrome(topInset: 0, bottomContentInset: 44, applyMask: false)
+						.contentMargins(.top, headerHeight + 2, for: .scrollIndicators)
+						.contentMargins(
+							.bottom,
+							44 + 2,
+							for: .scrollIndicators
+						)
+						.contentMargins(.trailing, 8, for: .scrollIndicators)
+						.contentMargins(.leading, 14, for: .scrollContent)
+						.contentMargins(.trailing, 14, for: .scrollContent)
+					.frame(maxHeight: .infinity, alignment: .top)
+					.layoutPriority(1)
+					//.border(.red, width: 2)
 
 				VStack(spacing: 0) {
 					header
@@ -89,190 +134,161 @@ struct AppDetailContent: View {
 						Color.clear
 							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
 					}
-				)
+					)
 				}
-					HStack {
-						Spacer()
-						Button {
-							if let onClose {
-								onClose()
-							} else {
-								dismiss()
-							}
-						} label: {
-							Image(systemName: "xmark")
-								.font(.system(size: 11, weight: .regular))
-								.padding(.horizontal, -5)
-								.padding(.vertical, 2)
-						}
-						.nativeActionButtonStyle(.secondary, controlSize: .large)
-						.buttonBorderShape(.automatic)
-						Button {
-							onAddToQueue?()
-							if onClose == nil {
-								dismiss()
-							}
-						} label: {
-							Image(systemName: "plus")
-								.font(.system(size: 11, weight: .regular))
-								.padding(.horizontal, -5)
-								.padding(.vertical, 2)
-						}
-						.nativeActionButtonStyle(.primary, controlSize: .large)
-						.buttonBorderShape(.automatic)
-					}
-					.padding(.horizontal, 12)
-					.padding(.top, 4)
-					.padding(.bottom, 12)
+				VStack(spacing: 0) {
+					bottomActionBar
+				}
+//				.background(
+//					GeometryReader { proxy in
+//						Color.clear
+//							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
+//					}
+//					)
+				
+			
 			}
-		.padding(.top, 24)
-		//.padding(5)
-		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-		.clipped()
+			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+			.background {
+				detailContentAreaBackground
+			}
+			.clipped()
 		//.border(Color(.red), width: 1)
 		.background(WindowFocusReader { focusObserver.attach($0) })
 			.frame(minHeight: 420, alignment: .top)
 		//.border(Color(.blue), width: 1)
 		.background(Color.clear)
-		.presentationBackground(.clear)
-		.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
-			headerHeight = newValue
+			.presentationBackground(.clear)
+				.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
+					headerHeight = newValue
+				}
+		}
+	}
+
+	@ViewBuilder
+	private var bottomActionBar: some View {
+		DetailPinnedGlassSection(
+			corners: [.bottomLeft, .bottomRight],
+			cornerRadius: 14,
+			effectIsRegular: true
+		) {
+			bottomActionButtons
+		}
+	}
+
+	private var bottomActionButtons: some View {
+		HStack {
+			Spacer()
+			Button {
+				if let onClose {
+					onClose()
+				} else {
+					dismiss()
+				}
+			} label: {
+				Image(systemName: "xmark")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -5)
+					.padding(.vertical, 2)
+			}
+			.nativeActionButtonStyle(.secondary, controlSize: .large)
+			Button {
+				onAddToQueue?()
+				if onClose == nil {
+					dismiss()
+				}
+			} label: {
+				Image(systemName: "plus")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -5)
+					.padding(.vertical, 2)
+			}
+			.juiceGradientGlassProminentButtonStyle(controlSize: .large)
+		}
+		.padding(.horizontal, 12)
+		.padding(.top, 4)
+		.padding(.bottom, 12)
+	}
+
+	@ViewBuilder
+	private var detailContentAreaBackground: some View {
+		let shape = Rectangle()
+		if #available(macOS 26.0, iOS 16.0, *) {
+			GlassEffectContainer {
+				shape
+					.fill(Color.clear)
+					.glassEffect(.regular, in: shape)
+			}
+			.overlay(shape.strokeBorder(.white.opacity(0.15)))
+		} else {
+			shape
+				.fill(.ultraThinMaterial)
+				.overlay(shape.strokeBorder(.white.opacity(0.15)))
 		}
 	}
 
 	private var header: some View {
-		Group {
-			if #available(macOS 26.0, iOS 16.0, *) {
-				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
-				ZStack {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-					HStack(alignment: .top, spacing: 8) {
-						IconByFiletype(applicationFileName: item.applicationFileName)
-						VStack(alignment: .leading, spacing: 4) {
-							Text(item.applicationName)
-								.font(.system(.callout, weight: .semibold))
-								.foregroundStyle(.primary)
-								.lineLimit(2)
-								.minimumScaleFactor(0.85)
-							
-							Text(item.rootLocationGroupName ?? "Unknown location group")
-								.font(.footnote.weight(.regular))
-								.foregroundStyle(.secondary)
-							
-							FlowLayout(spacing: 6, rowSpacing: 6) {
-								if item.hasUpdate ?? false {
-									Pill("Has Update", color: .orange)
-								}
-								if item.status != "Active" {
-									Pill("Inactive", color: .gray)
-								}
-								if item.wasMatched == false {
-									Pill("No Matches", color: .gray)
-								}
-								if item.wasMatched == true && item.hasUpdate == false {
-									Pill("Up To Date", color: .green)
-								}
-							}
+		DetailPinnedGlassSection(corners: [.topLeft, .topRight]) {
+			HStack(alignment: .top, spacing: 8) {
+				IconByFiletype(applicationFileName: item.applicationFileName)
+				VStack(alignment: .leading, spacing: 4) {
+					Text(item.applicationName)
+						.font(.system(.callout, weight: .semibold))
+						.foregroundStyle(.primary)
+						.lineLimit(2)
+						.minimumScaleFactor(0.85)
+
+					Text(item.rootLocationGroupName ?? "Unknown location group")
+						.font(.footnote.weight(.regular))
+						.foregroundStyle(.secondary)
+
+					FlowLayout(spacing: 6, rowSpacing: 6) {
+						if item.hasUpdate ?? false {
+							Pill("Has Update", color: .orange)
 						}
-						Spacer()
-						VStack(alignment: .trailing, spacing: 1) {
-							Text("Current Version")
-								.font(.caption.weight(.medium))
-								.foregroundStyle(.secondary)
-								.padding(.top, 2)
-							Text(item.appVersion)
-								.font(.footnote.weight(.regular))
-								.lineLimit(1)
-								.foregroundStyle(.secondary)
-							if let newVersion = item.updatedApplication?.version,
-							   !newVersion.isEmpty
-							{
-							  Text("Latest Version")
-								  .font(.caption.weight(.medium))
-								  .foregroundStyle(.secondary)
-							  Text(newVersion)
-								  .foregroundStyle(.secondary)
-								  .font(.footnote.weight(.semibold))
-								  .lineLimit(1)
-								  .frame(maxWidth: 110, alignment: .trailing)
-							}
+						if item.status != "Active" {
+							Pill("Inactive", color: .gray)
+						}
+						if item.wasMatched == false {
+							Pill("No Matches", color: .gray)
+						}
+						if item.wasMatched == true && item.hasUpdate == false {
+							Pill("Up To Date", color: .green)
 						}
 					}
-				.padding(12)
 				}
-				.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				.clipShape(shape)
-				.frame(maxHeight: 100)
-			} else {
-				// Fallback: mimic the glass look with a rounded background material
-				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
-				HStack(alignment: .top, spacing: 8) {
-					IconByFiletype(applicationFileName: item.applicationFileName)
-					VStack(alignment: .leading, spacing: 4) {
-						Text(item.applicationName)
-							.font(.system(.callout, weight: .semibold))
-							.foregroundStyle(.primary)
-							.lineLimit(2)
-							.minimumScaleFactor(0.85)
-						
-						Text(item.rootLocationGroupName ?? "Unknown location group")
-							.font(.footnote.weight(.regular))
-							.foregroundStyle(.secondary)
-						
-						FlowLayout(spacing: 6, rowSpacing: 6) {
-							if item.hasUpdate ?? false {
-								Pill("Has Update", color: .orange)
-							}
-							if item.status != "Active" {
-								Pill("Inactive", color: .gray)
-							}
-							if item.wasMatched == false {
-								Pill("No Matches", color: .gray)
-							}
-							if item.wasMatched == true && item.hasUpdate == false {
-								Pill("Up To Date", color: .green)
-							}
-						}
-					}
-					Spacer()
-					VStack(alignment: .trailing, spacing: 1) {
-						Text("Current Version")
+				Spacer()
+				VStack(alignment: .trailing, spacing: 1) {
+					Text("Current Version")
+						.font(.caption.weight(.medium))
+						.foregroundStyle(.secondary)
+						.padding(.top, 2)
+					Text(item.appVersion)
+						.font(.footnote.weight(.regular))
+						.lineLimit(1)
+						.foregroundStyle(.secondary)
+					if let newVersion = item.updatedApplication?.version,
+					   !newVersion.isEmpty
+					{
+						Text("Latest Version")
 							.font(.caption.weight(.medium))
 							.foregroundStyle(.secondary)
-							.padding(.top, 2)
-						Text(item.appVersion)
-							.font(.footnote.weight(.regular))
-							.lineLimit(1)
+						Text(newVersion)
 							.foregroundStyle(.secondary)
-						if let newVersion = item.updatedApplication?.version,
-						   !newVersion.isEmpty
-						{
-						  Text("Latest Version")
-							  .font(.caption.weight(.medium))
-							  .foregroundStyle(.secondary)
-						  Text(newVersion)
-							  .foregroundStyle(.secondary)
-							  .font(.footnote.weight(.semibold))
-							  .lineLimit(1)
-							  .frame(maxWidth: 110, alignment: .trailing)
-						}
+							.font(.footnote.weight(.semibold))
+							.lineLimit(1)
+							.frame(maxWidth: 110, alignment: .trailing)
 					}
 				}
-				.padding(12)
-				.background(
-					shape
-						.fill(.ultraThinMaterial)
-						.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				)
-				.clipShape(shape)
-				.shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
 			}
+			.padding(12)
+			.padding(.top, 40)
+			.padding(.horizontal, 8)
 		}
+		.frame(maxHeight: 140)
+		.padding(.top, -20)
 	}
+
 
 	private var overviewRows: [DetailContentRow] {
 		[
@@ -713,6 +729,61 @@ struct LeftPanel: View {
 	.frame(width: 500, height: 600)
 }
 
+#Preview("Import App Detail") {
+	ZStack {
+		JuiceGradient()
+			.ignoresSafeArea()
+		LeftPanel()
+			.frame(width: 450)
+			.background {
+				let shape = RoundedRectangle(
+					cornerRadius: 16,
+					style: .continuous
+				)
+				if #available(macOS 26.0, iOS 26.0, *) {
+					ZStack {
+						shape.fill(Color.white.opacity(0.5))
+					}
+				} else {
+					shape.fill(.ultraThinMaterial)
+				}
+			}
+		VStack {
+			ImportAppDetailContent(
+				item: ImportedApplication(
+					fileName: "Omnissa-Horizon-Client.pkg",
+					fileExtension: ".pkg",
+					fullFilePath: "/Users/pete/Downloads/Omnissa-Horizon-Client.pkg",
+					hasMetadata: true,
+					isSelected: false,
+					munkiMetadata: MunkiMetadata(
+						installerFile: "Omnissa-Horizon-Client.pkg",
+						installerPlist: "OmnissaHorizon.plist",
+						iconFile: "OmnissaHorizon.png"
+					),
+					macApplication: sampleCask,
+					matchingRecipeId: "com.github.dataJAR-recipes.munki.Omnissa Horizon Client",
+					matchedOn: "name",
+					matchedScore: 100,
+					selectedIconIndex: nil,
+					selectedIconPath: nil,
+					cachedFileSizeBytes: 198_765_432,
+					uploadProgress: UploadProgress(),
+					metadataProgress: MetadataProgress(),
+					shouldCloseFlyout: false,
+					parsedMetadata: nil,
+					proposedMetadata: nil
+				),
+				onAddToQueue: {},
+				onClose: {}
+			)
+		}
+		.frame(width: 400)
+		.padding(10)
+	}
+	.frame(width: 500, height: 600)
+}
+
 struct ImportAppDetailContent: View {
 	// MARK: - Inputs
 
@@ -731,9 +802,10 @@ struct ImportAppDetailContent: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
-			ZStack(alignment: .top) {
-					ScrollView {
-					VStack(alignment: .leading, spacing: 12) {
+			ZStack(alignment: .bottom) {
+				ZStack(alignment: .top) {
+						ScrollView {
+						VStack(alignment: .leading, spacing: 12) {
 						DisclosureGroup("Overview", isExpanded: $overviewExpanded) {
 							detailGrid(rows: overviewRows)
 						}
@@ -752,61 +824,39 @@ struct ImportAppDetailContent: View {
 							}
 							.disclosureGroupStyle(DetailContentDisclosureStyle())
 						}
+							
 					}
 						.padding(.top, headerHeight + 2)
 					}
-					.panelContentScrollChrome(topInset: 0, bottomContentInset: 20)
+					.panelContentScrollChrome(topInset: 0, bottomContentInset: 44, applyMask: false)
 					.contentMargins(.top, headerHeight + 2, for: .scrollIndicators)
-					.contentMargins(.horizontal, 0, for: .scrollContent)
-				.frame(maxHeight: .infinity, alignment: .top)
-				.layoutPriority(1)
+					.contentMargins(
+						.bottom,
+						44 + 2,
+						for: .scrollIndicators
+					)
+					.contentMargins(.trailing, 8, for: .scrollIndicators)
+					.contentMargins(.leading, 14, for: .scrollContent)
+					.contentMargins(.trailing, 14, for: .scrollContent)
+					.frame(maxHeight: .infinity, alignment: .top)
+					.layoutPriority(1)
 
 				VStack(spacing: 0) {
 					header
 				}
-				.background(
-					GeometryReader { proxy in
-						Color.clear
-							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
-					}
-				)
+					.background(
+						GeometryReader { proxy in
+							Color.clear
+								.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
+						}
+					)
 				}
-					HStack {
-						Spacer()
-						Button {
-							if let onClose {
-								onClose()
-							} else {
-								dismiss()
-							}
-						} label: {
-							Image(systemName: "xmark")
-								.font(.system(size: 11, weight: .regular))
-								.padding(.horizontal, -5)
-								.padding(.vertical, 2)
-						}
-						.nativeActionButtonStyle(.secondary, controlSize: .large)
-						.buttonBorderShape(.automatic)
-						Button {
-							onAddToQueue?()
-							if onClose == nil {
-								dismiss()
-							}
-						} label: {
-							Image(systemName: "plus")
-								.font(.system(size: 11, weight: .regular))
-								.padding(.horizontal, -5)
-								.padding(.vertical, 2)
-						}
-						.nativeActionButtonStyle(.primary, controlSize: .large)
-						.buttonBorderShape(.automatic)
-					}
-				.padding(.horizontal, 12)
-				.padding(.top, 4)
-				.padding(.bottom, 12)
-		}
-		.padding(.top, 24)
+				bottomActionBar
+			}
 		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+		.background {
+			detailContentAreaBackground
+		}
 		.clipped()
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.frame(minHeight: 420, alignment: .top)
@@ -816,123 +866,124 @@ struct ImportAppDetailContent: View {
 			headerHeight = newValue
 		}
 	}
+	}
 
-	private var header: some View {
-		Group {
-			if #available(macOS 26.0, iOS 16.0, *) {
-				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
-				ZStack {
-					GlassEffectContainer {
-						shape
-							.fill(Color.clear)
-							.glassEffect(.regular, in: shape)
-					}
-					HStack(alignment: .top, spacing: 8) {
-						ImportAppIconView(item: item)
-							.frame(width: 32, height: 32)
-						VStack(alignment: .leading, spacing: 4) {
-							Text(item.displayTitle)
-								.font(.system(.callout, weight: .semibold))
-								.foregroundStyle(.primary)
-								.lineLimit(2)
-								.minimumScaleFactor(0.85)
-							Text(item.queueSubtitle)
-								.font(.footnote.weight(.regular))
-								.foregroundStyle(.secondary)
-							FlowLayout(spacing: 6, rowSpacing: 6) {
-								if item.hasMetadata {
-									Pill("Metadata", color: .green)
-								}
-								if item.macApplication != nil {
-									Pill("Catalog", color: .blue)
-								} else {
-									Pill("Filesystem", color: .gray)
-								}
-								Pill(fileTypeLabel, color: .orange)
-							}
-						}
-						Spacer()
-						VStack(alignment: .trailing, spacing: 1) {
-							Text("Version")
-								.font(.caption.weight(.medium))
-								.foregroundStyle(.secondary)
-								.padding(.top, 2)
-							Text(resolvedVersion ?? "Not available")
-								.font(.footnote.weight(.regular))
-								.lineLimit(1)
-								.foregroundStyle(.secondary)
-							Text("File Size")
-								.font(.caption.weight(.medium))
-								.foregroundStyle(.secondary)
-							LocalFileSizeValueView(
-								filePath: item.fullFilePath,
-								cachedBytes: item.cachedFileSizeBytes,
-								font: .footnote.weight(.semibold)
-							)
-						}
-					}
-					.padding(12)
-				}
-				.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				.clipShape(shape)
-					.frame(maxHeight: 100)
-			} else {
-				let shape = CustomRoundedCorners(radius: 20, corners: [.topLeft, .topRight])
-				HStack(alignment: .top, spacing: 8) {
-					ImportAppIconView(item: item)
-						.frame(width: 32, height: 32)
-					VStack(alignment: .leading, spacing: 4) {
-						Text(item.displayTitle)
-							.font(.system(.callout, weight: .semibold))
-							.foregroundStyle(.primary)
-							.lineLimit(2)
-							.minimumScaleFactor(0.85)
-						Text(item.queueSubtitle)
-							.font(.footnote.weight(.regular))
-							.foregroundStyle(.secondary)
-						FlowLayout(spacing: 6, rowSpacing: 6) {
-							if item.hasMetadata {
-								Pill("Metadata", color: .green)
-							}
-							if item.macApplication != nil {
-								Pill("Catalog", color: .blue)
-							} else {
-								Pill("Filesystem", color: .gray)
-							}
-							Pill(fileTypeLabel, color: .orange)
-						}
-					}
-					Spacer()
-					VStack(alignment: .trailing, spacing: 1) {
-						Text("Version")
-							.font(.caption.weight(.medium))
-							.foregroundStyle(.secondary)
-							.padding(.top, 2)
-						Text(resolvedVersion ?? "Not available")
-							.font(.footnote.weight(.regular))
-							.lineLimit(1)
-							.foregroundStyle(.secondary)
-						Text("File Size")
-							.font(.caption.weight(.medium))
-							.foregroundStyle(.secondary)
-						LocalFileSizeValueView(
-							filePath: item.fullFilePath,
-							cachedBytes: item.cachedFileSizeBytes,
-							font: .footnote.weight(.semibold)
-						)
-					}
-				}
-				.padding(12)
-				.background(
-					shape
-						.fill(.ultraThinMaterial)
-						.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				)
-				.clipShape(shape)
-				.shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
-			}
+	@ViewBuilder
+	private var bottomActionBar: some View {
+		DetailPinnedGlassSection(
+			corners: [.bottomLeft, .bottomRight],
+			cornerRadius: 14,
+			effectIsRegular: true
+		) {
+			bottomActionButtons
 		}
 	}
+
+	private var bottomActionButtons: some View {
+		HStack {
+			Spacer()
+			Button {
+				if let onClose {
+					onClose()
+				} else {
+					dismiss()
+				}
+			} label: {
+				Image(systemName: "xmark")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -5)
+					.padding(.vertical, 2)
+			}
+			.nativeActionButtonStyle(.secondary, controlSize: .large)
+			Button {
+				onAddToQueue?()
+				if onClose == nil {
+					dismiss()
+				}
+			} label: {
+				Image(systemName: "plus")
+					.font(.system(size: 11, weight: .regular))
+					.padding(.horizontal, -5)
+					.padding(.vertical, 2)
+			}
+			.juiceGradientGlassProminentButtonStyle(controlSize: .large)
+		}
+		.padding(.horizontal, 12)
+		.padding(.top, 4)
+		.padding(.bottom, 12)
+	}
+
+	@ViewBuilder
+	private var detailContentAreaBackground: some View {
+		let shape = Rectangle()
+		if #available(macOS 26.0, iOS 16.0, *) {
+			GlassEffectContainer {
+				shape
+					.fill(Color.clear)
+					.glassEffect(.regular, in: shape)
+			}
+			.overlay(shape.strokeBorder(.white.opacity(0.15)))
+		} else {
+			shape
+				.fill(.ultraThinMaterial)
+				.overlay(shape.strokeBorder(.white.opacity(0.15)))
+		}
+	}
+
+		private var header: some View {
+		DetailPinnedGlassSection(corners: [.topLeft, .topRight]) {
+			HStack(alignment: .top, spacing: 8) {
+				ImportAppIconView(item: item)
+					.frame(width: 32, height: 32)
+				VStack(alignment: .leading, spacing: 4) {
+					Text(item.displayTitle)
+						.font(.system(.callout, weight: .semibold))
+						.foregroundStyle(.primary)
+						.lineLimit(2)
+						.minimumScaleFactor(0.85)
+					Text(item.queueSubtitle)
+						.font(.footnote.weight(.regular))
+						.foregroundStyle(.secondary)
+					FlowLayout(spacing: 6, rowSpacing: 6) {
+						if item.hasMetadata {
+							Pill("Metadata", color: .green)
+						}
+						if item.macApplication != nil {
+							Pill("Catalog", color: .blue)
+						} else {
+							Pill("Filesystem", color: .gray)
+						}
+						Pill(fileTypeLabel, color: .orange)
+					}
+				}
+				Spacer()
+				VStack(alignment: .trailing, spacing: 1) {
+					Text("Version")
+						.font(.caption.weight(.medium))
+						.foregroundStyle(.secondary)
+						.padding(.top, 2)
+					Text(resolvedVersion ?? "Not available")
+						.font(.footnote.weight(.regular))
+						.lineLimit(1)
+						.foregroundStyle(.secondary)
+					Text("File Size")
+						.font(.caption.weight(.medium))
+						.foregroundStyle(.secondary)
+					LocalFileSizeValueView(
+						filePath: item.fullFilePath,
+						cachedBytes: item.cachedFileSizeBytes,
+						font: .footnote.weight(.semibold)
+					)
+				}
+			}
+			.padding(12)
+			.padding(.top, 40)
+			.padding(.horizontal, 8)
+		}
+		.frame(maxHeight: 140)
+		.padding(.top, -20)
+	}
+
 
 	private var overviewRows: [DetailContentRow] {
 		[
