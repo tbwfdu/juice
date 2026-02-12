@@ -364,8 +364,10 @@ private struct InspectorOverlayView: View {
 						in: shape,
 						style: .regular,
 						context: glassState,
-						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
-						fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
+						//fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillColor: Color.clear,
+						//fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
+						fillOpacity: 0.2,
 						surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
 					)
 				}

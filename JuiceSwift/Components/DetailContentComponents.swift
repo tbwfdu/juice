@@ -49,6 +49,71 @@ private struct DetailPinnedGlassSection<Content: View>: View {
 	}
 }
 
+private enum DetailPanelLayout {
+	static let headerHeight: CGFloat = 158
+	static let bottomBarHeight: CGFloat = 64
+	static let horizontalContentInset: CGFloat = 10
+	static let bottomButtonVerticalPadding: CGFloat = 10
+	static let scrollIndicatorTrailingInset: CGFloat = 8
+	static let headerClearanceTopInset: CGFloat = 32
+	static let headerBottomInset: CGFloat = 10
+}
+
+private struct DetailScrollGlassBackground: View {
+	let topInset: CGFloat
+	let bottomInset: CGFloat
+	private let borderColor = Color.white.opacity(0.15)
+
+	var body: some View {
+		let shape = Rectangle()
+		if #available(macOS 26.0, iOS 16.0, *) {
+			GlassEffectContainer {
+				shape
+					.fill(Color.clear)
+					.glassEffect(.regular, in: shape)
+			}
+			.mask {
+				VStack(spacing: 0) {
+					Color.clear.frame(height: max(0, topInset))
+					Rectangle().fill(Color.white)
+					Color.clear.frame(height: max(0, bottomInset))
+				}
+			}
+			.overlay {
+				HStack(spacing: 0) {
+					Rectangle().fill(borderColor).frame(width: 1)
+					Spacer(minLength: 0)
+					Rectangle().fill(borderColor).frame(width: 1)
+				}
+					.mask {
+						VStack(spacing: 0) {
+							Color.clear.frame(height: max(0, topInset))
+							Rectangle().fill(Color.white)
+							Color.clear.frame(height: max(0, bottomInset))
+						}
+					}
+			}
+		} else {
+			shape
+				.fill(.ultraThinMaterial)
+				.overlay {
+					HStack(spacing: 0) {
+						Rectangle().fill(borderColor).frame(width: 1)
+						Spacer(minLength: 0)
+						Rectangle().fill(borderColor).frame(width: 1)
+					}
+				}
+				.mask {
+					VStack(spacing: 0) {
+						Color.clear.frame(height: max(0, topInset))
+						Rectangle().fill(Color.white)
+						Color.clear.frame(height: max(0, bottomInset))
+					}
+				}
+		}
+	}
+}
+
 struct AppDetailContent: View {
 	// MARK: - Inputs
 
@@ -62,146 +127,136 @@ struct AppDetailContent: View {
 	@State private var countsExpanded = false
 	@State private var smartGroupsExpanded = false
 	@State private var matchedExpanded = false
-	@State private var headerHeight: CGFloat = 0
 
 	// MARK: - Body
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			ZStack(alignment: .bottom) {
-				ZStack(alignment: .top) {
-					// Scroll content sits below a pinned header; header height is measured dynamically.
-					ScrollView {
-						VStack(alignment: .leading, spacing: 12) {
-							DisclosureGroup(
-								"Overview",
-								isExpanded: $overviewExpanded
-							) {
-								detailGrid(rows: overviewRows)
-							}
-							.disclosureGroupStyle(
-								DetailContentDisclosureStyle()
-							)
-
-							if !countRows.isEmpty {
-								DisclosureGroup(
-									"Counts",
-									isExpanded: $countsExpanded
-								) {
-									detailGrid(rows: countRows)
-								}
-								.disclosureGroupStyle(
-									DetailContentDisclosureStyle()
-								)
-							}
-
-							if !smartGroupNames.isEmpty {
-								DisclosureGroup(
-									"Smart Groups",
-									isExpanded: $smartGroupsExpanded
-								) {
-									FlowLayout(spacing: 8, rowSpacing: 8) {
-										ForEach(smartGroupNames, id: \.self) {
-											name in
-											Pill(name, color: .blue)
-										}
-									}
-								}
-								.disclosureGroupStyle(
-									DetailContentDisclosureStyle()
-								)
-							}
-
-							if let matchedApp = item.updatedApplication {
-								DisclosureGroup(
-									"Matched Catalog App",
-									isExpanded: $matchedExpanded
-								) {
-									VStack(alignment: .leading, spacing: 10) {
-										Text(
-											matchedApp.name.first
-												?? matchedApp.token
-										)
-										.font(
-											.system(
-												.headline,
-												weight: .semibold
-											)
-										)
-										matchedCatalogDetails(for: matchedApp)
-									}
-								}
-								.disclosureGroupStyle(
-									DetailContentDisclosureStyle()
-								)
-							}
-						}
-						.padding(.top, headerHeight)
+		ZStack(alignment: .top) {
+			ScrollView {
+				VStack(alignment: .leading, spacing: 12) {
+					DisclosureGroup(
+						"Overview",
+						isExpanded: $overviewExpanded
+					) {
+						detailGrid(rows: overviewRows)
 					}
-					.background {
-						detailScrollBackground(
-							topInset: headerHeight - 18,
-							bottomInset: 50
+					.disclosureGroupStyle(
+						DetailContentDisclosureStyle()
+					)
+
+					if !countRows.isEmpty {
+						DisclosureGroup(
+							"Counts",
+							isExpanded: $countsExpanded
+						) {
+							detailGrid(rows: countRows)
+						}
+						.disclosureGroupStyle(
+							DetailContentDisclosureStyle()
 						)
 					}
-					.panelContentScrollChrome(
-						topInset: 0,
-						bottomContentInset: 44,
-						applyMask: false
-					)
-					.contentMargins(.top, headerHeight, for: .scrollIndicators)
-					.contentMargins(
-						.bottom,
-						44 + 2,
-						for: .scrollIndicators
-					)
-					.contentMargins(.trailing, 8, for: .scrollIndicators)
-					.contentMargins(.leading, 14, for: .scrollContent)
-					.contentMargins(.trailing, 14, for: .scrollContent)
-					.frame(maxHeight: .infinity, alignment: .top)
-					.layoutPriority(1)
-					//.border(.red, width: 2)
 
-					VStack(spacing: 0) {
-						header
-					}
-					.background(
-						GeometryReader { proxy in
-							Color.clear
-								.preference(
-									key: DetailContentHeaderHeightKey.self,
-									value: proxy.size.height
-								)
+					if !smartGroupNames.isEmpty {
+						DisclosureGroup(
+							"Smart Groups",
+							isExpanded: $smartGroupsExpanded
+						) {
+							FlowLayout(spacing: 8, rowSpacing: 8) {
+								ForEach(smartGroupNames, id: \.self) {
+									name in
+									Pill(name, color: .blue)
+								}
+							}
 						}
-					)
-				}
-				VStack(spacing: 0) {
-					bottomActionBar
-				}
-				//				.background(
-				//					GeometryReader { proxy in
-				//						Color.clear
-				//							.preference(key: DetailContentHeaderHeightKey.self, value: proxy.size.height)
-				//					}
-				//					)
+						.disclosureGroupStyle(
+							DetailContentDisclosureStyle()
+						)
+					}
 
+					if let matchedApp = item.updatedApplication {
+						DisclosureGroup(
+							"Matched Catalog App",
+							isExpanded: $matchedExpanded
+						) {
+							VStack(alignment: .leading, spacing: 10) {
+								Text(
+									matchedApp.name.first
+										?? matchedApp.token
+								)
+								.font(
+									.system(
+										.headline,
+										weight: .semibold
+									)
+								)
+								matchedCatalogDetails(for: matchedApp)
+							}
+						}
+						.disclosureGroupStyle(
+							DetailContentDisclosureStyle()
+						)
+					}
+				}
+				//.padding(.top, DetailPanelLayout.headerHeight)
+				//.padding(.bottom, DetailPanelLayout.bottomBarHeight)
+				.padding(.top, 110)
+				.padding(.bottom, 0)
 			}
-			.frame(
-				maxWidth: .infinity,
-				maxHeight: .infinity,
-				alignment: .topLeading
+			.background {
+				DetailScrollGlassBackground(
+//					topInset: DetailPanelLayout.headerHeight,
+//					bottomInset: DetailPanelLayout.bottomBarHeight
+					topInset: 99,
+					bottomInset: 47
+				)
+			}
+			.frame(maxHeight: .infinity, alignment: .top)
+			.contentMargins(
+				.trailing,
+				DetailPanelLayout.scrollIndicatorTrailingInset,
+				for: .scrollIndicators
 			)
-			.clipped()
-			//.border(Color(.red), width: 1)
-			.background(WindowFocusReader { focusObserver.attach($0) })
-			.frame(minHeight: 420, alignment: .top)
-			//.border(Color(.blue), width: 1)
-			.background(Color.clear)
-			.presentationBackground(.clear)
-			.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
-				headerHeight = newValue
+			.contentMargins(
+				.top,
+				DetailPanelLayout.headerHeight,
+				for: .scrollIndicators
+			)
+			.contentMargins(
+				.bottom,
+				DetailPanelLayout.bottomBarHeight,
+				for: .scrollIndicators
+			)
+			.contentMargins(
+				.leading,
+				DetailPanelLayout.horizontalContentInset,
+				for: .scrollContent
+			)
+			.contentMargins(
+				.trailing,
+				DetailPanelLayout.horizontalContentInset,
+				for: .scrollContent
+			)
+			
+			.layoutPriority(1)
+
+			VStack(spacing: 0) {
+				header
+					.frame(height: DetailPanelLayout.headerHeight, alignment: .top)
+				Spacer(minLength: 0)
+				bottomActionBar
+					.frame(height: DetailPanelLayout.bottomBarHeight, alignment: .bottom)
 			}
 		}
+		.frame(
+			maxWidth: .infinity,
+			maxHeight: .infinity,
+			alignment: .topLeading
+		)
+		.clipped()
+		.background(WindowFocusReader { focusObserver.attach($0) })
+		.frame(minHeight: 420, alignment: .top)
+		.background(Color.clear)
+		.presentationBackground(.clear)
 	}
 
 	@ViewBuilder
@@ -244,53 +299,8 @@ struct AppDetailContent: View {
 			}
 			.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 		}
-		.padding(.horizontal, 12)
-		.padding(.top, 12)
-		.padding(.bottom, 12)
-	}
-
-	@ViewBuilder
-	private func detailScrollBackground(
-		topInset: CGFloat,
-		bottomInset: CGFloat = 0
-	) -> some View {
-		let shape = Rectangle()
-		if #available(macOS 26.0, iOS 16.0, *) {
-			GlassEffectContainer {
-				shape
-					.fill(Color.clear)
-					.glassEffect(.regular, in: shape)
-			}
-			.mask {
-				VStack(spacing: 0) {
-					Color.clear.frame(height: max(0, topInset))
-					Rectangle().fill(Color.white)
-					Color.clear.frame(height: max(0, bottomInset))
-				}
-			}
-			.overlay {
-				shape
-					.strokeBorder(.white.opacity(0.15))
-					.mask {
-						VStack(spacing: 0) {
-							Color.clear.frame(height: max(0, topInset))
-							Rectangle().fill(Color.white)
-							Color.clear.frame(height: max(0, bottomInset))
-						}
-					}
-			}
-		} else {
-			shape
-				.fill(.ultraThinMaterial)
-				.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				.mask {
-					VStack(spacing: 0) {
-						Color.clear.frame(height: max(0, topInset))
-						Rectangle().fill(Color.white)
-						Color.clear.frame(height: max(0, bottomInset))
-					}
-				}
-		}
+		.padding(.horizontal, DetailPanelLayout.horizontalContentInset)
+		.padding(.vertical, DetailPanelLayout.bottomButtonVerticalPadding)
 	}
 
 	private var header: some View {
@@ -347,12 +357,11 @@ struct AppDetailContent: View {
 					}
 				}
 			}
-			.padding(12)
-			.padding(.top, 40)
-			.padding(.horizontal, 8)
+			.padding(.horizontal, DetailPanelLayout.horizontalContentInset)
+			.padding(.top, DetailPanelLayout.headerClearanceTopInset)
+			.padding(.bottom, DetailPanelLayout.headerBottomInset)
 		}
-		.frame(maxHeight: 140)
-		.padding(.top, -20)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 	}
 
 	private var overviewRows: [DetailContentRow] {
@@ -602,16 +611,6 @@ struct AppDetailContent: View {
 	}
 }
 
-private struct DetailContentHeaderHeightKey: PreferenceKey {
-	static let defaultValue: CGFloat = 0
-	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-		let next = nextValue()
-		if next > 0 {
-			value = next
-		}
-	}
-}
-
 private struct DetailContentRow: Identifiable {
 	let id = UUID()
 	let label: String
@@ -743,109 +742,106 @@ struct ImportAppDetailContent: View {
 	@State private var overviewExpanded = true
 	@State private var metadataExpanded = true
 	@State private var catalogExpanded = false
-	@State private var headerHeight: CGFloat = 0
 
 	// MARK: - Body
 
 	var body: some View {
-		VStack(alignment: .leading, spacing: 14) {
-			ZStack(alignment: .bottom) {
-				ZStack(alignment: .top) {
-					ScrollView {
-						VStack(alignment: .leading, spacing: 12) {
-							DisclosureGroup(
-								"Overview",
-								isExpanded: $overviewExpanded
-							) {
-								detailGrid(rows: overviewRows)
-							}
-							.disclosureGroupStyle(
-								DetailContentDisclosureStyle()
-							)
-
-							if hasMetadataSection {
-								DisclosureGroup(
-									"Metadata",
-									isExpanded: $metadataExpanded
-								) {
-									detailGrid(rows: metadataRows)
-								}
-								.disclosureGroupStyle(
-									DetailContentDisclosureStyle()
-								)
-							}
-
-							if item.macApplication != nil {
-								DisclosureGroup(
-									"Catalog Details",
-									isExpanded: $catalogExpanded
-								) {
-									detailGrid(rows: catalogRows)
-								}
-								.disclosureGroupStyle(
-									DetailContentDisclosureStyle()
-								)
-							}
-
-						}
-						.padding(.top, headerHeight + 2)
+		ZStack(alignment: .top) {
+			ScrollView {
+				VStack(alignment: .leading, spacing: 12) {
+					DisclosureGroup(
+						"Overview",
+						isExpanded: $overviewExpanded
+					) {
+						detailGrid(rows: overviewRows)
 					}
-					.background {
-						detailScrollBackground(
-							topInset: headerHeight - 8,
-							bottomInset: 50
+					.disclosureGroupStyle(
+						DetailContentDisclosureStyle()
+					)
+
+					if hasMetadataSection {
+						DisclosureGroup(
+							"Metadata",
+							isExpanded: $metadataExpanded
+						) {
+							detailGrid(rows: metadataRows)
+						}
+						.disclosureGroupStyle(
+							DetailContentDisclosureStyle()
 						)
 					}
-					.panelContentScrollChrome(
-						topInset: 0,
-						bottomContentInset: 44,
-						applyMask: false
-					)
-					.contentMargins(
-						.top,
-						headerHeight + 2,
-						for: .scrollIndicators
-					)
-					.contentMargins(
-						.bottom,
-						44 + 2,
-						for: .scrollIndicators
-					)
-					.contentMargins(.trailing, 8, for: .scrollIndicators)
-					.contentMargins(.leading, 14, for: .scrollContent)
-					.contentMargins(.trailing, 14, for: .scrollContent)
-					.frame(maxHeight: .infinity, alignment: .top)
-					.layoutPriority(1)
 
-					VStack(spacing: 0) {
-						header
-					}
-					.background(
-						GeometryReader { proxy in
-							Color.clear
-								.preference(
-									key: DetailContentHeaderHeightKey.self,
-									value: proxy.size.height
-								)
+					if item.macApplication != nil {
+						DisclosureGroup(
+							"Catalog Details",
+							isExpanded: $catalogExpanded
+						) {
+							detailGrid(rows: catalogRows)
 						}
-					)
+						.disclosureGroupStyle(
+							DetailContentDisclosureStyle()
+						)
+					}
 				}
-				bottomActionBar
+				//.padding(.top, DetailPanelLayout.headerHeight)
+				//.padding(.bottom, DetailPanelLayout.bottomBarHeight)
+				.padding(.top, 110)
+				.padding(.bottom, 0)
 			}
-			.frame(
-				maxWidth: .infinity,
-				maxHeight: .infinity,
-				alignment: .topLeading
+			.background {
+				DetailScrollGlassBackground(
+//					topInset: DetailPanelLayout.headerHeight,
+//					bottomInset: DetailPanelLayout.bottomBarHeight
+					topInset: 99,
+					bottomInset: 47
+				)
+			}
+			.contentMargins(
+				.trailing,
+				DetailPanelLayout.scrollIndicatorTrailingInset,
+				for: .scrollIndicators
 			)
-			.clipped()
-			.background(WindowFocusReader { focusObserver.attach($0) })
-			.frame(minHeight: 420, alignment: .top)
-			.background(Color.clear)
-			.presentationBackground(.clear)
-			.onPreferenceChange(DetailContentHeaderHeightKey.self) { newValue in
-				headerHeight = newValue
+			.contentMargins(
+				.top,
+				DetailPanelLayout.headerHeight,
+				for: .scrollIndicators
+			)
+			.contentMargins(
+				.bottom,
+				DetailPanelLayout.bottomBarHeight,
+				for: .scrollIndicators
+			)
+			.contentMargins(
+				.leading,
+				DetailPanelLayout.horizontalContentInset,
+				for: .scrollContent
+			)
+			.contentMargins(
+				.trailing,
+				DetailPanelLayout.horizontalContentInset,
+				for: .scrollContent
+			)
+			.frame(maxHeight: .infinity, alignment: .top)
+			.layoutPriority(1)
+
+			VStack(spacing: 0) {
+				header
+					.frame(height: DetailPanelLayout.headerHeight, alignment: .top)
+				Spacer(minLength: 0)
+				bottomActionBar
+					.frame(height: DetailPanelLayout.bottomBarHeight, alignment: .bottom)
 			}
 		}
+		.frame(
+			maxWidth: .infinity,
+			maxHeight: .infinity,
+			alignment: .topLeading
+		)
+		.clipped()
+		.background(WindowFocusReader { focusObserver.attach($0) })
+		.frame(minHeight: 420, alignment: .top)
+		.background(Color.clear)
+		.presentationBackground(.clear)
 	}
 
 	@ViewBuilder
@@ -888,53 +884,8 @@ struct ImportAppDetailContent: View {
 			}
 			.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 		}
-		.padding(.horizontal, 12)
-		.padding(.top, 12)
-		.padding(.bottom, 12)
-	}
-
-	@ViewBuilder
-	private func detailScrollBackground(
-		topInset: CGFloat,
-		bottomInset: CGFloat = 0
-	) -> some View {
-		let shape = Rectangle()
-		if #available(macOS 26.0, iOS 16.0, *) {
-			GlassEffectContainer {
-				shape
-					.fill(Color.clear)
-					.glassEffect(.regular, in: shape)
-			}
-			.mask {
-				VStack(spacing: 0) {
-					Color.clear.frame(height: max(0, topInset))
-					Rectangle().fill(Color.white)
-					Color.clear.frame(height: max(0, bottomInset))
-				}
-			}
-			.overlay {
-				shape
-					.strokeBorder(.white.opacity(0.15))
-					.mask {
-						VStack(spacing: 0) {
-							Color.clear.frame(height: max(0, topInset))
-							Rectangle().fill(Color.white)
-							Color.clear.frame(height: max(0, bottomInset))
-						}
-					}
-			}
-		} else {
-			shape
-				.fill(.ultraThinMaterial)
-				.overlay(shape.strokeBorder(.white.opacity(0.15)))
-				.mask {
-					VStack(spacing: 0) {
-						Color.clear.frame(height: max(0, topInset))
-						Rectangle().fill(Color.white)
-						Color.clear.frame(height: max(0, bottomInset))
-					}
-				}
-		}
+		.padding(.horizontal, DetailPanelLayout.horizontalContentInset)
+		.padding(.vertical, DetailPanelLayout.bottomButtonVerticalPadding)
 	}
 
 	private var header: some View {
@@ -983,12 +934,11 @@ struct ImportAppDetailContent: View {
 					)
 				}
 			}
-			.padding(12)
-			.padding(.top, 40)
-			.padding(.horizontal, 8)
+			.padding(.horizontal, DetailPanelLayout.horizontalContentInset)
+			.padding(.top, DetailPanelLayout.headerClearanceTopInset)
+			.padding(.bottom, DetailPanelLayout.headerBottomInset)
 		}
-		.frame(maxHeight: 140)
-		.padding(.top, -20)
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 	}
 
 	private var overviewRows: [DetailContentRow] {
@@ -1227,7 +1177,7 @@ struct ImportAppDetailContent: View {
 		.frame(width: 400)
 		.padding(10)
 	}
-	.frame(width: 500, height: 600)
+	.frame(width: 500)
 }
 
 #Preview("Import App Detail") {
@@ -1284,7 +1234,5 @@ struct ImportAppDetailContent: View {
 		.frame(width: 400)
 		.padding(10)
 	}
-	.frame(width: 500, height: 600)
+	.frame(width: 500)
 }
-
-
