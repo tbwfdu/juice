@@ -7,6 +7,62 @@ import SwiftUI
 // Consolidated queue/results inspector panel components.
 // Used by: SearchView, UpdatesView, ImportView, DownloadQueuePanelContent.
 
+private struct QueuePinnedGlassSection<Content: View>: View {
+	let corners: CustomRoundedCorners.Corner
+	var cornerRadius: CGFloat = 20
+	var showsBorder: Bool = true
+	@ViewBuilder let content: () -> Content
+
+	var body: some View {
+		let shape = CustomRoundedCorners(radius: cornerRadius, corners: corners)
+		if #available(macOS 26.0, iOS 16.0, *) {
+			content()
+				.background {
+					GlassEffectContainer {
+						shape
+							.fill(Color.clear)
+							.glassEffect(.regular, in: shape)
+					}
+				}
+				.overlay {
+					if showsBorder {
+						shape.strokeBorder(.white.opacity(0.15))
+					}
+				}
+				.clipShape(shape)
+		} else {
+			content()
+				.background(
+					shape
+						.fill(.ultraThinMaterial)
+						.overlay {
+							if showsBorder {
+								shape.strokeBorder(.white.opacity(0.15))
+							}
+						}
+				)
+				.clipShape(shape)
+		}
+	}
+}
+
+private struct QueuePanelHeaderHeightKey: PreferenceKey {
+	static let defaultValue: CGFloat = 0
+	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+		let next = nextValue()
+		if next > 0 {
+			value = next
+		}
+	}
+}
+
+private struct QueuePanelBottomBarHeightKey: PreferenceKey {
+	static let defaultValue: CGFloat = 0
+	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+		value = nextValue()
+	}
+}
+
 struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 	// MARK: - Inputs & State
 
@@ -41,6 +97,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 	@State private var displayNotice: Notice?
 	@State private var isDismissingNotice = false
 	@State private var previousTab: Tab = .queue
+	@State private var panelHeaderHeight: CGFloat = 0
 	private let noticeText = "Added!"
 	// Temporary override so the Results tab can be tested even when empty.
 	private let enableResultsTabWhenEmpty = true
@@ -227,63 +284,88 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 				.lineLimit(1)
 				.truncationMode(.tail)
 		}
-		return VStack(alignment: .leading, spacing: 12) {
-			ViewThatFits(in: .horizontal) {
-				HStack(alignment: .top, spacing: 8) {
-					titleBlock
-					Spacer(minLength: 8)
-					headerActions(actionTitle: actionTitle, action: action, isPinned: isPinned, isActionDisabled: isActionDisabled)
-				}
-				VStack(alignment: .leading, spacing: 10) {
-					titleBlock
-					HStack(spacing: 8) {
-						Spacer(minLength: 0)
-						headerActions(actionTitle: actionTitle, action: action, isPinned: isPinned, isActionDisabled: isActionDisabled)
-					}
-				}
-			}
-			.padding(.horizontal, 5)
-			.padding(.top, 20)
-			.padding(.bottom, 0)
-			
-			ZStack(alignment: .bottomTrailing) {
+		let hasBottomBar = bottomActions != nil
+		let bottomContentInset: CGFloat = hasBottomBar ? 60 : 20
+		let bottomIndicatorInset: CGFloat = hasBottomBar ? (bottomContentInset + 2) : 10
+
+		return ZStack(alignment: .bottomTrailing) {
+			ZStack(alignment: .top) {
 				ScrollView {
 					content()
-						//.padding(.vertical, 14)
-						.padding(.horizontal, 10)
+						.padding(.top, panelHeaderHeight + 2)
 				}
-					.safeAreaInset(edge: .top) {
-						Color.clear.frame(height: 20)
+				.scrollContentBackground(.hidden)
+				.background(Color.clear)
+				.background {
+					QueuePinnedGlassSection(
+						corners: [.allCorners],
+						cornerRadius: 14
+					) {
+						Color.clear
 					}
-					.safeAreaInset(edge: .bottom) {
-						Color.clear.frame(height: 20)
+				}
+				.panelContentScrollChrome(
+					topInset: 0,
+					bottomContentInset: bottomContentInset,
+					applyMask: false
+				)
+				.contentMargins(.top, panelHeaderHeight + 2, for: .scrollIndicators)
+				.contentMargins(.bottom, bottomIndicatorInset, for: .scrollIndicators)
+				.contentMargins(.trailing, 8, for: .scrollIndicators)
+				.contentMargins(.leading, 10, for: .scrollContent)
+				.contentMargins(.trailing, 10, for: .scrollContent)
+				.frame(maxHeight: .infinity, alignment: .top)
+
+				QueuePinnedGlassSection(corners: [.topLeft, .topRight]) {
+					ViewThatFits(in: .horizontal) {
+						HStack(alignment: .top, spacing: 8) {
+							titleBlock
+							Spacer(minLength: 8)
+							headerActions(
+								actionTitle: actionTitle,
+								action: action,
+								isPinned: isPinned,
+								isActionDisabled: isActionDisabled
+							)
+						}
+						VStack(alignment: .leading, spacing: 10) {
+							titleBlock
+							HStack(spacing: 8) {
+								Spacer(minLength: 0)
+								headerActions(
+									actionTitle: actionTitle,
+									action: action,
+									isPinned: isPinned,
+									isActionDisabled: isActionDisabled
+								)
+							}
+						}
 					}
-					// Modern Margin Handling: Keeps scrollbars at edge while content is inset
-					.contentMargins(.bottom, bottomActions != nil ? 60 : 20, for: .scrollContent)
-					.contentMargins(.trailing, 8, for: .scrollIndicators)
-					// The Transparency-Safe Fade
-					.mask {
-					LinearGradient(
-						stops: [
-							.init(color: .clear, location: 0),
-							.init(color: .black, location: 0.022), // Top fade
-							.init(color: .black, location: 0.965), // Bottom fade start
-							.init(color: .clear, location: 1.0)   // Bottom fade end
-						],
-						startPoint: .top,
-						endPoint: .bottom
-					)
+					.padding(.horizontal, 12)
+					.padding(.top, 30)
+					.padding(.bottom, 10)
 				}
-				
-				if let bottomActions {
-					bottomActions
-						.padding(.trailing, 18)
-						.padding(.bottom, 12)
-				}
+				.background(
+					GeometryReader { proxy in
+						Color.clear.preference(
+							key: QueuePanelHeaderHeightKey.self,
+							value: proxy.size.height
+						)
+					}
+				)
 			}
-			.frame(maxHeight: .infinity)
-			.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-			.padding(-16)
+
+			if let bottomActions {
+				bottomActions
+					.padding(.trailing, 18)
+					.padding(.bottom, 12)
+			}
+		}
+		.frame(maxHeight: .infinity)
+		.onPreferenceChange(QueuePanelHeaderHeightKey.self) { newValue in
+			if newValue > 0 {
+				panelHeaderHeight = newValue
+			}
 		}
 	}
 

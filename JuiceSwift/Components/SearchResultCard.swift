@@ -81,8 +81,7 @@ struct SearchResultCard: View {
 								.padding(.vertical, 2)
 						}
 						.accessibilityLabel(actionTitle)
-							.nativeActionButtonStyle(.primary, controlSize: .large)
-							.buttonBorderShape(.automatic)
+							.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 					}
 
 			Divider()
