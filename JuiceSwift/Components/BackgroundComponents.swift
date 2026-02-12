@@ -118,44 +118,23 @@ struct WindowGlassBackground: View {
 
     var body: some View {
         let shape = Rectangle()
-        let isFocused = focusObserver.isFocused
         ZStack {
             Group {
                 if #available(macOS 26.0, iOS 26.0, *) {
                     ZStack {
-                        if isFocused {
-                            shape.fill(.ultraThinMaterial)
-                        } else {
-                            shape.fill(.ultraThinMaterial)
-                                .opacity(0.25)
-                        }
+                        shape.fill(.ultraThinMaterial)
                         GlassEffectContainer {
                             shape
                                 .fill(Color.clear)
                                 .glassEffect(.regular, in: shape)
                         }
-                        if !isFocused {
-                            GlassEffectContainer {
-                                shape
-                                    .fill(Color.clear)
-                                    .glassEffect(.regular, in: shape)
-                            }
-                            .opacity(0.35)
-                        }
                     }
                 } else {
-                    VisualEffectView(
-                        material: isFocused ? .hudWindow : .underWindowBackground,
-                        blendingMode: .behindWindow
-                    )
-                    if !isFocused {
-                        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                            .opacity(0.35)
-                    }
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
                 }
             }
             Color(nsColor: .windowBackgroundColor)
-                .opacity(isFocused ? 0.5 : 0.12)
+                .opacity(0.12)
         }
         .background(WindowFocusReader { window in
             focusObserver.attach(window)
@@ -285,8 +264,6 @@ struct JuiceGlassWordBackground: View {
             let width = proxy.size.width
             let textSize = min(max(width * style.wordSizeFactor, style.wordMinSize), style.wordMaxSize)
             let hasWord = !style.wordText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            let focusOpacityMultiplier: Double = focusObserver.isFocused ? 1.0 : 0.80
-            let focusBlurRadius: CGFloat = focusObserver.isFocused ? 0 : 3.0
             let textShape = Text(style.wordText)
 				.font(.system(size: textSize, weight: .heavy))
                 .tracking(style.wordTracking)
@@ -300,8 +277,7 @@ struct JuiceGlassWordBackground: View {
                 backgroundGlassLayer
 
                 LinearGradient.juice
-                    .opacity((colorScheme == .dark ? style.gradientOpacityDark : style.gradientOpacityLight) * focusOpacityMultiplier)
-                    .blur(radius: focusBlurRadius)
+                    .opacity(colorScheme == .dark ? style.gradientOpacityDark : style.gradientOpacityLight)
                     .ignoresSafeArea()
 
                 if hasWord {
@@ -353,7 +329,6 @@ struct JuiceGlassWordBackground: View {
                             endPoint: .bottom
                         )
                     )
-                    .blur(radius: focusBlurRadius * 0.6)
             }
         }
         .background(WindowFocusReader { window in

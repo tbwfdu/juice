@@ -47,6 +47,8 @@ struct UpdatesView: View {
 	@StateObject private var focusObserver = WindowFocusObserver()
 	@State private var panelMinHeightCache: CGFloat = 0
 	@State private var expandActionsTrigger: Int = 0
+	@State private var isClearActionExpanded = false
+	@State private var updatesTopRowHeight: CGFloat = 0
 
 	private var glassBaseOpacity: CGFloat {
 		GlassThemeTokens.panelBaseTintOpacity(for: glassState)
@@ -75,7 +77,7 @@ struct UpdatesView: View {
 				VStack(alignment: .leading) {
 					HStack(alignment: .top) {
 						// Primary updates content panel.
-						leftPanel(
+						mainContentPanel(
 							panelMinHeight: panelMinHeight,
 							panelMinWidth: CGFloat(panelMinWidth)
 						)
@@ -143,15 +145,13 @@ struct UpdatesView: View {
 			alignment: .topLeading
 		)
 		.ifAvailableMacOS14ContentMarginsElsePadding()
-		.onAppearUnlessPreview {
-			queueItems = model.queueItems
-			resultsItems = model.updateItems
-			DispatchQueue.main.async {
-				withAnimation(.bouncy(duration: 0.35, extraBounce: 0.12)) {
+			.onAppearUnlessPreview {
+				queueItems = model.queueItems
+				resultsItems = model.updateItems
+				DispatchQueue.main.async {
 					uemApps = model.uemApps
 				}
 			}
-		}
 		.sheet(isPresented: $confirmationVisible) {
 			QueueActionSheet(
 				mode: confirmationMode,
@@ -168,44 +168,90 @@ struct UpdatesView: View {
 	}
 
 	@ViewBuilder
-	private func leftPanel(panelMinHeight: CGFloat, panelMinWidth: CGFloat)
+	private func mainContentPanel(panelMinHeight: CGFloat, panelMinWidth: CGFloat)
 		-> some View
 	{
 		ZStack(alignment: .center) {
-			VStack(alignment: .leading, spacing: 16) {
-				SectionHeader(
-					"Application Updates",
-					subtitle: "Query Workspace ONE for Application Updates"
-				)
-				//queryButtonsRow()
-				buttonsView()
-				if !uemApps.isEmpty {
-					let updates: [UemApplication] = uemApps.filter {
-						($0.hasUpdate ?? false)
+			let updates: [UemApplication] = uemApps.filter {
+				($0.hasUpdate ?? false)
+			}
+			let displayedApps: [UemApplication] =
+				showAllUemApps ? uemApps : updates
+			let hasResults = !uemApps.isEmpty
+
+			ZStack(alignment: .top) {
+				if hasResults {
+					leftPanelGlassRow(
+						backgroundTopInset: max(0, updatesTopRowHeight - 4),
+						showsTopBorder: false
+					) {
+						appsListSection(topOverlayHeight: updatesTopRowHeight)
 					}
-					let displayedApps: [UemApplication] =
-						showAllUemApps ? uemApps : updates
-					updatesHeaderRow(displayedApps: displayedApps)
-						.frame(minWidth: 550)
-						.frame(
-							maxWidth: 900,
-							alignment: .init(
-								horizontal: .center,
-								vertical: .center
-							)
-						).padding(0)
 				}
-				appsListSection()
+				leftPanelGlassRow(showsBottomBorder: hasResults ? false : true) {
+					VStack(alignment: .leading, spacing: 16) {
+						SectionHeader(
+							"Application Updates",
+							subtitle: "Query Workspace ONE for Application Updates"
+						)
+						buttonsView()
+							.id("updates_query_clear_controls")
+						if hasResults {
+							updatesHeaderRow(displayedApps: displayedApps)
+								.frame(minWidth: 550)
+								.frame(
+									maxWidth: 900,
+									alignment: .init(
+										horizontal: .center,
+										vertical: .center
+									)
+								)
+						} else if isQueryingUem {
+							Spacer(minLength: 20)
+							VStack(alignment: .center, spacing: 10) {
+								ThinkingIndicator(
+									phrases: [
+										"Querying Workspace ONE",
+										"Evaluating Matches",
+										"Identifying Updates",
+									],
+									iconName: "sparkles"
+								)
+							}
+							.frame(maxWidth: .infinity, alignment: .center)
+							Spacer(minLength: 0)
+						} else {
+							Spacer(minLength: 0)
+						}
+					}
+					.padding(16)
+					.frame(
+						maxHeight: hasResults ? nil : .infinity,
+						alignment: .topLeading
+					)
+				}
+				.background(
+					GeometryReader { proxy in
+						Color.clear.preference(
+							key: UpdatesHeaderRowHeightKey.self,
+							value: proxy.size.height
+						)
+					}
+				)
 			}
 			if let notice = queueNotice {
 				leftPanelQueueNotice(notice)
 					.transition(
 						.opacity.combined(with: .scale(scale: 0.96, anchor: .center))
-					)
+				)
 					.allowsHitTesting(false)
 			}
 		}
-		.padding(16)
+		.onPreferenceChange(UpdatesHeaderRowHeightKey.self) { newValue in
+			if newValue > 0 {
+				updatesTopRowHeight = newValue
+			}
+		}
 		.frame(
 			minWidth: CGFloat(panelMinWidth),
 			minHeight: panelMinHeight,
@@ -214,29 +260,117 @@ struct UpdatesView: View {
 		)
 		.frame(maxWidth: .infinity, alignment: .topLeading)
 		.layoutPriority(1)
-		.background {
-			let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-			shape.fill(
-				panelBaseTintColor
-					.opacity(
-						min(1, glassBaseOpacity + panelNeutralOverlayOpacity)
-					)
-			)
-		}
-		.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-		.overlay {
-			RoundedRectangle(cornerRadius: 14, style: .continuous)
-				.strokeBorder(panelBorderColor)
-		}
-		.shadow(
-			color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
-			radius: 3,
-			x: 0,
-			y: 1.5
-		)
+		.background(colorScheme == .dark ? Color.black : Color.white)
+		.clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 		.background(WindowFocusReader { focusObserver.attach($0) })
 		.zIndex(1)
 		.animation(.bouncy(duration: 0.22, extraBounce: 0.08), value: queueNotice)
+	}
+
+	@ViewBuilder
+	private func leftPanelGlassRow<Content: View>(
+		backgroundTopInset: CGFloat = 0,
+		showsTopBorder: Bool = true,
+		showsBottomBorder: Bool = true,
+		showsGlass: Bool = true,
+		contentTopClip: CGFloat = 0,
+		@ViewBuilder content: () -> Content
+	) -> some View {
+		let shape = RoundedRectangle(cornerRadius: 0, style: .continuous)
+		let borderColor = Color.white.opacity(0.15)
+		if #available(macOS 26.0, iOS 16.0, *) {
+			content()
+				.frame(maxWidth: .infinity, alignment: .topLeading)
+				.background {
+					if showsGlass {
+						GeometryReader { proxy in
+							let start = max(0, backgroundTopInset + contentTopClip)
+							let height = max(0, proxy.size.height - start)
+							GlassEffectContainer {
+								shape
+									.fill(Color.clear)
+									.glassEffect(.regular, in: shape)
+							}
+							.frame(height: height, alignment: .top)
+							.offset(y: start)
+						}
+						.transaction { transaction in
+							transaction.animation = nil
+						}
+						.allowsHitTesting(false)
+					}
+				}
+				.overlay {
+						GeometryReader { proxy in
+							let start = max(0, backgroundTopInset)
+							let height = max(0, proxy.size.height - start)
+							ZStack {
+							HStack(spacing: 0) {
+								Rectangle().fill(borderColor).frame(width: 1)
+								Spacer(minLength: 0)
+								Rectangle().fill(borderColor).frame(width: 1)
+							}
+							if showsTopBorder {
+								VStack(spacing: 0) {
+									Rectangle().fill(borderColor).frame(height: 1)
+									Spacer(minLength: 0)
+								}
+							}
+							if showsBottomBorder {
+								VStack(spacing: 0) {
+									Spacer(minLength: 0)
+									Rectangle().fill(borderColor).frame(height: 1)
+								}
+							}
+						}
+						.frame(height: height, alignment: .top)
+						.offset(y: start)
+					}
+					.allowsHitTesting(false)
+				}
+				.clipShape(shape)
+		} else {
+			content()
+				.frame(maxWidth: .infinity, alignment: .topLeading)
+				.background {
+					if showsGlass {
+						GeometryReader { proxy in
+							let start = max(0, backgroundTopInset + contentTopClip)
+							let height = max(0, proxy.size.height - start)
+							shape
+								.fill(.ultraThinMaterial)
+								.overlay {
+									ZStack {
+										HStack(spacing: 0) {
+											Rectangle().fill(borderColor).frame(width: 1)
+											Spacer(minLength: 0)
+											Rectangle().fill(borderColor).frame(width: 1)
+										}
+										if showsTopBorder {
+											VStack(spacing: 0) {
+												Rectangle().fill(borderColor).frame(height: 1)
+												Spacer(minLength: 0)
+											}
+										}
+										if showsBottomBorder {
+											VStack(spacing: 0) {
+												Spacer(minLength: 0)
+												Rectangle().fill(borderColor).frame(height: 1)
+											}
+										}
+									}
+								}
+							.frame(height: height, alignment: .top)
+							.offset(y: start)
+						}
+						.transaction { transaction in
+							transaction.animation = nil
+						}
+						.allowsHitTesting(false)
+					}
+				}
+				.clipShape(shape)
+		}
 	}
 
 	@ViewBuilder
@@ -266,7 +400,7 @@ struct UpdatesView: View {
 							.padding(.vertical, 2)
 					}
 					.padding(1)
-					.buttonStyle(.glass)
+					.buttonStyle(.glass(.clear))
 					.controlSize(.large)
 					.buttonBorderShape(.automatic)
 					.disabled(uemApps.isEmpty)
@@ -333,6 +467,7 @@ struct UpdatesView: View {
 			isEnabled: true,
 			isSecondaryEnabled: !isQueryingUem,
 			isPrimaryInProgress: isQueryingUem,
+			isClearExpanded: $isClearActionExpanded,
 			externalExpandTrigger: expandActionsTrigger,
 			onPrimary: {
 				queryAllApps()
@@ -349,149 +484,149 @@ struct UpdatesView: View {
 			isQueryingUem = true
 			let apps: [UemApplication] = await UEMService.instance
 				.getAllApps().compactMap { $0 }
-			withAnimation(.bouncy(duration: 0.35, extraBounce: 0.12)) {
-				uemApps = apps
-				selectedAppKeys.removeAll()
-				selectedApp = nil
-				isQueryingUem = false
-			}
+			uemApps = apps
+			selectedAppKeys.removeAll()
+			selectedApp = nil
+			isQueryingUem = false
 		}
 	}
 
 	private func clearQueriedApps() {
 		guard !isQueryingUem else { return }
-		withAnimation(.bouncy(duration: 0.3, extraBounce: 0.1)) {
-			uemApps.removeAll()
-		}
+		uemApps.removeAll()
 	}
 
 	@ViewBuilder
-	private func appsListSection() -> some View {
-		if isQueryingUem {
-			VStack(alignment: .center) {
-				VStack(alignment: .center, spacing: 10) {
-					ThinkingIndicator(
-						phrases: [
-							"Querying Workspace ONE",
-							"Evaluating Matches",
-							"Identifying Updates",
-						],
-						iconName: "sparkles"
-					)
+	private func appsListSection(topOverlayHeight: CGFloat = 0) -> some View {
+		Group {
+			if isQueryingUem {
+				VStack(alignment: .center) {
+					VStack(alignment: .center, spacing: 10) {
+						ThinkingIndicator(
+							phrases: [
+								"Querying Workspace ONE",
+								"Evaluating Matches",
+								"Identifying Updates",
+							],
+							iconName: "sparkles"
+						)
+					}
+					.frame(maxWidth: .infinity, alignment: .center)
 				}
 				.frame(maxWidth: .infinity, alignment: .center)
-			}
-			.frame(maxWidth: .infinity, alignment: .center)
-			.frame(
-				minWidth: 500,
-				maxWidth: .infinity,
-				minHeight: 150,
-				alignment: .center
-			)
-		} else if uemApps.count > 0 {
-			ZStack(alignment: .bottom) {
-				ScrollView {
-					let updates: [UemApplication] = uemApps.filter {
-						($0.hasUpdate ?? false)
-					}
-					let displayedApps: [UemApplication] =
-						showAllUemApps ? uemApps : updates
-					FlowLayout(spacing: 6, rowSpacing: 6, rowAlignment: .center)
-					{
-						ForEach(
-							Array(displayedApps.enumerated()),
-							id: \.element.id
-						) { index, app in
-							let hasUpdate: Bool = app.hasUpdate ?? false
-							AnimatedAppCard(
-								app: app,
-								delay: Double(index) * 0.04,
-								isSelected: selectedAppKeys.contains(
-									appKey(app)
-								),
-								onToggleSelect: hasUpdate
-									? { toggleSelection(for: app) } : nil,
-								onDetails: hasUpdate
-									? { selectedApp = app } : nil,
-								onAddToQueue: hasUpdate
-									? { addToQueue(app) } : nil
-							)
-							.transition(
-								.asymmetric(
-									insertion: .move(edge: .top).combined(
-										with: .opacity
+				.frame(
+					minWidth: 500,
+					maxWidth: .infinity,
+					minHeight: 150,
+					alignment: .center
+				)
+			} else if uemApps.count > 0 {
+				ZStack(alignment: .bottom) {
+					ScrollView {
+						let updates: [UemApplication] = uemApps.filter {
+							($0.hasUpdate ?? false)
+						}
+						let displayedApps: [UemApplication] =
+							showAllUemApps ? uemApps : updates
+						FlowLayout(spacing: 6, rowSpacing: 6, rowAlignment: .center)
+						{
+							ForEach(
+								Array(displayedApps.enumerated()),
+								id: \.element.id
+							) { index, app in
+								let hasUpdate: Bool = app.hasUpdate ?? false
+								AnimatedAppCard(
+									app: app,
+									delay: Double(index) * 0.04,
+									isSelected: selectedAppKeys.contains(
+										appKey(app)
 									),
-									removal: .scale(scale: 0.9).combined(
-										with: .opacity
+									onToggleSelect: hasUpdate
+										? { toggleSelection(for: app) } : nil,
+									onDetails: hasUpdate
+										? { selectedApp = app } : nil,
+									onAddToQueue: hasUpdate
+										? { addToQueue(app) } : nil
+								)
+								.transition(
+									.asymmetric(
+										insertion: .move(edge: .top).combined(
+											with: .opacity
+										),
+										removal: .scale(scale: 0.9).combined(
+											with: .opacity
+										)
 									)
 								)
-							)
+							}
 						}
+
+						.padding(.top, topOverlayHeight + 6)
+						.padding(.bottom, 16)
+						.padding(.horizontal, 6)
+						.background(Color.clear)
+						.frame(minWidth: 300)
+						.frame(idealWidth: 800)
+						.frame(maxWidth: 900)
 					}
-					
-					.padding(.top, 6)
-					.padding(.bottom, 16)
-					.padding(.horizontal, 6)
+					.panelContentScrollChrome(
+						topInset: 0,
+						bottomContentInset: !selectedAppKeys.isEmpty ? 60 : 20,
+						applyMask: false
+					)
+					.contentMargins(.top, topOverlayHeight + 2, for: .scrollIndicators)
+					.scrollContentBackground(.hidden)
 					.background(Color.clear)
-					.frame(minWidth: 300)
-					.frame(idealWidth: 800)
-					.frame(maxWidth: 900)
-					//.border(.red, width: 1)
-				}
-				.panelContentScrollChrome(
-					topInset: 0,
-					bottomContentInset: !selectedAppKeys.isEmpty ? 60 : 20
-				)
-				.scrollContentBackground(.hidden)
-				.background(Color.clear)
 					if !selectedAppKeys.isEmpty {
 						Button("Add Selected (\(selectedAppKeys.count))") {
 							addSelectedToQueue()
 						}
 						.nativeActionButtonStyle(.secondary, controlSize: .large)
-							.padding(.trailing, 20)
-							.padding(.bottom, 16)
-							.glassCompatShadow(context: glassState, elevation: .card)
-							.transition(
-								.asymmetric(
-									insertion: .modifier(
-										active: SelectionButtonTransitionState(
-											opacity: 0,
-											scale: 0.78,
-											blur: 10
-										),
-										identity: SelectionButtonTransitionState(
-											opacity: 1,
-											scale: 1,
-											blur: 0
-										)
+						.padding(.trailing, 20)
+						.padding(.bottom, 16)
+						.glassCompatShadow(context: glassState, elevation: .card)
+						.transition(
+							.asymmetric(
+								insertion: .modifier(
+									active: SelectionButtonTransitionState(
+										opacity: 0,
+										scale: 0.78,
+										blur: 10
 									),
-									removal: .modifier(
-										active: SelectionButtonTransitionState(
-											opacity: 0,
-											scale: 0.88,
-											blur: 10
-										),
-										identity: SelectionButtonTransitionState(
-											opacity: 1,
-											scale: 1,
-											blur: 0
-										)
+									identity: SelectionButtonTransitionState(
+										opacity: 1,
+										scale: 1,
+										blur: 0
+									)
+								),
+								removal: .modifier(
+									active: SelectionButtonTransitionState(
+										opacity: 0,
+										scale: 0.88,
+										blur: 10
+									),
+									identity: SelectionButtonTransitionState(
+										opacity: 1,
+										scale: 1,
+										blur: 0
 									)
 								)
 							)
-						}
+						)
 					}
-					.animation(.bouncy(duration: 0.28, extraBounce: 0.18), value: selectedAppKeys.isEmpty)
-					.background(Color.clear)
-					.frame(maxHeight: 500)
-					.frame(minWidth: 500)
-			//.border(.blue, width: 3)
+				}
+				.animation(.bouncy(duration: 0.28, extraBounce: 0.18), value: selectedAppKeys.isEmpty)
+				.background(Color.clear)
+			} else {
+				Color.clear
+			}
 		}
+		.frame(maxHeight: .infinity, alignment: .topLeading)
+		.frame(minWidth: 500)
 	}
 
-	@ViewBuilder
-	private func updatesHeaderRow(displayedApps: [UemApplication]) -> some View
+		@ViewBuilder
+		private func updatesHeaderRow(displayedApps: [UemApplication]) -> some View
 	{
 		HStack(alignment: .center, spacing: 8) {
 			updatesHeaderTitle(displayedApps: displayedApps)
@@ -529,7 +664,7 @@ struct UpdatesView: View {
 							.padding(.vertical, 2)
 					}
 					.padding(1)
-					.buttonStyle(.glass)
+					.buttonStyle(.glass(.clear))
 					.controlSize(.large)
 					.buttonBorderShape(.automatic)
 					.disabled(!displayedApps.contains(where: { $0.hasUpdate ?? false }))
@@ -1155,26 +1290,29 @@ private struct ActionButtonsGlass: View {
 	let isEnabled: Bool
 	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
+	@Binding var isClearExpanded: Bool
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
 	let externalExpandTrigger: Int
 
-	@State private var isClearExpanded = false
 	@State private var expandedPadding: CGFloat = 0
 	@State private var expandedOpacity: Double = 1.0
 	
 	@State private var phase: CGFloat = 0
+	@State private var primaryScale: CGFloat = 1
+	@State private var secondaryScale: CGFloat = 1
 	
 	@Namespace private var namespace
 
 	var body: some View {
 		//GlassEffectContainer(spacing: 10) {
 			HStack(spacing: 10) {
-					Button(action: {
-						guard isEnabled, !isPrimaryInProgress else { return }
-						onPrimary()
-						expandClearIfNeeded()
-					}) {
+						Button(action: {
+							guard isEnabled, !isPrimaryInProgress else { return }
+							triggerPrimaryBounce()
+							onPrimary()
+							expandClearIfNeeded()
+						}) {
 						HStack(spacing: 5) {
 							QueryUEMBadgeIcon(size: 11, isAnimating: isPrimaryInProgress)
 							Text("Query")
@@ -1188,18 +1326,20 @@ private struct ActionButtonsGlass: View {
 								.padding(.vertical, 3)
 							}
 					.juiceGradientGlassProminentButtonStyle(controlSize: .small)
-					.buttonBorderShape(.capsule)
-					.disabled(!isEnabled)
-					.allowsHitTesting(!isPrimaryInProgress)
-					.accessibilityLabel(primaryTitle)
-					.glassEffectID("glassPrimary", in: namespace)
+						.buttonBorderShape(.capsule)
+						.disabled(!isEnabled)
+						.allowsHitTesting(!isPrimaryInProgress)
+						.scaleEffect(primaryScale)
+						.accessibilityLabel(primaryTitle)
+						.glassEffectID("glassPrimary", in: namespace)
 
 				if isClearExpanded {
-						Button(action: {
-							guard isSecondaryEnabled else { return }
-							onSecondary()
-							collapseExpanded()
-						}) {
+							Button(action: {
+								guard isSecondaryEnabled else { return }
+								triggerSecondaryBounce()
+								onSecondary()
+								collapseExpanded()
+							}) {
 							Image(systemName: "xmark")
 								.font(.system(size: 11, weight: .regular))
 								.padding(.horizontal, -5)
@@ -1208,12 +1348,13 @@ private struct ActionButtonsGlass: View {
 						.liquidNoticeStyle(isVisible: isClearExpanded, phase: phase)
 						.opacity(expandedOpacity)
 						.padding(.leading, expandedPadding)
-						.buttonStyle(.glass)
+						.buttonStyle(.glass(.clear))
 						.controlSize(.large)
-						.buttonBorderShape(.automatic)
-						.disabled(!isEnabled || !isSecondaryEnabled)
-						.accessibilityLabel(secondaryTitle)
-						.glassEffectID("glassSecondary", in: namespace)
+							.buttonBorderShape(.automatic)
+							.disabled(!isEnabled || !isSecondaryEnabled)
+							.scaleEffect(secondaryScale)
+							.accessibilityLabel(secondaryTitle)
+							.glassEffectID("glassSecondary", in: namespace)
 
 						.onAppear {
 							withAnimation(.bouncy(duration: 0.2, extraBounce: 0.28)) {
@@ -1254,6 +1395,30 @@ private struct ActionButtonsGlass: View {
 		//			isClearExpanded.toggle()
 		//		}
 	}
+
+	private func triggerPrimaryBounce() {
+		withAnimation(.bouncy(duration: 0.14, extraBounce: 0.32)) {
+			primaryScale = 0.9
+		}
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.06))
+			withAnimation(.bouncy(duration: 0.2, extraBounce: 0.35)) {
+				primaryScale = 1
+			}
+		}
+	}
+
+	private func triggerSecondaryBounce() {
+		withAnimation(.bouncy(duration: 0.14, extraBounce: 0.32)) {
+			secondaryScale = 0.9
+		}
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.06))
+			withAnimation(.bouncy(duration: 0.2, extraBounce: 0.35)) {
+				secondaryScale = 1
+			}
+		}
+	}
 }
 
 private struct ActionButtonsAvailabilityAdapter: View {
@@ -1262,6 +1427,7 @@ private struct ActionButtonsAvailabilityAdapter: View {
 	let isEnabled: Bool
 	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
+	let isClearExpanded: Binding<Bool>
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
@@ -1269,26 +1435,28 @@ private struct ActionButtonsAvailabilityAdapter: View {
 	var body: some View {
 		#if os(macOS)
 			if #available(macOS 26.0, *) {
-					ActionButtonsGlass(
-						primaryTitle: primaryTitle,
-						secondaryTitle: secondaryTitle,
-						isEnabled: isEnabled,
-						isSecondaryEnabled: isSecondaryEnabled,
-						isPrimaryInProgress: isPrimaryInProgress,
-						onPrimary: onPrimary,
-						onSecondary: onSecondary,
-						externalExpandTrigger: externalExpandTrigger
+						ActionButtonsGlass(
+							primaryTitle: primaryTitle,
+							secondaryTitle: secondaryTitle,
+							isEnabled: isEnabled,
+							isSecondaryEnabled: isSecondaryEnabled,
+							isPrimaryInProgress: isPrimaryInProgress,
+							isClearExpanded: isClearExpanded,
+							onPrimary: onPrimary,
+							onSecondary: onSecondary,
+							externalExpandTrigger: externalExpandTrigger
 					)
 			} else {
-					ActionButtonsFallback(
-						primaryTitle: primaryTitle,
-						secondaryTitle: secondaryTitle,
-						isEnabled: isEnabled,
-						isSecondaryEnabled: isSecondaryEnabled,
-						isPrimaryInProgress: isPrimaryInProgress,
-						externalExpandTrigger: externalExpandTrigger,
-						onPrimary: onPrimary,
-						onSecondary: onSecondary
+						ActionButtonsFallback(
+							primaryTitle: primaryTitle,
+							secondaryTitle: secondaryTitle,
+							isEnabled: isEnabled,
+							isSecondaryEnabled: isSecondaryEnabled,
+							isPrimaryInProgress: isPrimaryInProgress,
+							isClearExpanded: isClearExpanded,
+							externalExpandTrigger: externalExpandTrigger,
+							onPrimary: onPrimary,
+							onSecondary: onSecondary
 					)
 			}
 		#else
@@ -1309,19 +1477,21 @@ private struct ActionButtonsFallback: View {
 	let isEnabled: Bool
 	let isSecondaryEnabled: Bool
 	let isPrimaryInProgress: Bool
+	@Binding var isClearExpanded: Bool
 	let externalExpandTrigger: Int
 	let onPrimary: () -> Void
 	let onSecondary: () -> Void
-
-	@State private var isClearExpanded = false
+	@State private var primaryScale: CGFloat = 1
+	@State private var secondaryScale: CGFloat = 1
 
 	var body: some View {
 		HStack(spacing: 16) {
-				Button {
-					guard isEnabled, !isPrimaryInProgress else { return }
-					onPrimary()
-					expandClearIfNeeded()
-			} label: {
+					Button {
+						guard isEnabled, !isPrimaryInProgress else { return }
+						triggerPrimaryBounce()
+						onPrimary()
+						expandClearIfNeeded()
+				} label: {
 					HStack(spacing: 5) {
 						QueryUEMBadgeIcon(size: 11, isAnimating: isPrimaryInProgress)
 						Text("Query")
@@ -1335,28 +1505,31 @@ private struct ActionButtonsFallback: View {
 						.padding(.vertical, 3)
 					}
 				.juiceGradientGlassProminentButtonStyle(controlSize: .small)
-				.buttonBorderShape(.capsule)
-				.disabled(!isEnabled)
-				.allowsHitTesting(!isPrimaryInProgress)
-				.accessibilityLabel(primaryTitle)
+					.buttonBorderShape(.capsule)
+					.disabled(!isEnabled)
+					.allowsHitTesting(!isPrimaryInProgress)
+					.scaleEffect(primaryScale)
+					.accessibilityLabel(primaryTitle)
 
 			if isClearExpanded {
-				Button {
-					guard isEnabled, isSecondaryEnabled else { return }
-					onSecondary()
-					collapseExpanded()
-				} label: {
+					Button {
+						guard isEnabled, isSecondaryEnabled else { return }
+						triggerSecondaryBounce()
+						onSecondary()
+						collapseExpanded()
+					} label: {
 					Image(systemName: "xmark")
 						.font(.system(size: 11, weight: .regular))
 						.padding(.horizontal, -5)
 						.padding(.vertical, 2)
 				}
 				.nativeActionButtonStyle(.secondary, controlSize: .large)
-				.buttonBorderShape(.automatic)
-				.disabled(!isEnabled || !isSecondaryEnabled)
-				.accessibilityLabel(secondaryTitle)
-				.transition(.move(edge: .trailing).combined(with: .opacity))
-			}
+					.buttonBorderShape(.automatic)
+					.disabled(!isEnabled || !isSecondaryEnabled)
+					.scaleEffect(secondaryScale)
+					.accessibilityLabel(secondaryTitle)
+					.transition(.move(edge: .trailing).combined(with: .opacity))
+				}
 		}
 		.onChange(of: externalExpandTrigger) { _, _ in
 			expandClearIfNeeded()
@@ -1373,6 +1546,30 @@ private struct ActionButtonsFallback: View {
 		guard !isClearExpanded else { return }
 		withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
 			isClearExpanded = true
+		}
+	}
+
+	private func triggerPrimaryBounce() {
+		withAnimation(.bouncy(duration: 0.14, extraBounce: 0.32)) {
+			primaryScale = 0.9
+		}
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.06))
+			withAnimation(.bouncy(duration: 0.2, extraBounce: 0.35)) {
+				primaryScale = 1
+			}
+		}
+	}
+
+	private func triggerSecondaryBounce() {
+		withAnimation(.bouncy(duration: 0.14, extraBounce: 0.32)) {
+			secondaryScale = 0.9
+		}
+		Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.06))
+			withAnimation(.bouncy(duration: 0.2, extraBounce: 0.35)) {
+				secondaryScale = 1
+			}
 		}
 	}
 }
@@ -1456,6 +1653,16 @@ struct LiquidNoticeModifier: ViewModifier {
 extension View {
 	func liquidNoticeStyle(isVisible: Bool, phase: CGFloat) -> some View {
 		modifier(LiquidNoticeModifier(isVisible: isVisible, phase: phase))
+	}
+}
+
+private struct UpdatesHeaderRowHeightKey: PreferenceKey {
+	static let defaultValue: CGFloat = 0
+	static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+		let next = nextValue()
+		if next > 0 {
+			value = next
+		}
 	}
 }
 

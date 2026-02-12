@@ -121,12 +121,6 @@ struct AppDetailListItem: View {
 			.overlay(alwaysVisibleBorder)
 			.overlay(liquidBorder)
 			.overlay(liquidInnerHighlight)
-			.shadow(
-				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
-				radius: 3,
-				x: 0,
-				y: 1.5
-			)
 			.clipShape(shape)
 			.contentShape(shape)
 			.overlay(alignment: .topTrailing) {
@@ -288,12 +282,6 @@ struct ImportAppDetailListItem: View {
 			.overlay(alwaysVisibleBorder)
 			.overlay(liquidBorder)
 			.overlay(liquidInnerHighlight)
-			.shadow(
-				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
-				radius: 3,
-				x: 0,
-				y: 1.5
-			)
 			.clipShape(shape)
 			.contentShape(shape)
 			.overlay(alignment: .topTrailing) {
@@ -342,7 +330,7 @@ private struct QueueRowEllipsisButton: View {
 								.frame(width: 10, height: 10)
 								.padding(2)
 						}
-						.buttonStyle(.glass)
+						.buttonStyle(.glass(.clear))
 						.controlSize(.mini)
 						.buttonBorderShape(.circle)
 
@@ -352,7 +340,7 @@ private struct QueueRowEllipsisButton: View {
 									.frame(width: 10, height: 10)
 									.padding(2)
 							}
-							.buttonStyle(.glass)
+							.buttonStyle(.glass(.clear))
 							.controlSize(.mini)
 							.buttonBorderShape(.circle)
 						}
@@ -362,7 +350,7 @@ private struct QueueRowEllipsisButton: View {
 								.frame(width: 10, height: 10)
 								.padding(2)
 						}
-						.buttonStyle(.glass)
+						.buttonStyle(.glass(.clear))
 						.controlSize(.mini)
 						.buttonBorderShape(.circle)
 					}

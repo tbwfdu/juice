@@ -39,13 +39,6 @@ import SwiftUI
 	}
 #endif
 
-private func softenedDetailBadgeShadow(
-	for glassState: GlassStateContext
-) -> (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {
-	_ = glassState
-	return (color: .clear, radius: 0, x: 0, y: 0)
-}
-
 @MainActor
 @ViewBuilder
 private func cardActionsButtons(
@@ -96,7 +89,7 @@ private struct CardActionsMenu: View {
 										.frame(width: 10, height: 10)
 										.padding(2)
 								}
-								.buttonStyle(.glass)
+								.buttonStyle(.glass(.clear))
 								.controlSize(.mini)
 								.buttonBorderShape(.circle)
 							}
@@ -109,7 +102,7 @@ private struct CardActionsMenu: View {
 										.frame(width: 10, height: 10)
 										.padding(2)
 								}
-								.buttonStyle(.glass)
+								.buttonStyle(.glass(.clear))
 								.controlSize(.mini)
 								.buttonBorderShape(.circle)
 							}
@@ -121,7 +114,7 @@ private struct CardActionsMenu: View {
 									.frame(width: 10, height: 10)
 									.padding(2)
 							}
-							.buttonStyle(.glass)
+							.buttonStyle(.glass(.clear))
 							.controlSize(.mini)
 							.buttonBorderShape(.circle)
 						}
@@ -235,7 +228,6 @@ struct AppDetailCard: View {
 			colorScheme: colorScheme,
 			isFocused: true
 		)
-		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
 		return VStack(alignment: .leading, spacing: 4) {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
@@ -248,19 +240,13 @@ struct AppDetailCard: View {
 							.foregroundStyle(.green)
 							.background(
 								Circle()
-									.fill(
-										GlassThemeTokens.windowBackgroundBase(
-											for: glassState
+										.fill(
+											GlassThemeTokens.windowBackgroundBase(
+												for: glassState
+											)
 										)
-									)
-									.frame(width: 14, height: 14)
-									.shadow(
-										color: badgeShadow.color,
-										radius: badgeShadow.radius,
-										x: badgeShadow.x,
-										y: badgeShadow.y
-									)
-							)
+										.frame(width: 14, height: 14)
+								)
 							.offset(x: 6, y: -6)
 							.accessibilityHidden(true)
 					}
@@ -403,17 +389,11 @@ struct AppDetailCard: View {
 			.frame(maxHeight: .infinity, alignment: .topLeading)
 			.padding(.horizontal, 12)
 			.padding(.vertical, 14)
-			.background(shape.fill(cardBaseColor))
-			.overlay(alwaysVisibleBorder)
-			.overlay(liquidBorder)
-			.overlay(liquidInnerHighlight)
-			.shadow(
-				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
-				radius: 3,
-				x: 0,
-				y: 1.5
-			)
-			.clipShape(shape)
+				.background(shape.fill(cardBaseColor))
+				.overlay(alwaysVisibleBorder)
+				.overlay(liquidBorder)
+				.overlay(liquidInnerHighlight)
+				.clipShape(shape)
 			.overlay(
 				Group {
 					if isSelected {
@@ -530,7 +510,6 @@ struct ImportAppDetailCard: View {
 			colorScheme: colorScheme,
 			isFocused: true
 		)
-		let badgeShadow = softenedDetailBadgeShadow(for: glassState)
 		return VStack(alignment: .leading, spacing: 4) {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
@@ -542,19 +521,13 @@ struct ImportAppDetailCard: View {
 							.foregroundStyle(.green)
 							.background(
 								Circle()
-									.fill(
-										GlassThemeTokens.windowBackgroundBase(
-											for: glassState
+										.fill(
+											GlassThemeTokens.windowBackgroundBase(
+												for: glassState
+											)
 										)
-									)
-									.frame(width: 14, height: 14)
-									.shadow(
-										color: badgeShadow.color,
-										radius: badgeShadow.radius,
-										x: badgeShadow.x,
-										y: badgeShadow.y
-									)
-							)
+										.frame(width: 14, height: 14)
+								)
 							.offset(x: 6, y: -6)
 							.accessibilityHidden(true)
 					}
@@ -664,17 +637,11 @@ struct ImportAppDetailCard: View {
 			.frame(maxHeight: .infinity, alignment: .topLeading)
 			.padding(.horizontal, 12)
 			.padding(.vertical, 14)
-			.background(shape.fill(cardBaseColor))
-			.overlay(alwaysVisibleBorder)
-			.overlay(liquidBorder)
-			.overlay(liquidInnerHighlight)
-			.shadow(
-				color: Color.black.opacity(colorScheme == .dark ? 0.22 : 0.12),
-				radius: 3,
-				x: 0,
-				y: 1.5
-			)
-			.clipShape(shape)
+				.background(shape.fill(cardBaseColor))
+				.overlay(alwaysVisibleBorder)
+				.overlay(liquidBorder)
+				.overlay(liquidInnerHighlight)
+				.clipShape(shape)
 			.overlay(
 				Group {
 					if isSelected {

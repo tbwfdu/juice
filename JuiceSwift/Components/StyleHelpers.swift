@@ -104,7 +104,7 @@ private struct JuiceGradientProminentSurfaceModifier: ViewModifier {
 
 	func body(content: Content) -> some View {
 		styled(content: content)
-			.foregroundStyle(.white)
+			.foregroundStyle(.white.opacity(isUnfocused ? 0.84 : 1.0))
 			.tint(Color(hex: "#FC642D"))
 			.background {
 				let shape = Capsule(style: .continuous)
@@ -152,17 +152,12 @@ private struct JuiceGradientProminentSurfaceModifier: ViewModifier {
 					shape
 						.strokeBorder(.white.opacity(isUnfocused ? 0.12 : 0.18), lineWidth: 0.8)
 				}
-				.shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
 			}
 	}
 
 	@ViewBuilder
 	private func styled(content: Content) -> some View {
-		if isUnfocused {
-			content.buttonStyle(.glass)
-		} else {
-			content.buttonStyle(.glassProminent)
-		}
+		content.buttonStyle(.glass(.clear))
 	}
 }
 
@@ -740,27 +735,12 @@ extension View {
 		bottomContentInset: CGFloat = 20,
 		applyMask: Bool = true
 	) -> some View {
-		let chrome = self
+		let _ = applyMask
+		self
 			.safeAreaInset(edge: .top) {
 				Color.clear.frame(height: topInset)
 			}
 			.contentMargins(.bottom, bottomContentInset, for: .scrollContent)
-		if applyMask {
-			chrome.mask {
-				LinearGradient(
-					stops: [
-						.init(color: .clear, location: 0),
-						.init(color: .black, location: 0.022),
-						.init(color: .black, location: 0.965),
-						.init(color: .clear, location: 1.0)
-					],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-			}
-		} else {
-			chrome
-		}
 	}
 }
 

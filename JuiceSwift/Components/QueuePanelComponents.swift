@@ -261,6 +261,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 		@ViewBuilder content: @escaping () -> Content
 	) -> some View {
 		content()
+			
 	}
 
 	private func panelContent<Content: View>(
@@ -292,7 +293,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 			ZStack(alignment: .top) {
 				ScrollView {
 					content()
-						.padding(.top, panelHeaderHeight + 2)
+						.padding(.top, panelHeaderHeight + 12)
 				}
 				.scrollContentBackground(.hidden)
 				.background(Color.clear)
@@ -315,6 +316,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 				.contentMargins(.leading, 10, for: .scrollContent)
 				.contentMargins(.trailing, 10, for: .scrollContent)
 				.frame(maxHeight: .infinity, alignment: .top)
+	
 
 				QueuePinnedGlassSection(corners: [.topLeft, .topRight]) {
 					ViewThatFits(in: .horizontal) {
@@ -349,7 +351,7 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 					GeometryReader { proxy in
 						Color.clear.preference(
 							key: QueuePanelHeaderHeightKey.self,
-							value: proxy.size.height
+							value: proxy.size.height - 10
 						)
 					}
 				)

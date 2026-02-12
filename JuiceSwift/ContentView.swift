@@ -359,9 +359,16 @@ private struct InspectorOverlayView: View {
 				.padding(.bottom, 0)
 				.frame(width: clampedWidth)
 				.frame(maxHeight: .infinity, alignment: .top)
-			.background {
-				Color.clear
-			}
+				.background {
+					Color.clear.glassCompatSurface(
+						in: shape,
+						style: .regular,
+						context: glassState,
+						fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+						fillOpacity: GlassThemeTokens.panelBaseTintOpacity(for: glassState),
+						surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+					)
+				}
 			.clipShape(shape)
 			.glassCompatBorder(in: shape, context: glassState, role: .standard)
 			.overlay(alignment: .topLeading) {
