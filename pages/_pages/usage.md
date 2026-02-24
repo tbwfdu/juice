@@ -50,20 +50,13 @@ Prior to Juice, processing and uploading of macOS applications into Workspace ON
 
 ## Adding or Editing Metadata
 
-To identify which applications have available metadata, you'll see a small icon on App results in Juice.
+To identify which applications have available metadata, you'll see a coloured pill in the results in Juice.
 ![Alt text](../assets/images/HasRecipe.png "Has Recipe Icon")
-To add any metadata from a recipe, you can do this after the application has been downloaded in Step 2 of the upload process. Simply click on the Edit button in the 'Edit Metadata and Icons' screen.
 
-![Alt text](../assets/images/EditMetadata.png "Edit Metadata Button")
+To add any metadata from a recipe, you can do this after the application has been downloaded in Step 2 of the upload process. Simply click on the Edit button.
 
-Once you've made any changes, you'll get a chance to review the values and if needed, view the resulting pkginfo.plist file.
+![Alt text](../assets/images/EditMetadata.png "Edit Metadata")
 
-![Alt text](../assets/images/Changes.png "Changed Metadata Screen")
-![Alt text](../assets/images/SaveAppMetadata.png "Save Metadata Screen")
-
-If you 'Enable Editing', you can **directly** edit the pkginfo.plist file and add any manual metadata directly from Juice.
-
-![Alt text](../assets/images/EditAppMetdata.png "Edit App Metadata Screen")
 
 ## Adding or Editing Application Scripts
 
@@ -78,11 +71,7 @@ Application Deployment using Workspace ONE UEM supports the use of scripts that 
 
 During the upload process, you can *edit* the application metadata and the edit screen allows you to add text contents of these scripts in the UI or if there is a matching recipe and the recipe contains these scripts, you can import directly from the recipe.
 
-![Alt text](../assets/images/AddScript.png "Add Script Screen")
-
 Also, if you already have these scripts prepared for your already downloaded application, you can place these scripts in the root directory alongside your installer and Juice will automatically import them. 
-
-![Alt text](../assets/images/ImportedScripts.png "Imported Scripts Example")
 
 >### ℹ️ Important
 >{: .no_toc }

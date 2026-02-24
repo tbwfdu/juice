@@ -22,8 +22,7 @@ When you run Fetch for the first time, you will need to enter the following sett
 ![Alt text](../assets/images/Config.png "Juice Configuration Screen")
 
 >### ℹ️ Notes
-> - Application Configuration is saved to: <br>
-> `/Users/{your username}/.juice/LocalSettings.json`
+> - Application Configuration is saved in application defaults for `com.tbwfdu.juice`.
 > 
 > 
 > - Org Group Name, Org Group ID and Org Group UUID will be retrieved automatically from Workspace ONE during validation of the settings entered above.
@@ -36,5 +35,5 @@ When you run Fetch for the first time, you will need to enter the following sett
 
 >### ⚠️ IMPORTANT
 >
-> Juice stores your provided Client ID and Client Secret securely in the Keychain of your device.
+> Juice stores your provided Client Secret securely in the Keychain of your user account on the device.
 
