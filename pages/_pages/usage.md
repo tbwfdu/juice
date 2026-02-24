@@ -88,3 +88,13 @@ Also, if you already have these scripts prepared for your already downloaded app
 >### ℹ️ Note
 >{: .no_toc }
 > In order for the script content to be added to the metadata.plist file, you must "edit" the application metadata in Step 2 of the upload process. Simply placing the scripts in the directory **will not** add the script contents as a security measure.
+
+## Widgets
+
+Juice has a few widgets that can be added to your macOS desktop to provide visibility into your configured environments and available application updates.
+
+![Alt text](../assets/images/sml_updates.png "Small - Available Updates")
+
+![Alt text](../assets/images/sml_environment.png "Small - Environment Overview")
+
+![Alt text](../assets/images/med_environment.png "Medium - Environment Overview")
