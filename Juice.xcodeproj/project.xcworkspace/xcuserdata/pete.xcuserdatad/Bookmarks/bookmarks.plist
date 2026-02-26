@@ -27,23 +27,23 @@
 					<key>payload</key>
 					<dict>
 						<key>relative-path</key>
-						<string>JuiceSwift/Juice.swift</string>
+						<string>Juice/Juice.swift</string>
 					</dict>
 				</dict>
 			</dict>
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>    private func bootstrapApp() async {
+				<string>
 </string>
 				<key>leading</key>
-				<string>
-    @MainActor
+				<string>        }
+        .windowStyle(.hiddenTitleBar)
 </string>
 				<key>trailing</key>
-				<string>		let settings = SettingsStore().load()
-		await Runtime.Config.applySettings(settings)
+				<string>		MenuBarExtra("Juice", image: "JuiceMenuBarIcon") { JuiceMenuBarContent() }
     }
+
 </string>
 			</dict>
 			<key>title</key>
@@ -74,7 +74,7 @@
 					<key>payload</key>
 					<dict>
 						<key>relative-path</key>
-						<string>JuiceSwift/Components/InspectorControl.swift</string>
+						<string>Juice/Components/InspectorControl.swift</string>
 					</dict>
 				</dict>
 			</dict>
@@ -91,6 +91,94 @@
 				<string>		}
 	}
 
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>2767</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>2767</string>
+					<key>Timestamp</key>
+					<string>793495209.908662</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Juice/Views/SettingsView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string></string>
+				<key>leading</key>
+				<string>					}
+			)
+</string>
+				<key>trailing</key>
+				<string>		}
+		.frame(minHeight: 24)
+		.accessibilityLabel("Prominent Button Color Spectrum")
+</string>
+			</dict>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>2767</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>2767</string>
+					<key>Timestamp</key>
+					<string>793495209.905883</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Juice/Views/SettingsView.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string></string>
+				<key>leading</key>
+				<string>					}
+			)
+</string>
+				<key>trailing</key>
+				<string>		}
+		.frame(minHeight: 24)
+		.accessibilityLabel("Prominent Button Color Spectrum")
 </string>
 			</dict>
 			<key>type</key>

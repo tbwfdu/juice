@@ -1,0 +1,44 @@
+{
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/CustomGlassButtons.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomGlassButtons.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomGlassButtons.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomGlassButtons.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomGlassButtons.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomGlassButtons.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/CustomNavMenu.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomNavMenu.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomNavMenu.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomNavMenu.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomNavMenu.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomNavMenu.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/CustomRoundedCorners.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomRoundedCorners.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomRoundedCorners.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomRoundedCorners.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomRoundedCorners.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/CustomRoundedCorners.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/DetailCardComponents.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailCardComponents.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailCardComponents.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailCardComponents.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailCardComponents.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailCardComponents.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/DetailContentComponents.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailContentComponents.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailContentComponents.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailContentComponents.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailContentComponents.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailContentComponents.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Components/DetailListItemComponents.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailListItemComponents.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailListItemComponents.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailListItemComponents.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailListItemComponents.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/DetailListItemComponents.swiftdeps"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/ContentView.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ContentView.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ContentView.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Juice.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/Juice-8d283279b5812d86e8713866e80df571.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/Juice-8d283279b5812d86e8713866e80df571.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/Juice-8d283279b5812d86e8713866e80df571.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/Juice-8d283279b5812d86e8713866e80df571.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/Juice-8d283279b5812d86e8713866e80df571.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/ZipService.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ZipService.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ZipService.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ZipService.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ZipService.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ZipService.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceWidgetExtension/ActiveEnvironmentEntryView.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentEntryView.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentEntryView.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentEntryView.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentEntryView.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentEntryView.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceWidgetExtension/ActiveEnvironmentProvider.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentProvider.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentProvider.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentProvider.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentProvider.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ActiveEnvironmentProvider.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceWidgetExtension/AvailableUpdatesProvider.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/AvailableUpdatesProvider.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/AvailableUpdatesProvider.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/AvailableUpdatesProvider.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/AvailableUpdatesProvider.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/AvailableUpdatesProvider.swiftdeps"
+  }
+}

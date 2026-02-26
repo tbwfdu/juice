@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="2e001741-a854-4d96-8d79-002164e661f8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.codex/environments/environment.toml" beforeDir="false" afterPath="$PROJECT_DIR$/.codex/environments/environment.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GEMINI.md" beforeDir="false" afterPath="$PROJECT_DIR$/GEMINI.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Juice.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Juice.xcodeproj/project.pbxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Juice.xcodeproj/project.xcworkspace/xcuserdata/pete.xcuserdatad/Bookmarks/bookmarks.plist" beforeDir="false" afterPath="$PROJECT_DIR$/Juice.xcodeproj/project.xcworkspace/xcuserdata/pete.xcuserdatad/Bookmarks/bookmarks.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Juice.xcodeproj/xcshareddata/xcschemes/JuiceSwift.xcscheme" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Juice.xcodeproj/xcuserdata/pete.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist" beforeDir="false" afterPath="$PROJECT_DIR$/Juice.xcodeproj/xcuserdata/pete.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Juice.xcodeproj/xcuserdata/pete.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" afterPath="$PROJECT_DIR$/Juice.xcodeproj/xcuserdata/pete.xcuserdatad/xcschemes/xcschememanagement.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/JuiceLogo.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/JuiceLogo.imageset/juice 1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/JuiceLogo.imageset/juice.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/dmgIcon.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/dmgIcon.imageset/dmg_icon-iOS-Default-512x512@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/dmgImage.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/dmgImage.imageset/dmg_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/documentIcon.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/documentIcon.imageset/document_icon-iOS-Default-512x512@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/documentImage.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/documentImage.imageset/document_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/pkgIcon.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/pkgIcon.imageset/pkg_icon-iOS-Default-512x512@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/pkgImage.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/pkgImage.imageset/archive_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/zipIcon.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/zipIcon.imageset/zip_icon-iOS-Default-512x512@1x.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/zipImage.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Assets.xcassets/zipImage.imageset/zip_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/AutoSuggestBox.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/BackgroundComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/ChromeComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/ContentUnavailableComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/CustomGlassButtons.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/CustomNavMenu.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/CustomRoundedCorners.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DetailCardComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DetailContentComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DetailListItemComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DetailSupportComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DownloadQueuePanelContent.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DownloadQueueRowComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/DownloadQueueViewModel.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/ExpandableJuiceMenu.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/GlassControlSupport.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/GlassThemeTokens.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/InspectorComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/LiquidGlassSegmentedPicker.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/MetadataEditSheet.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/QueueActionComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/QueuePanelComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/SearchResultCard.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/StatusComponents.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Components/StyleHelpers.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/ContentView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Extensions/Colors.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Extensions/FlowLayout.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Extensions/Helpers.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Extensions/IconByFiletype.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Extensions/PreviewGuards.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Juice.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/JsonRecipeMetadata.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/JuiceModels.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/NavigationItem.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/PageViewData.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/ParsedMetadata.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/ProgressModels.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/RightPanelTab.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/StringExtensions.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/UEMEnvironment.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Models/UemModels.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Resources/app_aliases.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Resources/cask_apps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Resources/recipes.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/AppNameMatcher.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/AuthService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/DownloadUploadService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/ImportScanService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/KeychainStore.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/LocalCatalog.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/LocalCatalogCache.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/RemoteFileSizeService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/SettingsStore.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/UEMService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Services/ZipService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/ImportView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/JuiceGradientGlassPreviewView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/LandingView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/SearchView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/SettingsView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceSwift/Views/UpdatesView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSCatalogModels.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSCatalogStore.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSLandingView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSSearchView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSUpdatesView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/IOSV2GlassStyle.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/JuiceiOSApp.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/JuiceiOS/MobileContentView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LiteDBExport/cask_apps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LiteDBExport/collections.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LiteDBExport/macos_apps.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/LiteDBExport/recipes.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/archive_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dmg_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/document_filetype.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/zip_filetype.png" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="31" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="3A69M63TZZN6F0Qv1mS5oUYrPGL" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2e001741-a854-4d96-8d79-002164e661f8" name="Changes" comment="" />
+      <created>1760233531703</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1760233531703</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

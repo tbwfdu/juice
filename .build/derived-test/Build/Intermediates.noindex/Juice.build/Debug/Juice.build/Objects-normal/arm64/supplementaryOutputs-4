@@ -1,0 +1,44 @@
+{
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/ImportScanService.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ImportScanService.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ImportScanService.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ImportScanService.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ImportScanService.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/ImportScanService.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/KeychainStore.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/KeychainStore.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/KeychainStore.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/KeychainStore.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/KeychainStore.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/KeychainStore.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/LocalCatalog.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalog.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalog.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalog.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalog.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalog.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/LocalCatalogCache.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalogCache.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalogCache.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalogCache.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalogCache.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/LocalCatalogCache.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/RemoteFileSizeService.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/RemoteFileSizeService.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/RemoteFileSizeService.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/RemoteFileSizeService.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/RemoteFileSizeService.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/RemoteFileSizeService.swiftdeps"
+  },
+  "/Users/pete/GitHub_EUC/juice_swift/JuiceSwift/Services/SettingsStore.swift" : {
+    "const-values" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/SettingsStore.swiftconstvalues",
+    "dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/SettingsStore.d",
+    "diagnostics" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/SettingsStore.dia",
+    "object" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/SettingsStore.o",
+    "swift-dependencies" : "/Users/pete/GitHub_EUC/juice_swift/.build/derived-test/Build/Intermediates.noindex/Juice.build/Debug/Juice.build/Objects-normal/arm64/SettingsStore.swiftdeps"
+  }
+}

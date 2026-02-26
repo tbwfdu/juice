@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+APP_PATH="/Applications/Juice.app"
+
+if [ -d "$APP_PATH" ]; then
+  /usr/sbin/chown -R root:wheel "$APP_PATH" || true
+  /bin/chmod -R a+rX "$APP_PATH" || true
+  /bin/echo "[Juice app postinstall] verified $APP_PATH"
+else
+  /bin/echo "[Juice app postinstall] warning: $APP_PATH not found"
+fi
+
+exit 0

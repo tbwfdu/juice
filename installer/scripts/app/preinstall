@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+/bin/echo "[Juice app preinstall] starting"
+exit 0

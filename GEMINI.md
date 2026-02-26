@@ -41,7 +41,7 @@ Its primary goal is to help administrators identify applications in their UEM en
 *   A Workspace ONE UEM tenant (for full functionality).
 
 ### Configuration
-Currently, configuration appears to be embedded directly in `JuiceSwift/Juice.swift` within the `Runtime` actor. This includes:
+Currently, configuration appears to be embedded directly in `Juice/Juice.swift` within the `Runtime` actor. This includes:
 *   `uemUrl`
 *   `clientId` / `clientSecret`
 *   `orgGroupId`
@@ -55,7 +55,7 @@ Currently, configuration appears to be embedded directly in `JuiceSwift/Juice.sw
 
 ## Directory Structure
 
-*   `JuiceSwift/`: Main source directory.
+*   `Juice/`: Main source directory.
     *   `Components/`: Reusable UI elements (cards, badges, buttons).
     *   `Models/`: Data structures (`JuiceModels.swift`, plus focused supporting model files).
     *   `Services/`: Business logic and API handling (`UEMService.swift`, `AuthService.swift`).

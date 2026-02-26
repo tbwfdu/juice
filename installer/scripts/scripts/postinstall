@@ -1,0 +1,44 @@
+#!/bin/sh
+set -eu
+
+RUNTIME_DIR="/usr/local/juice"
+
+/bin/mkdir -p "$RUNTIME_DIR"
+/usr/sbin/chown -R root:wheel "$RUNTIME_DIR" || true
+/bin/chmod -R 755 "$RUNTIME_DIR" || true
+
+if [ -x "$RUNTIME_DIR/juice_runtime_check.sh" ]; then
+  "$RUNTIME_DIR/juice_runtime_check.sh" || true
+fi
+
+# Per-user setup for the currently logged-in console user.
+CONSOLE_USER="$(stat -f%Su /dev/console 2>/dev/null || true)"
+if [ -z "$CONSOLE_USER" ] || [ "$CONSOLE_USER" = "root" ]; then
+  /bin/echo "[Juice runtime postinstall] No logged-in user; skipping per-user setup."
+  /bin/echo "[Juice runtime postinstall] prepared $RUNTIME_DIR"
+  exit 0
+fi
+
+USER_HOME="$(dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory | awk '{print $2}')"
+if [ -z "$USER_HOME" ]; then
+  /bin/echo "[Juice runtime postinstall] Could not resolve home directory for $CONSOLE_USER; skipping per-user setup."
+  /bin/echo "[Juice runtime postinstall] prepared $RUNTIME_DIR"
+  exit 0
+fi
+
+/bin/echo "Creating required directories..."
+/bin/mkdir -p "$USER_HOME/.juice" "$USER_HOME/Juice" "$USER_HOME/Juice/cache"
+
+/bin/echo "Setting up Munki preferences..."
+/usr/bin/defaults write "$USER_HOME/Library/Preferences/com.googlecode.munki.munkiimport" default_catalog "device_catalog"
+/usr/bin/defaults write "$USER_HOME/Library/Preferences/com.googlecode.munki.munkiimport" pkginfo_extension ".plist"
+/usr/bin/defaults write "$USER_HOME/Library/Preferences/com.googlecode.munki.munkiimport" repo_url "file://$USER_HOME/Juice/cache"
+
+/bin/echo "Fixing Permissions..."
+/usr/sbin/chown -R "$CONSOLE_USER:staff" "$USER_HOME/.juice" "$USER_HOME/Juice" || true
+/bin/chmod -R 755 "$USER_HOME/.juice" "$USER_HOME/Juice" || true
+/usr/sbin/chown "$CONSOLE_USER:staff" "$USER_HOME/Library/Preferences/com.googlecode.munki.munkiimport.plist" || true
+/bin/chmod 644 "$USER_HOME/Library/Preferences/com.googlecode.munki.munkiimport.plist" || true
+
+/bin/echo "[Juice runtime postinstall] prepared $RUNTIME_DIR"
+exit 0

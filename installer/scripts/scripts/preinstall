@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+/bin/echo "[Juice runtime preinstall] starting"
+exit 0

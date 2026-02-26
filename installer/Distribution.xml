@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+  <title>Juice</title>
+  <options customize="never" require-scripts="false"/>
+  <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+  <volume-check>
+    <allowed-os-versions>
+      <os-version min="14.6"/>
+    </allowed-os-versions>
+  </volume-check>
+  <choices-outline>
+    <line choice="default">
+      <line choice="juice.app"/>
+      <line choice="juice.runtime"/>
+      <line choice="dep.01-munkitools-python-6.6.5.4711"/>
+      <line choice="dep.02-munkitools-core-6.6.5.4711"/>
+      <line choice="dep.03-munkitools-admin-6.6.5.4711"/>
+    </line>
+  </choices-outline>
+  <choice id="default" visible="false" title="Juice"/>
+  <choice id="juice.app" visible="false" title="Juice App">
+    <pkg-ref id="com.tbwfdu.juice.app"/>
+  </choice>
+  <choice id="juice.runtime" visible="false" title="Juice Runtime">
+    <pkg-ref id="com.tbwfdu.juice.runtime"/>
+  </choice>
+  <choice id="dep.01-munkitools-python-6.6.5.4711" visible="false" title="01-munkitools-python-6.6.5.4711">
+    <pkg-ref id="01-munkitools-python-6.6.5.4711"/>
+  </choice>
+  <choice id="dep.02-munkitools-core-6.6.5.4711" visible="false" title="02-munkitools-core-6.6.5.4711">
+    <pkg-ref id="02-munkitools-core-6.6.5.4711"/>
+  </choice>
+  <choice id="dep.03-munkitools-admin-6.6.5.4711" visible="false" title="03-munkitools-admin-6.6.5.4711">
+    <pkg-ref id="03-munkitools-admin-6.6.5.4711"/>
+  </choice>
+  <pkg-ref id="com.tbwfdu.juice.app" version="1.0">com.tbwfdu.juice.app.pkg</pkg-ref>
+  <pkg-ref id="com.tbwfdu.juice.runtime" version="1.0">com.tbwfdu.juice.runtime.pkg</pkg-ref>
+  <pkg-ref id="01-munkitools-python-6.6.5.4711">01-munkitools-python-6.6.5.4711.pkg</pkg-ref>
+  <pkg-ref id="02-munkitools-core-6.6.5.4711">02-munkitools-core-6.6.5.4711.pkg</pkg-ref>
+  <pkg-ref id="03-munkitools-admin-6.6.5.4711">03-munkitools-admin-6.6.5.4711.pkg</pkg-ref>
+</installer-gui-script>

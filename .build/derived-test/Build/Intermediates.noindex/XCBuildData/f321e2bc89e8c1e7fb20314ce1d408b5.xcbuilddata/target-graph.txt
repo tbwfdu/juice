@@ -1,0 +1,4 @@
+Target dependency graph (2 targets)
+Target 'Juice' in project 'Juice'
+➜ Implicit dependency on target 'JuiceWidgetExtension' in project 'Juice' via file 'JuiceWidgetExtension.appex' in build phase 'Copy Files'
+Target 'JuiceWidgetExtension' in project 'Juice' (no dependencies)
