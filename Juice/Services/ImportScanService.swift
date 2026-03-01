@@ -123,27 +123,18 @@ enum ImportScanService {
 				continue
 			}
 
-			var bestScore = 0
-			var bestRecipeId: String?
+			let topCandidates = await AppNameMatcher.matchRecipes(candidateName: candidateName, recipes: recipes)
 
-			for recipe in recipes {
-				let recipeName = recipe.displayName ?? recipe.name ?? recipe.identifier ?? ""
-				guard !recipeName.isEmpty else { continue }
-				let score = await AppNameMatcher.score(candidateName, recipeName)
-				if score > bestScore {
-					bestScore = score
-					bestRecipeId = recipe.identifier
-				}
-			}
-
-			if bestScore >= 90, let bestRecipeId {
-				mutable.matchingRecipeId = bestRecipeId
-				mutable.matchedOn = "name"
-				mutable.matchedScore = bestScore
+			if let selected = topCandidates.first {
+				mutable.matchingRecipeCandidates = topCandidates
+				mutable.matchingRecipeId = selected.identifier
+				mutable.matchedOn = selected.matchedOn
+				mutable.matchedScore = selected.score
 				if let macApp = mutable.macApplication {
-					macApp.matchingRecipeId = bestRecipeId
-					macApp.matchedOn = "name"
-					macApp.matchedScore = bestScore
+					macApp.matchingRecipeCandidates = topCandidates
+					macApp.matchingRecipeId = selected.identifier
+					macApp.matchedOn = selected.matchedOn
+					macApp.matchedScore = selected.score
 				}
 			}
 
@@ -221,6 +212,7 @@ enum ImportScanService {
 		var hasMetadata = false
 		var munkiMetadata: MunkiMetadata? = nil
 		var macApplication: CaskApplication? = nil
+		var iconPaths: [String] = []
 		#if os(macOS)
 		var availableIcons: [NSImage] = []
 		#endif
@@ -242,6 +234,7 @@ enum ImportScanService {
 					metadata.installerPlist = outputFile.path
 				}
 				if ext == "png" {
+					iconPaths.append(outputFile.path)
 					metadata.iconFile = outputFile.path
 					#if os(macOS)
 					if let image = NSImage(contentsOf: outputFile) {
@@ -278,6 +271,14 @@ enum ImportScanService {
 			munkiMetadata: munkiMetadata,
 			macApplication: macApplication
 		)
+		item.availableIconPaths = iconPaths
+		if let firstIcon = iconPaths.first {
+			item.selectedIconPath = firstIcon
+			item.selectedIconIndex = 0
+		}
+		if let plistPath = munkiMetadata?.installerPlist {
+			item.parsedMetadata = DownloadUploadService.parseInstallerPlist(plistPath)
+		}
 		#if os(macOS)
 		item.availableIcons = availableIcons
 		#endif

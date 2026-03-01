@@ -41,13 +41,6 @@ actor UEMService {
 	)
 
 	func getAllOrgGroups() async -> [OrganizationGroup]? {
-		
-        let token = await AuthService.instance.accessToken
-        let isValid = (token?.isEmpty == false)
-        if !isValid {
-            _ = await AuthService.instance.authenticate()
-        }
-
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
 		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 		else { return nil }
@@ -62,12 +55,13 @@ actor UEMService {
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-
-		if let token = await AuthService.instance.accessToken {
-			request.setValue(
-				"Bearer \(token)",
-				forHTTPHeaderField: "Authorization"
-			)
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: activeEnvironment
+		) else {
+			return []
+		}
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
 		}
 
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -116,21 +110,17 @@ actor UEMService {
 			return nil
 		}
 
-		guard
-			let accessToken = await AuthService.instance.getAccessToken(
-				for: environment
-			),
-			!accessToken.isEmpty
-		else {
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: environment
+		) else {
 			return []
 		}
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-		request.setValue(
-			"Bearer \(accessToken)",
-			forHTTPHeaderField: "Authorization"
-		)
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
 
 		do {
@@ -165,11 +155,6 @@ actor UEMService {
 	}
 
 	func getOrgGroupUuid(id: String? = nil) async -> String? {
-		let token = await AuthService.instance.accessToken
-		let isValid = (token?.isEmpty == false)
-		if !isValid {
-			_ = await AuthService.instance.authenticate()
-		}
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
 		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 
@@ -191,12 +176,13 @@ actor UEMService {
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-
-		if let token = await AuthService.instance.accessToken {
-			request.setValue(
-				"Bearer \(token)",
-				forHTTPHeaderField: "Authorization"
-			)
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: activeEnvironment
+		) else {
+			return nil
+		}
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
 		}
 
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -256,21 +242,17 @@ actor UEMService {
 			return nil
 		}
 
-		guard
-			let accessToken = await AuthService.instance.getAccessToken(
-				for: environment
-			),
-			!accessToken.isEmpty
-		else {
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: environment
+		) else {
 			return nil
 		}
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-		request.setValue(
-			"Bearer \(accessToken)",
-			forHTTPHeaderField: "Authorization"
-		)
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
 
 		do {
@@ -343,24 +325,20 @@ actor UEMService {
 			)
 			return nil
 		}
-		guard
-			let accessToken = await AuthService.instance.getAccessToken(
-				for: environment
-			),
-			!accessToken.isEmpty
-		else {
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: environment
+		) else {
 			logger.error(
-				"[\(self.logPrefix)][GetActiveEnvironmentDetails] Unable to obtain access token"
+				"[\(self.logPrefix)][GetActiveEnvironmentDetails] Unable to obtain auth headers"
 			)
 			return nil
 		}
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-		request.setValue(
-			"Bearer \(accessToken)",
-			forHTTPHeaderField: "Authorization"
-		)
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
 
 		do {
@@ -446,12 +424,9 @@ actor UEMService {
 
 		do {
 			logger.info("[\(self.logPrefix)][GetOrgGroupBrandingConfig] Getting Org Group Access Token")
-			guard
-				let accessToken = await AuthService.instance.getAccessToken(
-					for: environment
-				),
-				!accessToken.isEmpty
-			else {
+			guard let authHeaders = await AuthService.instance.authorizationHeaders(
+				for: environment
+			) else {
 				return nil
 			}
 
@@ -472,10 +447,9 @@ actor UEMService {
 
 			var request = URLRequest(url: url)
 			request.httpMethod = "GET"
-			request.setValue(
-				"Bearer \(accessToken)",
-				forHTTPHeaderField: "Authorization"
-			)
+			for (header, value) in authHeaders {
+				request.setValue(value, forHTTPHeaderField: header)
+			}
 			request.setValue("application/json", forHTTPHeaderField: "Accept")
 
 			let (data, response) = try await URLSession.shared.data(for: request)
@@ -846,15 +820,6 @@ actor UEMService {
 			event: "uem.query.start",
 			metadata: ["include_version_checks": String(includeVersionChecks)]
 		)
-		let token = await AuthService.instance.accessToken
-		let isValid = (token?.isEmpty == false)
-		if !isValid {
-			let didAuthenticate = await AuthService.instance.authenticate()
-			if !didAuthenticate {
-				appLog(.error, LogCategory.uem, "Authentication failed before app query", event: "uem.query.auth_failed")
-				return .failure(.authenticationFailed)
-			}
-		}
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
 		guard let baseURL = URL(string: activeEnvironment.uemUrl)
 		else { return .failure(.invalidBaseURL) }
@@ -869,12 +834,14 @@ actor UEMService {
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-
-		if let token = await AuthService.instance.accessToken {
-			request.setValue(
-				"Bearer \(token)",
-				forHTTPHeaderField: "Authorization"
-			)
+		guard let authHeaders = await AuthService.instance.authorizationHeaders(
+			for: activeEnvironment
+		) else {
+			appLog(.error, LogCategory.uem, "Authentication failed before app query", event: "uem.query.auth_failed")
+			return .failure(.authenticationFailed)
+		}
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
 		}
 
 		request.setValue("application/json", forHTTPHeaderField: "Accept")

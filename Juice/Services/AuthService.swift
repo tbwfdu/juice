@@ -22,50 +22,17 @@ actor AuthService {
 
 	@discardableResult
 	func authenticate() async -> Bool {
-
-		appLog(.debug, LogCategory.auth, "Requesting Access Token", event: "auth.request")
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
-		guard let baseURL = URL(string: activeEnvironment.oauthRegion) else {
-			appLog(.error, LogCategory.auth, "Invalid OAuth region URL", event: "auth.invalid_region_url")
+		guard let headers = await authorizationHeaders(for: activeEnvironment) else {
 			return false
 		}
-		guard let tokenURL = URL(string: self.tokenEndpoint, relativeTo: baseURL) else {
-			appLog(.error, LogCategory.auth, "Invalid OAuth token URL", event: "auth.invalid_token_url")
-			return false
-		}
-
-		var request = URLRequest(url: tokenURL)
-		request.httpMethod = "POST"
-		request.setValue(
-			"application/x-www-form-urlencoded",
-			forHTTPHeaderField: "Content-Type"
-		)
-
-		let body = [
-			"grant_type=client_credentials",
-			"client_id=\(activeEnvironment.clientId)",
-			"client_secret=\(activeEnvironment.clientSecret)",
-		].joined(separator: "&")
-		request.httpBody = body.data(using: .utf8)
-
-		do {
-			let (data, _) = try await URLSession.shared.data(for: request)
-			let json =
-				try JSONSerialization.jsonObject(with: data, options: [])
-				as? [String: Any]
-			if let token = json?["access_token"] as? String {
-				accessToken = token
-				appLog(.info, LogCategory.auth, "Access token obtained", event: "auth.success")
-				return true
-			}
-		} catch {
-			appLog(.error, LogCategory.auth, "Authentication request failed", event: "auth.failure", metadata: ["reason": error.localizedDescription])
-		}
-
-		return false
+		return headers["Authorization"]?.isEmpty == false
 	}
 
 	func getAccessToken(for environment: UemEnvironment) async -> String? {
+		guard environment.authenticationType == .oauthClientCredentials else {
+			return nil
+		}
 		appLog(.debug, LogCategory.auth, "Requesting Access Token for environment", event: "auth.request_for_environment")
 		guard let baseURL = URL(string: environment.oauthRegion) else {
 			appLog(.error, LogCategory.auth, "Invalid OAuth region URL", event: "auth.invalid_region_url")
@@ -96,6 +63,7 @@ actor AuthService {
 				try JSONSerialization.jsonObject(with: data, options: [])
 				as? [String: Any]
 			if let token = json?["access_token"] as? String, !token.isEmpty {
+				accessToken = token
 				return token
 			}
 		} catch {
@@ -104,11 +72,47 @@ actor AuthService {
 
 		return nil
 	}
+
+	func authorizationHeaders(for environment: UemEnvironment) async -> [String: String]? {
+		switch environment.authenticationType {
+		case .oauthClientCredentials:
+			guard
+				let token = await getAccessToken(for: environment),
+				!token.isEmpty
+			else {
+				return nil
+			}
+			return ["Authorization": "Bearer \(token)"]
+
+		case .basicAuthApiKey:
+			let username = environment.basicUsername.trimmingCharacters(
+				in: .whitespacesAndNewlines
+			)
+			let password = environment.basicPassword.trimmingCharacters(
+				in: .whitespacesAndNewlines
+			)
+			let apiKey = environment.apiKey.trimmingCharacters(
+				in: .whitespacesAndNewlines
+			)
+			guard !username.isEmpty, !password.isEmpty, !apiKey.isEmpty else {
+				return nil
+			}
+			let credentials = "\(username):\(password)"
+			guard let credentialsData = credentials.data(using: .utf8) else {
+				return nil
+			}
+			let encodedCredentials = credentialsData.base64EncodedString()
+			accessToken = nil
+			return [
+				"Authorization": "Basic \(encodedCredentials)",
+				"aw-tenant-code": apiKey
+			]
+		}
+	}
 	
 	
 	
 	func getOrgGroupDetails() async -> [String: Any]? {
-		_ = await authenticate()
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
 		guard let baseURL = URL(string: activeEnvironment.uemUrl) else { return nil }
 		guard let url = URL(string: "/API/system/groups/\(activeEnvironment.orgGroupId)", relativeTo: baseURL) else {
@@ -117,11 +121,12 @@ actor AuthService {
 
 		var request = URLRequest(url: url)
 		request.httpMethod = "GET"
-		
-		if let token = accessToken {
-			request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+		guard let headers = await authorizationHeaders(for: activeEnvironment) else {
+			return nil
 		}
-		
+		for (header, value) in headers {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json", forHTTPHeaderField: "Accept")
 
 		do {

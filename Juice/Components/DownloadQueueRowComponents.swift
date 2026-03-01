@@ -77,7 +77,7 @@ struct DownloadReviewRow: View {
 						.font(.system(size: 11, weight: .medium))
 						.foregroundStyle(.secondary)
 					if download.recipeIdentifier != nil {
-						Pill("Recipe", color: .orange)
+						Pill("Recipe", style: .juiceGradient)
 					}
 				}
 					Spacer()
@@ -659,13 +659,18 @@ struct DownloadQueuePanelContent_PreviewHost: View {
 		selectedIconIndex: 0,
 		parsedMetadata: ParsedMetadata(),
 		metadataText: "{}",
-		metadataError: nil,
-		preparationError: nil,
-		recipeIdentifier: nil,
-		recipeText: nil,
-		recipeError: nil,
-		parsedRecipe: nil,
-		preinstallScript: "",
+			metadataError: nil,
+			preparationError: nil,
+			recipeIdentifier: nil,
+			recipeCandidates: [],
+			selectedRecipeId: nil,
+			recipeText: nil,
+			recipeError: nil,
+			parsedRecipe: nil,
+			plistText: "",
+			plistError: nil,
+			isPlistDirty: false,
+			preinstallScript: "",
 		postinstallScript: "",
 		preuninstallScript: "",
 		postuninstallScript: "",

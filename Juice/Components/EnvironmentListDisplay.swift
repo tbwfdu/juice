@@ -404,11 +404,15 @@ struct EnvironmentListDisplay: View {
 						Spacer()
 					}
 
-					HStack(alignment: .firstTextBaseline, spacing: 6) {
-						Image(systemName: "globe.asia.australia")
-							.font(
-								.system(
-									size: 11,
+						HStack(alignment: .firstTextBaseline, spacing: 6) {
+							Image(
+								systemName: environment.authenticationType
+									== .basicAuthApiKey
+									? "key.fill" : "globe.asia.australia"
+							)
+								.font(
+									.system(
+										size: 11,
 									weight: .medium,
 									design: .default
 								)
@@ -416,13 +420,10 @@ struct EnvironmentListDisplay: View {
 							.foregroundStyle(
 								Color(hex: JuiceStyleConfig.defaultTintHex)
 							)
-						Text(
-							returnRegion(url: environment.oauthRegion)
-								?? environment.oauthRegion
-						)
-						.font(
-							.system(size: 11, weight: .regular)
-						)
+							Text(authenticationSummary(for: environment))
+							.font(
+								.system(size: 11, weight: .regular)
+							)
 						.foregroundStyle(.secondary)
 						.lineLimit(1)
 						Spacer()
@@ -433,6 +434,16 @@ struct EnvironmentListDisplay: View {
 			.padding(.top, 16)
 			.padding(.horizontal, 16)
 			.padding(.bottom, 16)
+		}
+	}
+
+	private func authenticationSummary(for environment: UemEnvironment) -> String {
+		switch environment.authenticationType {
+		case .oauthClientCredentials:
+			return returnRegion(url: environment.oauthRegion)
+				?? environment.oauthRegion
+		case .basicAuthApiKey:
+			return "Basic Auth + API Key"
 		}
 	}
 

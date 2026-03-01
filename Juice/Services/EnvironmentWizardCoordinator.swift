@@ -15,23 +15,52 @@ enum EnvironmentWizardCoordinator {
 	static func configureStepValidationError(for environment: UemEnvironment)
 		-> String?
 	{
-		let missing = [
+		var missing: [String?] = [
 			environment.friendlyName.trimmingCharacters(
 				in: .whitespacesAndNewlines
 			).isEmpty ? "Friendly Name" : nil,
 			environment.uemUrl.trimmingCharacters(in: .whitespacesAndNewlines)
 				.isEmpty ? "Workspace ONE API Server URL" : nil,
-			environment.clientId.trimmingCharacters(in: .whitespacesAndNewlines)
-				.isEmpty ? "Client ID" : nil,
-			environment.clientSecret.trimmingCharacters(
-				in: .whitespacesAndNewlines
-			).isEmpty ? "Client Secret" : nil,
-			environment.oauthRegion.trimmingCharacters(
-				in: .whitespacesAndNewlines
-			).isEmpty ? "OAuth Region" : nil,
-		].compactMap { $0 }
-		if !missing.isEmpty {
-			return "Missing: \(missing.joined(separator: ", "))."
+		]
+
+		switch environment.authenticationType {
+		case .oauthClientCredentials:
+			missing.append(
+				environment.clientId.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "Client ID" : nil
+			)
+			missing.append(
+				environment.clientSecret.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "Client Secret" : nil
+			)
+			missing.append(
+				environment.oauthRegion.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "OAuth Region" : nil
+			)
+		case .basicAuthApiKey:
+			missing.append(
+				environment.basicUsername.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "Username" : nil
+			)
+			missing.append(
+				environment.basicPassword.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "Password" : nil
+			)
+			missing.append(
+				environment.apiKey.trimmingCharacters(
+					in: .whitespacesAndNewlines
+				).isEmpty ? "API Key" : nil
+			)
+		}
+
+		let compactMissing = missing.compactMap { $0 }
+		if !compactMissing.isEmpty {
+			return "Missing: \(compactMissing.joined(separator: ", "))."
 		}
 
 		let trimmedURL = environment.uemUrl.trimmingCharacters(

@@ -24,7 +24,7 @@ struct UpdatesView: View {
 	@EnvironmentObject private var catalog: LocalCatalog
 	@Environment(\.colorScheme) private var colorScheme
 	@State private var queueNoticeTask: Task<Void, Never>?
-	@StateObject private var downloadQueueModel = DownloadQueueViewModel()
+	@EnvironmentObject private var downloadQueueModel: DownloadQueueViewModel
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
 	private var glassState: GlassStateContext {
@@ -232,7 +232,9 @@ struct UpdatesView: View {
 			updateInspector()
 		}
 		.onDisappear {
-			inspector.hide()
+			if selectedApp != nil || !downloadQueueModel.shouldPresentPanel {
+				inspector.hide()
+			}
 			queueNoticeTask?.cancel()
 			queueNoticeTask = nil
 		}
@@ -249,6 +251,15 @@ struct UpdatesView: View {
 					DispatchQueue.main.async {
 						uemApps = model.uemApps
 						state.hasInitialized = true
+					}
+				}
+				
+				// Ensure inspector content is correct on appear
+				if selectedApp == nil {
+					if downloadQueueModel.shouldPresentPanel {
+						inspector.show(
+							downloadPanelView(panelMinHeight: panelMinHeightCache > 0 ? panelMinHeightCache : basePanelMinHeight)
+						)
 					}
 				}
 			}
@@ -1882,6 +1893,7 @@ private struct UpdatesHeaderRowHeightKey: PreferenceKey {
 	UpdatesView(model: .sample, state: UpdatesViewState())
 		.environmentObject(InspectorCoordinator())
 		.environmentObject(LocalCatalog())
+		.environmentObject(DownloadQueueViewModel())
 		.frame(width: 700, height: 400)
 		.background {
 			JuiceGradient()

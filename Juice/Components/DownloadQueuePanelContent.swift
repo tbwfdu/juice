@@ -12,20 +12,27 @@ struct DownloadQueuePanelContent: View {
 	@State private var selectedEditable: EditableDownload?
 	@State private var showCancelConfirmation = false
 
+	private var queueSectionLabel: String {
+		if model.stage == .uploading { return "Uploading" }
+		return "Downloading"
+	}
+
 	var body: some View {
-		let isEditing = model.stage == .editing
-		let hasQueueItems = isEditing ? model.hasEditableDownloads : !model.queueItems.isEmpty
+		let hasQueueItems = !model.queueItems.isEmpty
+		let hasEditableItems = !model.editableDownloads.isEmpty
+		let hasResults = !model.results.isEmpty
+		
 		let showQueueAction = !(model.stage == .downloading
 			|| model.stage == .editing
 			|| model.stage == .uploading)
 		let queueActionTitle = showQueueAction
 			? (model.isRunning ? "Cancel All" : "Clear")
 			: ""
-		let showCancelButton = hasQueueItems
+		let showCancelButton = (hasQueueItems || hasEditableItems)
 			&& (model.stage == .downloading
 				|| model.stage == .editing
 				|| model.stage == .uploading)
-		let showContinueButton = hasQueueItems && model.stage == .editing
+		let showContinueButton = hasEditableItems && (model.stage == .editing || model.stage == .downloading)
 		
 		let bottomActionsView: AnyView? = (showCancelButton || showContinueButton)
 			? AnyView(
@@ -57,12 +64,12 @@ struct DownloadQueuePanelContent: View {
 			resultsTitle: "Results",
 			queueCountText: model.queueCountText,
 			resultsCountText: model.resultsCountText,
-			queueIsEmpty: isEditing ? !model.hasEditableDownloads : model.queueItems.isEmpty,
-			resultsIsEmpty: model.results.isEmpty,
+			queueIsEmpty: !hasQueueItems && !hasEditableItems,
+			resultsIsEmpty: !hasResults,
 			queueActionTitle: queueActionTitle,
 			resultsActionTitle: "Clear",
 			onQueueAction: {
-				if isEditing {
+				if hasEditableItems && !hasQueueItems {
 					model.startUploadAfterEdits()
 				} else if model.isRunning {
 					model.cancel()
@@ -79,32 +86,54 @@ struct DownloadQueuePanelContent: View {
 			bottomActions: bottomActionsView
 		) {
 			AnyView(
-				VStack(alignment: .leading, spacing: 12) {
+				VStack(alignment: .leading, spacing: 16) {
 					DownloadQueueStatusHeader(
 						statusText: model.statusText,
 						stageProgressText: model.stageProgressText
 					)
-					if isEditing {
-						DownloadEditReviewList(
-							model: model,
-							onEdit: { id in
-								if let index = model.editableDownloads.firstIndex(where: { $0.id == id }) {
-									if !model.editableDownloads[index].iconPaths.isEmpty {
-										model.editableDownloads[index].selectedIconIndex = 0
-									}
-									selectedEditable = model.editableDownloads[index]
+					
+					if hasQueueItems {
+						VStack(alignment: .leading, spacing: 8) {
+							if hasEditableItems || model.stage == .uploading {
+								Text(queueSectionLabel)
+									.font(.system(size: 11, weight: .bold))
+									.foregroundStyle(.secondary)
+									.padding(.leading, 4)
+							}
+							LazyVStack(spacing: 8) {
+								ForEach(model.queueItems) { item in
+									DownloadQueueRow(
+										app: item,
+										uploadStatus: model.uploadStatus(for: item)
+									)
+									.transition(.opacity.combined(with: .move(edge: .top)))
 								}
 							}
-						)
-					} else {
-						LazyVStack(spacing: 8) {
-							ForEach(model.queueItems) { item in
-								DownloadQueueRow(
-									app: item,
-									uploadStatus: model.uploadStatus(for: item)
-								)
-								.transition(.opacity.combined(with: .move(edge: .top)))
+						}
+					}
+					
+					if hasEditableItems {
+						VStack(alignment: .leading, spacing: 8) {
+							if hasQueueItems {
+								Divider()
+									.padding(.vertical, 4)
+								Text("Ready to Review")
+									.font(.system(size: 11, weight: .bold))
+									.foregroundStyle(.secondary)
+									.padding(.leading, 4)
 							}
+							
+							DownloadEditReviewList(
+								model: model,
+								onEdit: { id in
+									if let index = model.editableDownloads.firstIndex(where: { $0.id == id }) {
+										if !model.editableDownloads[index].iconPaths.isEmpty {
+											model.editableDownloads[index].selectedIconIndex = 0
+										}
+										selectedEditable = model.editableDownloads[index]
+									}
+								}
+							)
 						}
 					}
 				}
@@ -137,18 +166,23 @@ struct DownloadQueuePanelContent: View {
 				}
 			}
 		}
-		.sheet(item: $selectedEditable) { editable in
-			MetadataEditSheet(
-				download: editable,
-				onSave: { updated in
-					model.updateEditedDownload(updated)
-					selectedEditable = nil
-				},
-				onCancel: {
-					selectedEditable = nil
-				}
-			)
-		}
+			.sheet(item: $selectedEditable) { editable in
+				MetadataEditSheet(
+					download: editable,
+					onSave: { updated in
+						model.updateEditedDownload(updated)
+						selectedEditable = nil
+					},
+					onCancel: {
+						selectedEditable = nil
+					},
+					onSelectRecipe: { recipeId in
+						// Just resolve the recipe without updating the parent view's state for the open sheet.
+						// The sheet handles its own activeRecipe state.
+						return model.recipesById[recipeId]
+					}
+				)
+			}
 		.sheet(isPresented: $showCancelConfirmation) {
 			JuiceConfirmationSheet(
 				title: "Cancel all in-progress work?",

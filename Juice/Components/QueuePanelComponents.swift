@@ -384,22 +384,22 @@ struct QueuePanelContent<QueueContent: View, ResultsContent: View>: View {
 					.disabled(isActionDisabled)
 					.opacity(isActionDisabled ? 0.5 : 1.0)
 				}
-				if let isPinned {
-					Button {
-						isPinned.wrappedValue.toggle()
-					} label: {
-						Image(systemName: isPinned.wrappedValue ? "pin.fill" : "pin")
-							.font(.system(size: 11, weight: .semibold))
-					}
-					.buttonStyle(.plain)
-					.controlSize(.large)
-					.buttonBorderShape(.circle)
-					.tint(isPinned.wrappedValue ? .accentColor : .secondary)
-					.rotationEffect(.degrees(isPinned.wrappedValue ? 0 : 30))
-					.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
-					.padding(.top, 2)
-					.juiceHelp(HelpText.Queue.pinPanel)
-				}
+//				if let isPinned {
+//					Button {
+//						isPinned.wrappedValue.toggle()
+//					} label: {
+//						Image(systemName: isPinned.wrappedValue ? "pin.fill" : "pin")
+//							.font(.system(size: 11, weight: .semibold))
+//					}
+//					.buttonStyle(.plain)
+//					.controlSize(.large)
+//					.buttonBorderShape(.circle)
+//					.tint(isPinned.wrappedValue ? .accentColor : .secondary)
+//					.rotationEffect(.degrees(isPinned.wrappedValue ? 0 : 30))
+//					.animation(.easeInOut(duration: 0.18), value: isPinned.wrappedValue)
+//					.padding(.top, 2)
+//					.juiceHelp(HelpText.Queue.pinPanel)
+//				}
 			}.padding(.top, 16)
 //					.border(.red, width: 2)
 				.fixedSize(horizontal: true, vertical: false)

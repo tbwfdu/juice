@@ -77,7 +77,7 @@ struct ParsedMetadata: Codable {
         extra = nil
     }
 
-    enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CodingKey, CaseIterable {
         case _metadata
         case autoremove
         case catalogs
@@ -115,6 +115,23 @@ struct ParsedMetadata: Codable {
         case items_to_copy
         case extra
     }
+
+    private struct DynamicCodingKey: CodingKey {
+        var stringValue: String
+        var intValue: Int?
+
+        init?(stringValue: String) {
+            self.stringValue = stringValue
+            self.intValue = nil
+        }
+
+        init?(intValue: Int) {
+            self.stringValue = String(intValue)
+            self.intValue = intValue
+        }
+    }
+
+    private static let knownTopLevelKeys: Set<String> = Set(CodingKeys.allCases.map(\.stringValue))
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -154,7 +171,13 @@ struct ParsedMetadata: Codable {
         installer_type = decodeString(container, key: .installer_type)
         installs = try? container.decode([InstallItem].self, forKey: .installs)
         items_to_copy = try? container.decode([ItemToCopy].self, forKey: .items_to_copy)
-        extra = try? container.decode([String: AnyCodable].self, forKey: .extra)
+        var mergedExtra: [String: AnyCodable] = (try? container.decode([String: AnyCodable].self, forKey: .extra)) ?? [:]
+        let dynamicContainer = try decoder.container(keyedBy: DynamicCodingKey.self)
+        for key in dynamicContainer.allKeys where !Self.knownTopLevelKeys.contains(key.stringValue) {
+            guard let value = try? dynamicContainer.decode(AnyCodable.self, forKey: key) else { continue }
+            mergedExtra[key.stringValue] = value
+        }
+        extra = mergedExtra.isEmpty ? nil : mergedExtra
     }
 
     func encode(to encoder: Encoder) throws {
@@ -194,7 +217,14 @@ struct ParsedMetadata: Codable {
         try container.encodeIfPresent(installer_type, forKey: .installer_type)
         try container.encodeIfPresent(installs, forKey: .installs)
         try container.encodeIfPresent(items_to_copy, forKey: .items_to_copy)
-        try container.encodeIfPresent(extra, forKey: .extra)
+        if let extra, !extra.isEmpty {
+            var dynamicContainer = encoder.container(keyedBy: DynamicCodingKey.self)
+            for key in extra.keys.sorted() {
+                guard !Self.knownTopLevelKeys.contains(key) else { continue }
+                guard let dynamicKey = DynamicCodingKey(stringValue: key), let value = extra[key] else { continue }
+                try dynamicContainer.encode(value, forKey: dynamicKey)
+            }
+        }
     }
 
     private func decodeString(

@@ -101,7 +101,7 @@ struct AppDetailListItem: View {
 			ScrollView(.horizontal, showsIndicators: false) {
 				LazyHStack(spacing: 6) {
 					ForEach(pillDescriptors) { pill in
-						Pill(pill.title, color: pill.color, help: pill.help)
+						Pill(pill.title, style: pill.style, help: pill.help)
 					}
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
@@ -173,7 +173,7 @@ struct AppDetailListItem: View {
 	private struct PillDescriptor: Identifiable {
 		let id = UUID()
 		let title: String
-		let color: Color
+		let style: Pill.PillStyle
 		let help: String
 	}
 
@@ -184,14 +184,14 @@ struct AppDetailListItem: View {
 				guard item.hasRecipe else { return nil }
 				return PillDescriptor(
 					title: "Recipe",
-					color: .green,
+					style: .juiceGradient,
 					help: HelpText.Pills.recipe
 				)
 			case .token:
 				guard item.token.isEmpty == false else { return nil }
 				return PillDescriptor(
 					title: item.token,
-					color: .blue,
+					style: .solid(.blue),
 					help: HelpText.Pills.token
 				)
 			case .filetype:
@@ -199,7 +199,7 @@ struct AppDetailListItem: View {
 				let ext = URL(fileURLWithPath: item.url).pathExtension.lowercased()
 				return PillDescriptor(
 					title: ".\(ext)",
-					color: .blue,
+					style: .solid(.blue),
 					help: HelpText.Pills.fileType
 				)
 			}
@@ -278,7 +278,7 @@ struct ImportAppDetailListItem: View {
 		VStack(alignment: .leading, spacing: 4) {
 			HStack(alignment: .top, spacing: 8) {
 				ImportAppIconView(item: item)
-					.frame(width: 32, height: 32)
+					.frame(width: 40, height: 40)
 				VStack(alignment: .leading, spacing: 2) {
 					Text(item.displayTitle)
 						.frame(maxWidth: .infinity, alignment: .leading)
@@ -312,18 +312,18 @@ struct ImportAppDetailListItem: View {
 			}
 			ScrollView(.horizontal, showsIndicators: false) {
 				LazyHStack(spacing: 6) {
+					if (item.matchingRecipeId ?? "").isEmpty == false || (item.macApplication?.matchingRecipeId ?? "").isEmpty == false {
+						Pill(
+							"Recipe",
+							style: .juiceGradient,
+							help: HelpText.Pills.recipe
+						)
+					}
 					if item.hasMetadata {
 						Pill(
 							"Metadata",
 							color: .green,
 							help: HelpText.Pills.metadata
-						)
-					}
-					if (item.matchingRecipeId ?? "").isEmpty == false || (item.macApplication?.matchingRecipeId ?? "").isEmpty == false {
-						Pill(
-							"Recipe",
-							color: .orange,
-							help: HelpText.Pills.recipe
 						)
 					}
 					if item.macApplication != nil {
@@ -347,9 +347,8 @@ struct ImportAppDetailListItem: View {
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 			}
-			.frame(height: 24, alignment: .topLeading)
-			.padding(.top, -4)
-			.padding(.bottom, -4)
+			.frame(height: 20, alignment: .topLeading)
+			.padding(.top, 1)
 		}
 		.padding(.horizontal, 12)
 		.padding(.vertical, 14)
@@ -398,14 +397,11 @@ struct ImportAppDetailListItem: View {
 			.clipShape(shape)
 			.contentShape(shape)
 			.overlay(alignment: .topTrailing) {
-				HStack(spacing: 4) {
-					if let onRemove {
-						QueueRowRemoveButton(action: onRemove)
-					}
-					QueueRowEllipsisButton()
+				if let onRemove {
+					QueueRowRemoveButton(action: onRemove)
+						.padding(.top, 8)
+						.padding(.trailing, 8)
 				}
-				.padding(.top, 8)
-				.padding(.trailing, 8)
 			}
 	}
 

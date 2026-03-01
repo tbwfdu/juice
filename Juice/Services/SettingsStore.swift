@@ -179,18 +179,20 @@ struct SettingsStore {
 		publishWidgetSharedState(from: hydratedState)
 	}
 
-	func reset() {
-		let previousEnvironments = loadEnvironmentsFromDefaults()
-		for environment in previousEnvironments {
-			guard let secretRef = normalizedSecretRef(environment.secretRef) else {
-				continue
-			}
-			do {
-				try keychain.deleteEnvironmentClientSecret(secretRef: secretRef)
-			} catch {
-				appLog(
-					.error,
-					"SettingsStore",
+		func reset() {
+			let previousEnvironments = loadEnvironmentsFromDefaults()
+			for environment in previousEnvironments {
+				guard let secretRef = normalizedSecretRef(environment.secretRef) else {
+					continue
+				}
+				do {
+					try keychain.deleteEnvironmentClientSecret(secretRef: secretRef)
+					try keychain.deleteEnvironmentBasicPassword(secretRef: secretRef)
+					try keychain.deleteEnvironmentApiKey(secretRef: secretRef)
+				} catch {
+					appLog(
+						.error,
+						"SettingsStore",
 					"Failed to delete keychain secret during reset for ref \(secretRef): \(error.localizedDescription)"
 				)
 			}
@@ -368,14 +370,47 @@ struct SettingsStore {
 				shouldPersistScrubbed = true
 			}
 
+			if let legacyBasicPassword = normalizedValue(
+				resolvedEnvironment.basicPassword
+			) {
+				try keychain.setEnvironmentBasicPassword(
+					legacyBasicPassword,
+					secretRef: secretRef
+				)
+				shouldPersistScrubbed = true
+			}
+
+			if let legacyApiKey = normalizedValue(resolvedEnvironment.apiKey) {
+				try keychain.setEnvironmentApiKey(
+					legacyApiKey,
+					secretRef: secretRef
+				)
+				shouldPersistScrubbed = true
+			}
+
 			let keychainSecret =
 				try keychain.getEnvironmentClientSecret(secretRef: secretRef) ?? ""
+			let keychainBasicPassword =
+				try keychain.getEnvironmentBasicPassword(secretRef: secretRef)
+				?? ""
+			let keychainApiKey =
+				try keychain.getEnvironmentApiKey(secretRef: secretRef) ?? ""
 			hydratedEnvironment.clientSecret = keychainSecret
+			hydratedEnvironment.basicPassword = keychainBasicPassword
+			hydratedEnvironment.apiKey = keychainApiKey
 			hydratedEnvironments.append(hydratedEnvironment)
 
 			var scrubbed = resolvedEnvironment
 			if !scrubbed.clientSecret.isEmpty {
 				scrubbed.clientSecret = ""
+				shouldPersistScrubbed = true
+			}
+			if !scrubbed.basicPassword.isEmpty {
+				scrubbed.basicPassword = ""
+				shouldPersistScrubbed = true
+			}
+			if !scrubbed.apiKey.isEmpty {
+				scrubbed.apiKey = ""
 				shouldPersistScrubbed = true
 			}
 			scrubbedEnvironments.append(scrubbed)
@@ -393,6 +428,8 @@ struct SettingsStore {
 			let (resolved, _) = resolvedSecretRef(for: environment)
 			var fallback = resolved
 			fallback.clientSecret = ""
+			fallback.basicPassword = ""
+			fallback.apiKey = ""
 			return fallback
 		}
 	}
@@ -417,7 +454,24 @@ struct SettingsStore {
 				try keychain.deleteEnvironmentClientSecret(secretRef: secretRef)
 			}
 
+			if let basicPassword = normalizedValue(resolved.basicPassword) {
+				try keychain.setEnvironmentBasicPassword(
+					basicPassword,
+					secretRef: secretRef
+				)
+			} else {
+				try keychain.deleteEnvironmentBasicPassword(secretRef: secretRef)
+			}
+
+			if let apiKey = normalizedValue(resolved.apiKey) {
+				try keychain.setEnvironmentApiKey(apiKey, secretRef: secretRef)
+			} else {
+				try keychain.deleteEnvironmentApiKey(secretRef: secretRef)
+			}
+
 			resolved.clientSecret = ""
+			resolved.basicPassword = ""
+			resolved.apiKey = ""
 			sanitized.append(resolved)
 		}
 
@@ -434,6 +488,8 @@ struct SettingsStore {
 		let removedRefs = previousRefs.subtracting(retainedSecretRefs)
 		for secretRef in removedRefs {
 			try keychain.deleteEnvironmentClientSecret(secretRef: secretRef)
+			try keychain.deleteEnvironmentBasicPassword(secretRef: secretRef)
+			try keychain.deleteEnvironmentApiKey(secretRef: secretRef)
 		}
 	}
 
@@ -444,6 +500,14 @@ struct SettingsStore {
 			var hydratedEnvironment = resolved
 			hydratedEnvironment.clientSecret =
 				try keychain.getEnvironmentClientSecret(
+					secretRef: resolved.secretRef
+				) ?? ""
+			hydratedEnvironment.basicPassword =
+				try keychain.getEnvironmentBasicPassword(
+					secretRef: resolved.secretRef
+				) ?? ""
+			hydratedEnvironment.apiKey =
+				try keychain.getEnvironmentApiKey(
 					secretRef: resolved.secretRef
 				) ?? ""
 			hydrated.append(hydratedEnvironment)

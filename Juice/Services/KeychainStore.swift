@@ -77,6 +77,14 @@ final class KeychainStore: @unchecked Sendable {
 		"juice.settings.env.\(secretRef).clientSecret"
 	}
 
+	func environmentBasicPasswordKey(secretRef: String) -> String {
+		"juice.settings.env.\(secretRef).basicPassword"
+	}
+
+	func environmentApiKeyKey(secretRef: String) -> String {
+		"juice.settings.env.\(secretRef).apiKey"
+	}
+
 	func setEnvironmentClientSecret(_ value: String, secretRef: String) throws {
 		try set(
 			value,
@@ -91,6 +99,40 @@ final class KeychainStore: @unchecked Sendable {
 	func deleteEnvironmentClientSecret(secretRef: String) throws {
 		try delete(
 			forKey: environmentClientSecretKey(secretRef: secretRef)
+		)
+	}
+
+	func setEnvironmentBasicPassword(_ value: String, secretRef: String) throws {
+		try set(
+			value,
+			forKey: environmentBasicPasswordKey(secretRef: secretRef)
+		)
+	}
+
+	func getEnvironmentBasicPassword(secretRef: String) throws -> String? {
+		try get(forKey: environmentBasicPasswordKey(secretRef: secretRef))
+	}
+
+	func deleteEnvironmentBasicPassword(secretRef: String) throws {
+		try delete(
+			forKey: environmentBasicPasswordKey(secretRef: secretRef)
+		)
+	}
+
+	func setEnvironmentApiKey(_ value: String, secretRef: String) throws {
+		try set(
+			value,
+			forKey: environmentApiKeyKey(secretRef: secretRef)
+		)
+	}
+
+	func getEnvironmentApiKey(secretRef: String) throws -> String? {
+		try get(forKey: environmentApiKeyKey(secretRef: secretRef))
+	}
+
+	func deleteEnvironmentApiKey(secretRef: String) throws {
+		try delete(
+			forKey: environmentApiKeyKey(secretRef: secretRef)
 		)
 	}
 }

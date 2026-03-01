@@ -630,13 +630,14 @@ struct SettingsView: View {
 				.font(.system(size: 13, weight: .semibold))
 				.foregroundStyle(.secondary)
 			
-			Picker("", selection: $debugThemeOverrideRaw) {
-				Text("System").tag("system")
-				Text("Light").tag("light")
-				Text("Dark").tag("dark")
-			}
-			.pickerStyle(.segmented)
-			.frame(width: 200)
+			LiquidGlassSegmentedPicker(
+				items: [
+					.init(title: "System", icon: "gearshape", tag: "system"),
+					.init(title: "Light", icon: "sun.max", tag: "light"),
+					.init(title: "Dark", icon: "moon", tag: "dark"),
+				],
+				selection: $debugThemeOverrideRaw
+			)
 		}
 	}
 
@@ -1192,7 +1193,7 @@ struct SettingsView: View {
 		appLog(
 			.debug,
 			"SettingsView.EditWizard",
-			"Next tapped on Configure step. friendlyName=\(editEnvironmentDraft.friendlyName), uemUrl=\(editEnvironmentDraft.uemUrl), clientIdLength=\(editEnvironmentDraft.clientId.count), clientSecretLength=\(editEnvironmentDraft.clientSecret.count), oauthRegion=\(editEnvironmentDraft.oauthRegion)"
+			"Next tapped on Configure step. friendlyName=\(editEnvironmentDraft.friendlyName), uemUrl=\(editEnvironmentDraft.uemUrl), authType=\(editEnvironmentDraft.authenticationType.rawValue), clientIdLength=\(editEnvironmentDraft.clientId.count), clientSecretLength=\(editEnvironmentDraft.clientSecret.count), basicUsernameLength=\(editEnvironmentDraft.basicUsername.count), basicPasswordLength=\(editEnvironmentDraft.basicPassword.count), apiKeyLength=\(editEnvironmentDraft.apiKey.count), oauthRegion=\(editEnvironmentDraft.oauthRegion)"
 		)
 		if let validationError = EnvironmentWizardCoordinator.configureStepValidationError(
 			for: editEnvironmentDraft

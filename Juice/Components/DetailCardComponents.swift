@@ -625,7 +625,7 @@ struct ImportAppDetailCard: View {
 			HStack(alignment: .top, spacing: 8) {
 				ZStack(alignment: .topTrailing) {
 					ImportAppIconView(item: item)
-						.frame(width: 32, height: 32)
+						.frame(width: 40, height: 40)
 					if isSelected {
 						Image(systemName: "checkmark.circle.fill")
 							.font(.system(size: 14, weight: .semibold))

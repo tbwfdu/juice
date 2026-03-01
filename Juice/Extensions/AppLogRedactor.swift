@@ -5,13 +5,15 @@ enum AppLogRedactor {
 		var sanitized = value
 		sanitized = redactAuthorizationHeaders(in: sanitized)
 		sanitized = redactBearerTokens(in: sanitized)
+		sanitized = redactTenantCode(in: sanitized)
 		sanitized = redactClientSecret(in: sanitized)
+		sanitized = redactApiKeys(in: sanitized)
 		sanitized = redactAccessTokenJSON(in: sanitized)
 		return sanitized
 	}
 
 	private static func redactAuthorizationHeaders(in value: String) -> String {
-		let pattern = #"(?i)(Authorization[:=]\s*Bearer\s+)[A-Za-z0-9\-._~+/=]+"#
+		let pattern = #"(?i)(Authorization[:=]\s*(?:Bearer|Basic)\s+)[A-Za-z0-9\-._~+/=]+"#
 		return replacing(pattern: pattern, in: value, with: "$1[REDACTED]")
 	}
 
@@ -22,6 +24,16 @@ enum AppLogRedactor {
 
 	private static func redactClientSecret(in value: String) -> String {
 		let pattern = #"(?i)(client_secret[=:]\s*)[^&\s",}]+"#
+		return replacing(pattern: pattern, in: value, with: "$1[REDACTED]")
+	}
+
+	private static func redactTenantCode(in value: String) -> String {
+		let pattern = #"(?i)(\"?aw-tenant-code\"?\s*[:=]\s*\"?)[^\"&\s,}]+"#
+		return replacing(pattern: pattern, in: value, with: "$1[REDACTED]")
+	}
+
+	private static func redactApiKeys(in value: String) -> String {
+		let pattern = #"(?i)(\"?api[_-]?key\"?\s*[:=]\s*\"?)[^\"&\s,}]+"#
 		return replacing(pattern: pattern, in: value, with: "$1[REDACTED]")
 	}
 

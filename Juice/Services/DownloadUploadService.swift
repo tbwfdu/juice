@@ -168,97 +168,67 @@ struct DownloadUploadService {
 			fileExtension: fileExtension
 		)
 
-		if app.downloadProgress.currentState == "Archive type is not supported" {
-			// Already handled in resolveInstallerIfArchive
-			var minimal = try minimalSuccessfulDownload(app: app)
-			minimal.fullFilePath = installerURL.path
-			minimal.fileExtension = installerURL.pathExtension.isEmpty ? minimal.fileExtension : installerURL.pathExtension
-			return DownloadOutput(successfulDownload: minimal, installerFileURL: installerURL)
-		}
+		return try await prepareInstallerForMetadata(
+			app: app,
+			installerURL: installerURL,
+			appFolderURL: destinationURL.deletingLastPathComponent(),
+			finalExtension: finalExtension,
+			mode: mode,
+			shouldCancel: shouldCancel,
+			allowUnsupportedFallback: true
+		)
+	}
 
-		if ArchiveService.unsupportedExtensions.contains(finalExtension.lowercased()) {
-			logger.info("[\(logPrefix)] Skipping further processing for \(finalExtension) archive.")
-			appLog(.warning, LogCategory.upload, "Skipping further processing for \(finalExtension) archive (unsupported extension).")
-			
-			try await updateDownloadProgress(app) { progress in
-				progress.isIndeterminate = false
-				progress.isComplete = true
-				progress.isSuccess = false
-				progress.inProgress = false
-				progress.currentState = "Archive type is not supported"
-			}
-			
-			// Build a minimal SuccessfulDownload using the resolved installerURL and return it.
-			var minimal = try minimalSuccessfulDownload(app: app)
-			// Override the file path and extension with the resolved installer details if different
-			minimal.fullFilePath = installerURL.path
-			minimal.fileExtension = installerURL.pathExtension.isEmpty ? minimal.fileExtension : installerURL.pathExtension
-			return DownloadOutput(successfulDownload: minimal, installerFileURL: installerURL)
-		}
-
-		let supportedInstallerExtensions = ["app", "dmg", "pkg"]
-		if !supportedInstallerExtensions.contains(finalExtension.lowercased()) {
-			logger.info("[\(logPrefix)] Skipping further processing for unsupported installer type: \(finalExtension)")
-			appLog(.warning, LogCategory.upload, "Skipping further processing for unsupported installer type: .\(finalExtension). Only .app, .dmg, and .pkg are supported for metadata generation.")
-			
-			try await updateDownloadProgress(app) { progress in
-				progress.isIndeterminate = false
-				progress.isComplete = true
-				progress.isSuccess = false
-				progress.inProgress = false
-				progress.currentState = "Metadata cannot be processed"
-			}
-			
-			var minimal = try minimalSuccessfulDownload(app: app)
-			minimal.fullFilePath = installerURL.path
-			minimal.fileExtension = installerURL.pathExtension.isEmpty ? minimal.fileExtension : installerURL.pathExtension
-			return DownloadOutput(successfulDownload: minimal, installerFileURL: installerURL)
+	static func prepareImportedForUpload(
+		_ imported: ImportedApplication,
+		shouldCancel: @MainActor @Sendable @escaping () -> Bool,
+		mode: ConfirmationActionMode = .upload
+	) async throws -> DownloadOutput {
+		let app = importQueueApplication(from: imported)
+		try await updateDownloadProgress(app) { progress in
+			progress.inProgress = true
+			progress.isIndeterminate = true
+			progress.currentState = "Generating metadata (munkiimport)..."
 		}
 
 		if await MainActor.run(body: shouldCancel) { throw CancellationError() }
 
-		try await updateDownloadProgress(app) { progress in
-			progress.currentState = "Generating metadata..."
-			progress.isIndeterminate = true
+		let installerURL = URL(fileURLWithPath: imported.fullFilePath)
+		guard FileManager.default.fileExists(atPath: installerURL.path) else {
+			throw NSError(
+				domain: logPrefix,
+				code: 101,
+				userInfo: [NSLocalizedDescriptionKey: "Imported installer was not found on disk."]
+			)
 		}
 
-		let metadata: MunkiMetadata
-		do {
-			metadata = try await generateMunkiMetadata(
-				installerPath: installerURL.path,
-				appDownloadPath: destinationURL.deletingLastPathComponent().path,
-				mode: mode
+		let rawExtension = installerURL.pathExtension.isEmpty
+			? imported.fileExtension
+			: installerURL.pathExtension
+		let sourceExtension = normalizedExtension(rawExtension)
+		guard !sourceExtension.isEmpty else {
+			throw NSError(
+				domain: logPrefix,
+				code: 102,
+				userInfo: [NSLocalizedDescriptionKey: "Unsupported installer type for metadata generation (missing file extension)."]
 			)
-
-			try writeMetadataJson(app: app, folderURL: destinationURL.deletingLastPathComponent())
-
-			let successfulDownload = try buildSuccessfulDownload(
-				app: app,
-				installerURL: installerURL,
-				appFolderURL: destinationURL.deletingLastPathComponent(),
-				metadata: metadata
-			)
-
-			try await updateDownloadProgress(app) { progress in
-				progress.isIndeterminate = false
-				progress.isComplete = true
-				progress.isSuccess = true
-				progress.inProgress = false
-				progress.fullFilePath = installerURL.path
-				progress.currentState = "Download complete"
-			}
-
-			return DownloadOutput(successfulDownload: successfulDownload, installerFileURL: installerURL)
-		} catch {
-			try await updateDownloadProgress(app) { progress in
-				progress.isIndeterminate = false
-				progress.isComplete = true
-				progress.isSuccess = false
-				progress.inProgress = false
-				progress.currentState = "Failed: \(error.localizedDescription)"
-			}
-			throw error
 		}
+
+		let (resolvedInstallerURL, finalExtension) = try await resolveInstallerIfArchive(
+			app: app,
+			fileURL: installerURL,
+			fileExtension: sourceExtension
+		)
+
+		return try await prepareInstallerForMetadata(
+			app: app,
+			installerURL: resolvedInstallerURL,
+			appFolderURL: installerURL.deletingLastPathComponent(),
+			finalExtension: finalExtension,
+			mode: mode,
+			shouldCancel: shouldCancel,
+			allowUnsupportedFallback: false
+		)
 	}
 
 	static func uploadSuccessfulDownload(
@@ -680,6 +650,162 @@ struct DownloadUploadService {
 		return (fileURL, fileExtension)
 	}
 
+	private static func prepareInstallerForMetadata(
+		app: CaskApplication,
+		installerURL: URL,
+		appFolderURL: URL,
+		finalExtension: String,
+		mode: ConfirmationActionMode,
+		shouldCancel: @MainActor @Sendable @escaping () -> Bool,
+		allowUnsupportedFallback: Bool
+	) async throws -> DownloadOutput {
+		let normalizedFinalExtension = normalizedExtension(finalExtension)
+
+		if ArchiveService.unsupportedExtensions.contains(normalizedFinalExtension) {
+			logger.info("[\(logPrefix)] Skipping metadata generation for unsupported archive type: \(normalizedFinalExtension)")
+			appLog(
+				.warning,
+				LogCategory.upload,
+				"Unsupported installer type for metadata generation: .\(normalizedFinalExtension)"
+			)
+			try await updateDownloadProgress(app) { progress in
+				progress.isIndeterminate = false
+				progress.isComplete = true
+				progress.isSuccess = false
+				progress.inProgress = false
+				progress.currentState = "Archive type is not supported"
+			}
+			if allowUnsupportedFallback {
+				var minimal = try minimalSuccessfulDownload(app: app)
+				minimal.fullFilePath = installerURL.path
+				if !installerURL.pathExtension.isEmpty {
+					minimal.fileExtension = installerURL.pathExtension
+				}
+				return DownloadOutput(
+					successfulDownload: minimal,
+					installerFileURL: installerURL
+				)
+			}
+			throw NSError(
+				domain: logPrefix,
+				code: 103,
+				userInfo: [NSLocalizedDescriptionKey: "Unsupported installer type for metadata generation: .\(normalizedFinalExtension)"]
+			)
+		}
+
+		let supportedInstallerExtensions = Set(["app", "dmg", "pkg"])
+		if !supportedInstallerExtensions.contains(normalizedFinalExtension) {
+			logger.info("[\(logPrefix)] Unsupported installer type for metadata generation: \(normalizedFinalExtension)")
+			appLog(
+				.warning,
+				LogCategory.upload,
+				"Unsupported installer type for metadata generation: .\(normalizedFinalExtension)"
+			)
+			try await updateDownloadProgress(app) { progress in
+				progress.isIndeterminate = false
+				progress.isComplete = true
+				progress.isSuccess = false
+				progress.inProgress = false
+				progress.currentState = "Metadata cannot be processed"
+			}
+			if allowUnsupportedFallback {
+				var minimal = try minimalSuccessfulDownload(app: app)
+				minimal.fullFilePath = installerURL.path
+				if !installerURL.pathExtension.isEmpty {
+					minimal.fileExtension = installerURL.pathExtension
+				}
+				return DownloadOutput(
+					successfulDownload: minimal,
+					installerFileURL: installerURL
+				)
+			}
+			throw NSError(
+				domain: logPrefix,
+				code: 104,
+				userInfo: [NSLocalizedDescriptionKey: "Unsupported installer type for metadata generation: .\(normalizedFinalExtension)"]
+			)
+		}
+
+		if await MainActor.run(body: shouldCancel) { throw CancellationError() }
+
+		try await updateDownloadProgress(app) { progress in
+			progress.currentState = "Generating metadata (munkiimport)..."
+			progress.isIndeterminate = true
+		}
+
+		do {
+			let metadata = try await generateMunkiMetadata(
+				installerPath: installerURL.path,
+				appDownloadPath: appFolderURL.path,
+				mode: mode
+			)
+
+			try writeMetadataJson(app: app, folderURL: appFolderURL)
+
+			let successfulDownload = try buildSuccessfulDownload(
+				app: app,
+				installerURL: installerURL,
+				appFolderURL: appFolderURL,
+				metadata: metadata
+			)
+
+			try await updateDownloadProgress(app) { progress in
+				progress.isIndeterminate = false
+				progress.isComplete = true
+				progress.isSuccess = true
+				progress.inProgress = false
+				progress.fullFilePath = installerURL.path
+				progress.currentState = "Download complete"
+			}
+
+			return DownloadOutput(
+				successfulDownload: successfulDownload,
+				installerFileURL: installerURL
+			)
+		} catch {
+			try await updateDownloadProgress(app) { progress in
+				progress.isIndeterminate = false
+				progress.isComplete = true
+				progress.isSuccess = false
+				progress.inProgress = false
+				progress.currentState = "Failed: \(error.localizedDescription)"
+			}
+			throw error
+		}
+	}
+
+	private static func normalizedExtension(_ value: String) -> String {
+		value
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+			.lowercased()
+			.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+	}
+
+	private static func importQueueApplication(from imported: ImportedApplication) -> CaskApplication {
+		let existing = imported.macApplication
+		let resolvedName = existing?.name.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+		let fallbackName = imported.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+		let resolvedVersion = imported.parsedMetadata?.version
+			?? existing?.version
+			?? ""
+		let app = CaskApplication(
+			token: imported.id.uuidString,
+			fullToken: imported.id.uuidString,
+			name: [resolvedName?.isEmpty == false ? resolvedName! : fallbackName],
+			desc: existing?.desc ?? imported.queueSubtitle,
+			url: imported.fullFilePath,
+			version: resolvedVersion,
+			matchingRecipeId: imported.matchingRecipeId,
+			matchingRecipeCandidates: imported.matchingRecipeCandidates,
+			matchedOn: imported.matchedOn,
+			matchedScore: imported.matchedScore
+		)
+		app.parsedMetadata = imported.parsedMetadata ?? existing?.parsedMetadata
+		let firstIconPath = imported.selectedIconPath ?? imported.availableIconPaths.first
+		app.downloadProgress.iconFilePath = firstIconPath
+		return app
+	}
+
 	private static func generateMunkiMetadata(
 		installerPath: String,
 		appDownloadPath: String,
@@ -887,7 +1013,7 @@ struct DownloadUploadService {
 		return success
 	}
 
-	private static func parseInstallerPlist(_ path: String?) -> ParsedMetadata? {
+	static func parseInstallerPlist(_ path: String?) -> ParsedMetadata? {
 		guard let path else { return nil }
 		guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return nil }
 		let decoder = PropertyListDecoder()
@@ -917,14 +1043,14 @@ struct DownloadUploadService {
 		fileURL: URL,
 		onProgress: @escaping @Sendable (Int64, Int64) -> Void = { _, _ in }
 	) async throws -> String {
-		let token = await AuthService.instance.accessToken
-		if token?.isEmpty != false {
-			_ = await AuthService.instance.authenticate()
-		}
-		guard let accessToken = await AuthService.instance.accessToken, !accessToken.isEmpty else {
+		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard
+			let authHeaders = await AuthService.instance.authorizationHeaders(
+				for: activeEnvironment
+			)
+		else {
 			return ""
 		}
-		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
 		guard let baseURL = URL(string: activeEnvironment.uemUrl) else { return "" }
 		let fileName = fileURL.lastPathComponent
 		let orgGroupId = activeEnvironment.orgGroupId
@@ -937,7 +1063,9 @@ struct DownloadUploadService {
 		var request = URLRequest(url: uploadURL)
 		request.httpMethod = "POST"
 		request.timeoutInterval = 6 * 60 * 60
-		request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json, application/json;version=2", forHTTPHeaderField: "Accept")
 		request.setValue(contentType(for: fileURL.pathExtension), forHTTPHeaderField: "Content-Type")
 		request.setValue(nil, forHTTPHeaderField: "Expect")
@@ -996,12 +1124,14 @@ struct DownloadUploadService {
 		applicationIconBlobId: String,
 		version: String
 	) async throws -> Bool {
-		let token = await AuthService.instance.accessToken
-		if token?.isEmpty != false {
-			_ = await AuthService.instance.authenticate()
-		}
-		guard let accessToken = await AuthService.instance.accessToken, !accessToken.isEmpty else { return false }
 		let activeEnvironment = await Runtime.Config.currentActiveEnvironment()
+		guard
+			let authHeaders = await AuthService.instance.authorizationHeaders(
+				for: activeEnvironment
+			)
+		else {
+			return false
+		}
 		guard let baseURL = URL(string: activeEnvironment.uemUrl) else { return false }
 		let orgGroupId = activeEnvironment.orgGroupId
 		guard let url = URL(string: "/api/mam/groups/\(orgGroupId)/macos/apps", relativeTo: baseURL) else {
@@ -1017,7 +1147,9 @@ struct DownloadUploadService {
 		let bodyData = try JSONSerialization.data(withJSONObject: body)
 		var request = URLRequest(url: url)
 		request.httpMethod = "POST"
-		request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+		for (header, value) in authHeaders {
+			request.setValue(value, forHTTPHeaderField: header)
+		}
 		request.setValue("application/json; version=1", forHTTPHeaderField: "Accept")
 		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 		request.httpBody = bodyData

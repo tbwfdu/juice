@@ -38,6 +38,7 @@ struct EnvironmentWizard: View {
 	let onNext: () -> Void
 	let onSave: () -> Void
 	@State private var showClientSecret: Bool = false
+	@State private var showBasicPassword: Bool = false
 
 	init(
 		mode: Mode,
@@ -146,74 +147,161 @@ struct EnvironmentWizard: View {
 							.textFieldStyle(.roundedBorder)
 							.padding(.top, -2)
 
-						Text("Client ID")
+						Text("Authentication Type")
 							.font(.system(size: 12, weight: .semibold))
 							.padding(.bottom, -4)
-						TextField("Client ID", text: $draft.clientId)
-							.textFieldStyle(.roundedBorder)
-							.padding(.top, -2)
+						LiquidGlassSegmentedPicker(
+							items: [
+								.init(
+									title: "OAuth",
+									icon: "person.badge.key",
+									tag: UemAuthenticationType.oauthClientCredentials
+								),
+								.init(
+									title: "Basic + API Key",
+									icon: "key.fill",
+									tag: UemAuthenticationType.basicAuthApiKey
+								),
+							],
+							selection: $draft.authenticationType
+						)
+						.padding(.top, -2)
 
-						Text("Client Secret")
-							.font(.system(size: 12, weight: .semibold))
-							.padding(.bottom, -4)
-
-						if mode == .edit {
-							HStack(spacing: 8) {
-								Group {
-									if showClientSecret {
-										TextField(
-											"Client Secret",
-											text: $draft.clientSecret
-										)
-									} else {
-										SecureField(
-											"Client Secret",
-											text: $draft.clientSecret
-										)
-									}
-								}
+						if draft.authenticationType == .oauthClientCredentials {
+							Text("Client ID")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+							TextField("Client ID", text: $draft.clientId)
 								.textFieldStyle(.roundedBorder)
-								Button {
-									showClientSecret.toggle()
-								} label: {
-									Image(
-										systemName: showClientSecret
-											? "eye.slash" : "eye"
+								.padding(.top, -2)
+
+							Text("Client Secret")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+
+							if mode == .edit {
+								HStack(spacing: 8) {
+									Group {
+										if showClientSecret {
+											TextField(
+												"Client Secret",
+												text: $draft.clientSecret
+											)
+										} else {
+											SecureField(
+												"Client Secret",
+												text: $draft.clientSecret
+											)
+										}
+									}
+									.textFieldStyle(.roundedBorder)
+									Button {
+										showClientSecret.toggle()
+									} label: {
+										Image(
+											systemName: showClientSecret
+												? "eye.slash" : "eye"
+										)
+										.font(
+											.system(
+												size: 12,
+												weight: .semibold
+											)
+										)
+										.foregroundStyle(.secondary)
+									}
+									.buttonStyle(.plain)
+									.juiceHelp(
+										HelpText.Settings.clientSecretToggle(
+											isRevealed: showClientSecret
+										)
 									)
-									.font(.system(size: 12, weight: .semibold))
-									.foregroundStyle(.secondary)
 								}
-								.buttonStyle(.plain)
-								.juiceHelp(
-									HelpText.Settings.clientSecretToggle(
-										isRevealed: showClientSecret
-									)
+								.padding(.top, -2)
+							} else {
+								SecureField(
+									"Client Secret",
+									text: $draft.clientSecret
 								)
+								.textFieldStyle(.roundedBorder)
+								.padding(.top, -2)
 							}
+
+							Text("OAuth Region")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+							Picker("OAuth Region", selection: $draft.oauthRegion) {
+								ForEach(
+									normalizedOptions(
+										oauthRegions,
+										current: draft.oauthRegion
+									),
+									id: \.self
+								) { option in
+									Text(option).tag(option)
+								}
+							}
+							.pickerStyle(.menu)
+							.labelsHidden()
 							.padding(.top, -2)
 						} else {
-							SecureField("Client Secret", text: $draft.clientSecret)
+							Text("Username")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+							TextField("Username", text: $draft.basicUsername)
+								.textFieldStyle(.roundedBorder)
+								.padding(.top, -2)
+
+							Text("Password")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+							if mode == .edit {
+								HStack(spacing: 8) {
+									Group {
+										if showBasicPassword {
+											TextField(
+												"Password",
+												text: $draft.basicPassword
+											)
+										} else {
+											SecureField(
+												"Password",
+												text: $draft.basicPassword
+											)
+										}
+									}
+									.textFieldStyle(.roundedBorder)
+									Button {
+										showBasicPassword.toggle()
+									} label: {
+										Image(
+											systemName: showBasicPassword
+												? "eye.slash" : "eye"
+										)
+										.font(
+											.system(
+												size: 12,
+												weight: .semibold
+											)
+										)
+										.foregroundStyle(.secondary)
+									}
+									.buttonStyle(.plain)
+								}
+								.padding(.top, -2)
+							} else {
+								SecureField("Password", text: $draft.basicPassword)
+									.textFieldStyle(.roundedBorder)
+									.padding(.top, -2)
+							}
+
+							Text("API Key")
+								.font(.system(size: 12, weight: .semibold))
+								.padding(.bottom, -4)
+							SecureField("API Key", text: $draft.apiKey)
 								.textFieldStyle(.roundedBorder)
 								.padding(.top, -2)
 						}
-
-						Text("OAuth Region")
-							.font(.system(size: 12, weight: .semibold))
-							.padding(.bottom, -4)
-						Picker("OAuth Region", selection: $draft.oauthRegion) {
-							ForEach(
-								normalizedOptions(
-									oauthRegions,
-									current: draft.oauthRegion
-								),
-								id: \.self
-							) { option in
-								Text(option).tag(option)
-							}
-						}
-						.pickerStyle(.menu)
-						.labelsHidden()
-						.padding(.top, -2)
 					}
 
 				case .selectOrganizationGroup:

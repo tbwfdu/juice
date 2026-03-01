@@ -575,329 +575,360 @@ struct ExpandingJuiceButtonsFallback: View {
 
 ////Expand out to Right
 //
-//@available(macOS 26.0, *)
-//struct ExpandingButtonsGlass: View {
-//	let primaryTitle: String
-//	let secondaryTitle: String
-//	let isEnabled: Bool
-//	let isFolderSelected: Bool
-//	let onPrimary: () -> Void
-//	let onSecondary: () -> Void
-//	let onTertiary: () -> Void
-//
-//	@State private var isSelectBtnExpanded = true
-//	@State private var isScanBtnExpanded = false
-//	@State private var isClearBtnExpanded = false
-//	@State private var glassSpacing: CGFloat = 40
-//	@State private var buttonSpacing: CGFloat = 25
-//	@State private var selectButtonTask: Task<Void, Never>?
-//	@State private var scanButtonTask: Task<Void, Never>?
-//	@State private var clearButtonTask: Task<Void, Never>?
-//	@State private var collapseAllTask: Task<Void, Never>?
-//	@State private var spacingUpdateTask: Task<Void, Never>?
-//	@State private var selectFolderBtnOpacity: Double = 1.0
-//	private let selectFolderFadeDuration: Double = 0.25
-//	private let selectFolderFadeEase = Animation.easeInOut(duration: 0.3)
-//	private let defaultGlassSpacing: CGFloat = 40
-//	private let defaultButtonSpacing: CGFloat = 25
-//	private let compactSpacing: CGFloat = 10
-//
-//	@Namespace private var namespace
-//
-//	var body: some View {
-//		ZStack {
-//			GlassEffectContainer(spacing: glassSpacing) {
-//				HStack {
-//					ZStack(alignment: .trailing) {
-//						if isSelectBtnExpanded {
-//
-//							Button(action: selectFolderButtonActions) {
-//								Text("Select Folder")
-//									.font(.system(size: 12, weight: .regular))
-//									.padding(.horizontal, 5)
-//									.padding(.vertical, 4)
-//							}
-//							.padding(1)
-//							.buttonStyle(.glass)
-//							.controlSize(.large)
-//							.disabled(!isEnabled)
-//							.glassEffectID("glassToggle", in: namespace)
-//							.frame(minWidth: 10)
-//							.allowsHitTesting(!isFolderSelected)
-//							.background(selectFolderCardBackground)
-//							.frame(width: isFolderSelected ? 0 : nil)
-//							.clipped()
-//							.opacity(selectFolderBtnOpacity)
-//							.scaleEffect(
-//								selectFolderBtnOpacity < 1.0 ? 0.96 : 1.0
-//							)
-//							.offset(
-//								y: selectFolderBtnOpacity < 1.0 ? 2 : 0
-//							)
-//							.animation(
-//								selectFolderFadeEase,
-//								value: selectFolderBtnOpacity
-//							)
-//							.animation(
-//								selectFolderFadeEase,
-//								value: isFolderSelected
-//							)
-//						}
-//					}
-//					HStack(spacing: buttonSpacing) {
-//						if isScanBtnExpanded {
-//							Button(action: scanButtonActions) {
-//								Text(primaryTitle)
-//									.font(.system(size: 12, weight: .regular))
-//									.padding(.horizontal, 10)
-//									.padding(.vertical, 4)
-//							}
-//							.buttonStyle(.glassProminent)
-//							.controlSize(.large)
-//							.disabled(!isEnabled)
-//							.glassEffectID("glassPrimary", in: namespace)
-//							.frame(minWidth: 10)
-//						}
-//						if isClearBtnExpanded {
-//							Button(action: clearButtonActions) {
-//								Text(secondaryTitle)
-//									.font(.system(size: 12, weight: .regular))
-//									.padding(.horizontal, 10)
-//									.padding(.vertical, 4)
-//							}
-//							.padding(1)
-//							.buttonStyle(.glass)
-//							.controlSize(.large)
-//							.disabled(!isEnabled)
-//							.glassEffectID("glassSecondary", in: namespace)
-//							.frame(minWidth: 10)
-//						}
-//					}
-//				}
-//			}
-//		}
-//		.onAppear {
-//			updateSelectFolderVisibility(animated: false)
-//		}
-//		.onChange(of: isFolderSelected) { _, isSelected in
-//			updateSelectFolderVisibility(animated: true)
-//		}
-//	}
-//
-//	private func toggleExpanded() {
-//		if isScanBtnExpanded || isClearBtnExpanded {
-//			collapseExpanded()
-//			//selectFolderBtnOpacity = 1.0
-//		}
-//	}
-//
-//	private func selectFolderButtonActions() {
-//		if isScanBtnExpanded || isClearBtnExpanded {
-//			selectButtonTask?.cancel()
-//			scanButtonTask?.cancel()
-//			clearButtonTask?.cancel()
-//			withAnimation(.bouncy) {
-//				collapseExpanded()
-//			}
-//		} else {
-//			selectButtonTask = Task { @MainActor in
-//				try? await Task.sleep(for: .seconds(0.1))
-//				withAnimation(.bouncy) {
-//					isClearBtnExpanded = true
-//					isScanBtnExpanded = true
-//				}
-//				try? await Task.sleep(for: .seconds(0.2))
-//				glassSpacing = 10
-//				buttonSpacing = 10
-//			}
-//			onPrimary()
-//		}
-//	}
-//	private func scanButtonActions() {
-//
-//		scanButtonTask?.cancel()
-//		scanButtonTask = Task { @MainActor in
-//			try? await Task.sleep(for: .seconds(0.1))
-//			withAnimation(.bouncy) {
-//				isSelectBtnExpanded = false
-//			}
-//			try? await Task.sleep(for: .seconds(0.1))
-//			withAnimation(.bouncy) {
-//				//isClearBtnExpanded = true
-//				//isScanBtnExpanded = true
-//			}
-//			onSecondary()
-//		}
-//	}
-//	private func clearButtonActions() {
-//		clearButtonTask?.cancel()
-//		clearButtonTask = Task { @MainActor in
-//			try? await Task.sleep(for: .seconds(0.1))
-//			withAnimation(.bouncy) {
-//				isScanBtnExpanded = false
-//			}
-//			try? await Task.sleep(for: .seconds(0.2))
-//			withAnimation(.bouncy) {
-//				isClearBtnExpanded = false
-//				isSelectBtnExpanded = true
-//			}
-//			onTertiary()
-//		}
-//	}
-//
-//	private func collapseAll() {
-//		scanButtonTask?.cancel()
-//		clearButtonTask?.cancel()
-//		withAnimation(.bouncy) {
-//			isSelectBtnExpanded = false
-//		}
-//		collapseAllTask = Task { @MainActor in
-//			try? await Task.sleep(for: .seconds(0.1))
-//			withAnimation(.bouncy) {
-//				toggleExpanded()
-//			}
-//		}
-//	}
-//
-//	private func collapseExpanded() {
-//		scanButtonTask?.cancel()
-//		clearButtonTask?.cancel()
-//		glassSpacing = defaultGlassSpacing
-//		buttonSpacing = defaultButtonSpacing
-//		withAnimation(.bouncy) {
-//			isScanBtnExpanded = false
-//			isClearBtnExpanded = false
-//			isSelectBtnExpanded = !isFolderSelected
-//		}
-//		updateSelectFolderVisibility(animated: false)
-//	}
-//
-//	@ViewBuilder
-//	private var selectFolderCardBackground: some View {
-//		let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
-//		if #available(macOS 26.0, iOS 26.0, *) {
-//			shape
-//				.fill(Color.white.opacity(0.12))
-//				.glassEffect(.regular, in: shape)
-//				.padding(4)
-//		} else {
-//			shape
-//				.fill(.ultraThinMaterial)
-//				.padding(4)
-//		}
-//	}
-//
-//	private func updateSelectFolderVisibility(animated: Bool) {
-//		spacingUpdateTask?.cancel()
-//		if animated {
-//			withAnimation(selectFolderFadeEase) {
-//				selectFolderBtnOpacity = isFolderSelected ? 0.0 : 1.0
-//			}
-//		} else {
-//			selectFolderBtnOpacity = isFolderSelected ? 0.0 : 1.0
-//		}
-//
-//		if isFolderSelected {
-//			spacingUpdateTask = Task { @MainActor in
-//				if animated {
-//					try? await Task.sleep(for: .seconds(selectFolderFadeDuration))
-//				}
-//				withAnimation(selectFolderFadeEase) {
-//					glassSpacing = compactSpacing + 10
-//					buttonSpacing = compactSpacing + 10
-//				}
-//			}
-//		} else {
-//			withAnimation(animated ? selectFolderFadeEase : nil) {
-//				glassSpacing = defaultGlassSpacing
-//				buttonSpacing = defaultButtonSpacing
-//			}
-//		}
-//	}
-//}
-//
-//struct ExpandingButtonsAvailabilityAdapter: View {
-//	let primaryTitle: String
-//	let secondaryTitle: String
-//	let isEnabled: Bool
-//	let isFolderSelected: Bool
-//	let onPrimary: () -> Void
-//	let onSecondary: () -> Void
-//	let onTertiary: () -> Void
-//
-//	var body: some View {
-//		if #available(macOS 26.0, *) {
-//			ExpandingButtonsGlass(
-//				primaryTitle: primaryTitle,
-//				secondaryTitle: secondaryTitle,
-//				isEnabled: isEnabled,
-//				isFolderSelected: isFolderSelected,
-//				onPrimary: onPrimary,
-//				onSecondary: onSecondary,
-//				onTertiary: onTertiary
-//			)
-//		} else {
-//			ExpandingButtonsFallback(
-//				primaryTitle: primaryTitle,
-//				secondaryTitle: secondaryTitle,
-//				isEnabled: isEnabled,
-//				isFolderSelected: isFolderSelected,
-//				onPrimary: onPrimary,
-//				onSecondary: onSecondary,
-//				onTertiary: onTertiary
-//			)
-//		}
-//	}
-//}
-//
-//struct ExpandingButtonsFallback: View {
-//	let primaryTitle: String
-//	let secondaryTitle: String
-//	let isEnabled: Bool
-//	let isFolderSelected: Bool
-//	let onPrimary: () -> Void
-//	let onSecondary: () -> Void
-//	let onTertiary: () -> Void
-//
-//	@State private var isExpanded = false
-//
-//	var body: some View {
-//		HStack(spacing: 16) {
-//			if isExpanded {
-//				Button(primaryTitle) {
-//					guard isEnabled else { return }
-//					onPrimary()
-//				}
-//				.disabled(!isEnabled)
-//				Button(secondaryTitle) {
-//					guard isEnabled else { return }
-//					onSecondary()
-//				}
-//				.disabled(!isEnabled)
-//			}
-//			ZStack(alignment: .topTrailing) {
-//				Button {
-//					withAnimation(.spring(response: 0.4, dampingFraction: 0.8))
-//					{
-//						isExpanded.toggle()
-//					}
-//				} label: {
-//					Image(systemName: isExpanded ? "xmark" : "plus")
-//						.frame(width: 44, height: 44)
-//				}
-//				.buttonStyle(.borderedProminent)
-//				.buttonBorderShape(.capsule)
-//				.opacity(isFolderSelected ? 0.0 : 1.0)
-//				.allowsHitTesting(!isFolderSelected)
-//			}
-//		}
-//		.padding(12)
-//		.background(
-//			RoundedRectangle(cornerRadius: 16, style: .continuous)
-//				.fill(.ultraThinMaterial)
-//		)
-//	}
-//}
+@available(macOS 26.0, *)
+struct RightExpandingButtonsGlass: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let isFolderSelected: Bool
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+	let onTertiary: () -> Void
+
+	@State private var isSelectBtnExpanded = true
+	@State private var isScanBtnExpanded = false
+	@State private var isClearBtnExpanded = false
+	@State private var glassSpacing: CGFloat = 40
+	@State private var buttonSpacing: CGFloat = 25
+	@State private var selectButtonTask: Task<Void, Never>?
+	@State private var scanButtonTask: Task<Void, Never>?
+	@State private var clearButtonTask: Task<Void, Never>?
+	@State private var collapseAllTask: Task<Void, Never>?
+	@State private var spacingUpdateTask: Task<Void, Never>?
+	@State private var selectFolderBtnOpacity: Double = 1.0
+	private let selectFolderFadeDuration: Double = 0.25
+	private let selectFolderFadeEase = Animation.easeInOut(duration: 0.3)
+	private let defaultGlassSpacing: CGFloat = 40
+	private let defaultButtonSpacing: CGFloat = 25
+	private let compactSpacing: CGFloat = 10
+
+	@Namespace private var namespace
+
+	var body: some View {
+		ZStack {
+			GlassEffectContainer(spacing: glassSpacing) {
+				HStack {
+					ZStack(alignment: .trailing) {
+						if isSelectBtnExpanded {
+							Button(action: selectFolderButtonActions) {
+								Image(systemName: "paperplane")
+									.foregroundStyle(.blue)
+							}
+							.padding(1)
+							.buttonStyle(.glass)
+							.controlSize(.large)
+							.disabled(!isEnabled)
+							.glassEffectID("glassToggle", in: namespace)
+							.frame(minWidth: 10)
+							.allowsHitTesting(!isFolderSelected)
+							.background(selectFolderCardBackground)
+							.frame(width: isFolderSelected ? 0 : nil)
+							.clipped()
+							.opacity(selectFolderBtnOpacity)
+							.scaleEffect(
+								selectFolderBtnOpacity < 1.0 ? 0.96 : 1.0
+							)
+							.offset(
+								y: selectFolderBtnOpacity < 1.0 ? 2 : 0
+							)
+							.animation(
+								selectFolderFadeEase,
+								value: selectFolderBtnOpacity
+							)
+							.animation(
+								selectFolderFadeEase,
+								value: isFolderSelected
+							)
+						}
+					}
+					HStack(spacing: buttonSpacing) {
+						if isScanBtnExpanded {
+							Button(action: scanButtonActions) {
+								Text(primaryTitle)
+									.font(.system(size: 12, weight: .regular))
+									.padding(.horizontal, 10)
+									.padding(.vertical, 4)
+							}
+							.buttonStyle(.glassProminent)
+							.controlSize(.large)
+							.disabled(!isEnabled)
+							.glassEffectID("glassPrimary", in: namespace)
+							.frame(minWidth: 10)
+						}
+						if isClearBtnExpanded {
+							Button(action: clearButtonActions) {
+								Text(secondaryTitle)
+									.font(.system(size: 12, weight: .regular))
+									.padding(.horizontal, 10)
+									.padding(.vertical, 4)
+							}
+							.padding(1)
+							.buttonStyle(.glass)
+							.controlSize(.large)
+							.disabled(!isEnabled)
+							.glassEffectID("glassSecondary", in: namespace)
+							.frame(minWidth: 10)
+						}
+					}
+				}
+			}
+		}
+		.onAppear {
+			updateSelectFolderVisibility(animated: false)
+		}
+		.onChange(of: isFolderSelected) { _, isSelected in
+			updateSelectFolderVisibility(animated: true)
+		}
+	}
+
+	private func toggleExpanded() {
+		if isScanBtnExpanded || isClearBtnExpanded {
+			collapseExpanded()
+			//selectFolderBtnOpacity = 1.0
+		}
+	}
+
+	private func selectFolderButtonActions() {
+		if isScanBtnExpanded || isClearBtnExpanded {
+			selectButtonTask?.cancel()
+			scanButtonTask?.cancel()
+			clearButtonTask?.cancel()
+			withAnimation(.bouncy) {
+				collapseExpanded()
+			}
+		} else {
+			selectButtonTask = Task { @MainActor in
+				try? await Task.sleep(for: .seconds(0.1))
+				withAnimation(.bouncy) {
+					isClearBtnExpanded = true
+					isScanBtnExpanded = true
+				}
+				try? await Task.sleep(for: .seconds(0.2))
+				glassSpacing = 10
+				buttonSpacing = 10
+			}
+			onPrimary()
+		}
+	}
+	private func scanButtonActions() {
+
+		scanButtonTask?.cancel()
+		scanButtonTask = Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.1))
+			withAnimation(.bouncy) {
+				isSelectBtnExpanded = false
+			}
+			try? await Task.sleep(for: .seconds(0.1))
+			withAnimation(.bouncy) {
+				//isClearBtnExpanded = true
+				//isScanBtnExpanded = true
+			}
+			onSecondary()
+		}
+	}
+	private func clearButtonActions() {
+		clearButtonTask?.cancel()
+		clearButtonTask = Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.1))
+			withAnimation(.bouncy) {
+				isScanBtnExpanded = false
+			}
+			try? await Task.sleep(for: .seconds(0.2))
+			withAnimation(.bouncy) {
+				isClearBtnExpanded = false
+				isSelectBtnExpanded = true
+			}
+			onTertiary()
+		}
+	}
+
+	private func collapseAll() {
+		scanButtonTask?.cancel()
+		clearButtonTask?.cancel()
+		withAnimation(.bouncy) {
+			isSelectBtnExpanded = false
+		}
+		collapseAllTask = Task { @MainActor in
+			try? await Task.sleep(for: .seconds(0.1))
+			withAnimation(.bouncy) {
+				toggleExpanded()
+			}
+		}
+	}
+
+	private func collapseExpanded() {
+		scanButtonTask?.cancel()
+		clearButtonTask?.cancel()
+		glassSpacing = defaultGlassSpacing
+		buttonSpacing = defaultButtonSpacing
+		withAnimation(.bouncy) {
+			isScanBtnExpanded = false
+			isClearBtnExpanded = false
+			isSelectBtnExpanded = !isFolderSelected
+		}
+		updateSelectFolderVisibility(animated: false)
+	}
+
+	@ViewBuilder
+	private var selectFolderCardBackground: some View {
+		let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+		if #available(macOS 26.0, iOS 26.0, *) {
+			shape
+				.fill(Color.white.opacity(0.12))
+				.glassEffect(.regular, in: shape)
+				.padding(4)
+		} else {
+			shape
+				.fill(.ultraThinMaterial)
+				.padding(4)
+		}
+	}
+
+	private func updateSelectFolderVisibility(animated: Bool) {
+		spacingUpdateTask?.cancel()
+		if animated {
+			withAnimation(selectFolderFadeEase) {
+				selectFolderBtnOpacity = isFolderSelected ? 0.0 : 1.0
+			}
+		} else {
+			selectFolderBtnOpacity = isFolderSelected ? 0.0 : 1.0
+		}
+
+		if isFolderSelected {
+			spacingUpdateTask = Task { @MainActor in
+				if animated {
+					try? await Task.sleep(for: .seconds(selectFolderFadeDuration))
+				}
+				withAnimation(selectFolderFadeEase) {
+					glassSpacing = compactSpacing + 10
+					buttonSpacing = compactSpacing + 10
+				}
+			}
+		} else {
+			withAnimation(animated ? selectFolderFadeEase : nil) {
+				glassSpacing = defaultGlassSpacing
+				buttonSpacing = defaultButtonSpacing
+			}
+		}
+	}
+}
+
+struct RightExpandingButtonsAvailabilityAdapter: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let isFolderSelected: Bool
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+	let onTertiary: () -> Void
+
+	var body: some View {
+		if #available(macOS 26.0, *) {
+			RightExpandingButtonsGlass(
+				primaryTitle: primaryTitle,
+				secondaryTitle: secondaryTitle,
+				isEnabled: isEnabled,
+				isFolderSelected: isFolderSelected,
+				onPrimary: onPrimary,
+				onSecondary: onSecondary,
+				onTertiary: onTertiary
+			)
+		} else {
+			RightExpandingButtonsFallback(
+				primaryTitle: primaryTitle,
+				secondaryTitle: secondaryTitle,
+				isEnabled: isEnabled,
+				isFolderSelected: isFolderSelected,
+				onPrimary: onPrimary,
+				onSecondary: onSecondary,
+				onTertiary: onTertiary
+			)
+		}
+	}
+}
+
+struct RightExpandingButtonsFallback: View {
+	let primaryTitle: String
+	let secondaryTitle: String
+	let isEnabled: Bool
+	let isFolderSelected: Bool
+	let onPrimary: () -> Void
+	let onSecondary: () -> Void
+	let onTertiary: () -> Void
+
+	@State private var isExpanded = false
+
+	var body: some View {
+		HStack(spacing: 16) {
+			if isExpanded {
+				Button(primaryTitle) {
+					guard isEnabled else { return }
+					onPrimary()
+				}
+				.disabled(!isEnabled)
+				Button(secondaryTitle) {
+					guard isEnabled else { return }
+					onSecondary()
+				}
+				.disabled(!isEnabled)
+			}
+			ZStack(alignment: .topTrailing) {
+				Button {
+					withAnimation(.spring(response: 0.4, dampingFraction: 0.8))
+					{
+						isExpanded.toggle()
+					}
+				} label: {
+					Image(systemName: isExpanded ? "xmark" : "plus")
+						.frame(width: 44, height: 44)
+				}
+				.buttonStyle(.borderedProminent)
+				.buttonBorderShape(.capsule)
+				.opacity(isFolderSelected ? 0.0 : 1.0)
+				.allowsHitTesting(!isFolderSelected)
+			}
+		}
+		.padding(12)
+		.background(
+			RoundedRectangle(cornerRadius: 16, style: .continuous)
+				.fill(.ultraThinMaterial)
+		)
+	}
+}
+
+
+#Preview("RightExpandingButtons") {
+	struct PreviewHost: View {
+
+		var body: some View {
+			RightExpandingButtonsAvailabilityAdapter(
+				primaryTitle: "Scan Folder",
+				secondaryTitle: "Clear",
+				isEnabled: true,
+				isFolderSelected: false,
+				onPrimary: {},
+				onSecondary: {},
+				onTertiary: {}
+			)
+			.frame(width: 500, height: 200, alignment: .leading)
+			.preferredColorScheme(.light)
+			.background(
+				// A background is needed to see the blur/reflection effect
+				LinearGradient(
+					gradient: Gradient(colors: [.blue, .purple]),
+					startPoint: .topLeading,
+					endPoint: .bottomTrailing
+				)
+				.ignoresSafeArea()
+			)
+		}
+
+	}
+
+	return PreviewHost()
+}
+
+
 
 #Preview("ExpandingButtons") {
 	struct PreviewHost: View {
@@ -1138,3 +1169,4 @@ struct ExpandingJuiceButtonsFallback: View {
 
 	return PreviewHost()
 }
+

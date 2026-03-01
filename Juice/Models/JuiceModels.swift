@@ -251,6 +251,7 @@ struct PkgInfo: Codable {
     var category: String?
     var iconName: String?
     var requires: [String]?
+    var installs: [InstallItem]?
     var minimumOsVersion: String?
     var developer: String?
     var unattendedInstall: String?
@@ -276,6 +277,7 @@ struct PkgInfo: Codable {
         case category = "category"
         case iconName = "icon_name"
         case requires = "requires"
+        case installs = "installs"
         case minimumOsVersion = "minimum_os_version"
         case developer = "developer"
         case unattendedInstall = "unattended_install"
@@ -297,6 +299,15 @@ struct PkgInfo: Codable {
         case installerChoicesXML = "installer_choices_xml"
         case installcheckScript = "installcheck_script"
     }
+}
+
+struct RecipeMatchCandidate: Codable, Hashable, Identifiable {
+    var displayName: String
+    var identifier: String
+    var score: Int
+    var matchedOn: String
+
+    var id: String { identifier }
 }
 
 struct InstallerChoicesXML: Codable {
@@ -334,6 +345,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
     @Published var downloadProgress: DownloadProgress
     var parsedMetadata: ParsedMetadata?
     var matchingRecipeId: String?
+    var matchingRecipeCandidates: [RecipeMatchCandidate]?
     var matchedOn: String?
     var matchedScore: Int?
 
@@ -359,6 +371,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
         specificOs: String? = nil,
         guid: String = UUID().uuidString,
         matchingRecipeId: String? = nil,
+        matchingRecipeCandidates: [RecipeMatchCandidate]? = nil,
         matchedOn: String? = nil,
         matchedScore: Int? = nil,
         downloadProgress: DownloadProgress = DownloadProgress()
@@ -391,6 +404,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
         self.downloadProgress = downloadProgress
         self.parsedMetadata = nil
         self.matchingRecipeId = matchingRecipeId
+        self.matchingRecipeCandidates = matchingRecipeCandidates
         self.matchedOn = matchedOn
         self.matchedScore = matchedScore
     }
@@ -424,6 +438,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
         case downloadProgress
         case parsedMetadata = "ParsedMetadata"
         case matchingRecipeId
+        case matchingRecipeCandidates
         case matchedOn
         case matchedScore
     }
@@ -458,6 +473,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
         downloadProgress = try container.decodeIfPresent(DownloadProgress.self, forKey: .downloadProgress) ?? DownloadProgress()
         parsedMetadata = try container.decodeIfPresent(ParsedMetadata.self, forKey: .parsedMetadata)
         matchingRecipeId = try container.decodeIfPresent(String.self, forKey: .matchingRecipeId)
+        matchingRecipeCandidates = try container.decodeIfPresent([RecipeMatchCandidate].self, forKey: .matchingRecipeCandidates)
         matchedOn = try container.decodeIfPresent(String.self, forKey: .matchedOn)
         matchedScore = try container.decodeIfPresent(Int.self, forKey: .matchedScore)
     }
@@ -492,6 +508,7 @@ final class CaskApplication: ObservableObject, Codable, Identifiable {
         try container.encode(downloadProgress, forKey: .downloadProgress)
         try container.encodeIfPresent(parsedMetadata, forKey: .parsedMetadata)
         try container.encodeIfPresent(matchingRecipeId, forKey: .matchingRecipeId)
+        try container.encodeIfPresent(matchingRecipeCandidates, forKey: .matchingRecipeCandidates)
         try container.encodeIfPresent(matchedOn, forKey: .matchedOn)
         try container.encodeIfPresent(matchedScore, forKey: .matchedScore)
     }
@@ -803,6 +820,7 @@ struct ImportedApplication: Identifiable {
     var munkiMetadata: MunkiMetadata?
     var macApplication: CaskApplication?
     var matchingRecipeId: String?
+    var matchingRecipeCandidates: [RecipeMatchCandidate] = []
     var matchedOn: String?
     var matchedScore: Int?
     #if os(macOS)
@@ -810,6 +828,7 @@ struct ImportedApplication: Identifiable {
     var importedIcnsImage: NSImage?
     var availableIcons: [NSImage] = []
     #endif
+    var availableIconPaths: [String] = []
     var selectedIconIndex: Int?
     var selectedIconPath: String?
     var cachedFileSizeBytes: Int64?

@@ -22,6 +22,9 @@ struct ContentView: View {
 	@StateObject private var searchState = SearchViewState()
 	@StateObject private var updatesState = UpdatesViewState()
 	@StateObject private var importState = ImportViewState()
+	@StateObject private var searchDownloadQueueModel = DownloadQueueViewModel()
+	@StateObject private var updatesDownloadQueueModel = DownloadQueueViewModel()
+	@StateObject private var importDownloadQueueModel = DownloadQueueViewModel()
     @State private var inspectorWidth: CGFloat = 400
 	@State private var isNavigationPresented = false
 	@State private var navigationWidth: CGFloat = 280
@@ -160,12 +163,12 @@ struct ContentView: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity)
 			.ignoresSafeArea(edges: [.top, .bottom])
 			.preferredColorScheme(forcedColorScheme)
-        .toolbarBackground(.hidden, for: .windowToolbar)
-        .environmentObject(inspector)
-		.onChange(of: selection) { _, _ in
-			isNavigationPresented = false
-			inspector.hide()
-		}
+	        .toolbarBackground(.hidden, for: .windowToolbar)
+	        .environmentObject(inspector)
+			.onChange(of: selection) { _, _ in
+				isNavigationPresented = false
+				inspector.hide()
+			}
 		.onChange(of: isNavigationPresented) { _, isPresented in
 			guard pendingPanelOpen == nil else { return }
 			guard isPresented, inspector.isPresented else { return }
@@ -249,21 +252,24 @@ struct ContentView: View {
 		showOnboarding = !settings.eulaAccepted
 	}
 
-	@ViewBuilder
-	private var detailView: some View {
-		switch selection ?? .landing {
-		case .landing:
-			LandingView(model: model)
-		case .search:
-			SearchView(model: model, state: searchState)
-		case .updates:
-			UpdatesView(model: model, state: updatesState)
-		case .importApps:
-			ImportView(model: model, state: importState)
-		case .settings:
-			SettingsView(model: model)
+		@ViewBuilder
+		private var detailView: some View {
+			switch selection ?? .landing {
+			case .landing:
+				LandingView(model: model)
+			case .search:
+				SearchView(model: model, state: searchState)
+					.environmentObject(searchDownloadQueueModel)
+			case .updates:
+				UpdatesView(model: model, state: updatesState)
+					.environmentObject(updatesDownloadQueueModel)
+			case .importApps:
+				ImportView(model: model, state: importState)
+					.environmentObject(importDownloadQueueModel)
+			case .settings:
+				SettingsView(model: model)
+			}
 		}
-	}
 
 	private func coordinatePanelTransition(open target: PendingPanelOpen) {
 		pendingPanelOpen = target

@@ -51,7 +51,7 @@ struct SearchView: View {
     @State private var searchTask: Task<Void, Never>?
 	@State private var keyMonitor: Any?
 	@State private var queueNoticeTask: Task<Void, Never>?
-	@StateObject private var downloadQueueModel = DownloadQueueViewModel()
+	@EnvironmentObject private var downloadQueueModel: DownloadQueueViewModel
 	@StateObject private var focusObserver = WindowFocusObserver()
 	private let basePanelMinHeight: CGFloat = 680
 	private let bottomBarHeight: CGFloat = 88
@@ -260,6 +260,15 @@ struct SearchView: View {
 				resultsItems = model.searchResults
 				state.hasInitialized = true
 			}
+			
+			// Ensure inspector content is correct on appear
+			if selectedResult == nil {
+				if downloadQueueModel.shouldPresentPanel {
+					inspector.show(
+						downloadPanelView(panelMinHeight: panelMinHeightCache > 0 ? panelMinHeightCache : basePanelMinHeight)
+					)
+				}
+			}
 		}
 			.sheet(isPresented: binding(\.confirmationVisible)) {
 				QueueActionSheet(
@@ -279,9 +288,12 @@ struct SearchView: View {
 				Self.logger.debug("Search confirmationVisible changed: \(isVisible, privacy: .public)")
 			}
 			.onDisappear {
-			queueNoticeTask?.cancel()
-			queueNoticeTask = nil
-		}
+				if selectedResult != nil || !downloadQueueModel.shouldPresentPanel {
+					inspector.hide()
+				}
+				queueNoticeTask?.cancel()
+				queueNoticeTask = nil
+			}
 	}
 
 	@ViewBuilder
@@ -915,6 +927,7 @@ struct SearchView: View {
     SearchView(model: .sample, state: SearchViewState())
         .environmentObject(LocalCatalog())
 		.environmentObject(InspectorCoordinator())
+		.environmentObject(DownloadQueueViewModel())
 		.frame(width: 700, height: 400)
 	        .background(){
 				JuiceGradient()

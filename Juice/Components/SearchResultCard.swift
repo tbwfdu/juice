@@ -102,7 +102,7 @@ struct SearchResultCard: View {
 			if !pillDescriptors.isEmpty {
 				FlowLayout(spacing: 6, rowSpacing: 6) {
 					ForEach(pillDescriptors) { pill in
-						Pill(pill.title, color: pill.color)
+						Pill(pill.title, style: pill.style)
 					}
 				}
 			}
@@ -189,7 +189,7 @@ struct SearchResultCard: View {
 	private struct PillDescriptor: Identifiable {
 		let id = UUID()
 		let title: String
-		let color: Color
+		let style: Pill.PillStyle
 	}
 
 	private var pillDescriptors: [PillDescriptor] {
@@ -197,16 +197,16 @@ struct SearchResultCard: View {
 			switch key {
 			case .recipe:
 				guard selectedApplication.hasRecipe else { return nil }
-				return PillDescriptor(title: "Recipe", color: .green)
+				return PillDescriptor(title: "Recipe", style: .juiceGradient)
 			case .autoUpdates:
 				guard selectedApplication.autoUpdates == true else { return nil }
-				return PillDescriptor(title: "Auto Updates", color: .blue)
+				return PillDescriptor(title: "Auto Updates", style: .solid(.blue))
 			case .deprecated:
 				guard selectedApplication.deprecated == true else { return nil }
-				return PillDescriptor(title: "Deprecated", color: .gray)
+				return PillDescriptor(title: "Deprecated", style: .solid(.gray))
 			case .disabled:
 				guard selectedApplication.disabled == true else { return nil }
-				return PillDescriptor(title: "Disabled", color: .gray)
+				return PillDescriptor(title: "Disabled", style: .solid(.gray))
 			}
 		}
 	}

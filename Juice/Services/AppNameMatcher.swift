@@ -89,4 +89,38 @@ enum AppNameMatcher {
 
 		return prev[rightCount]
 	}
+
+	static func matchRecipes(candidateName: String, recipes: [Recipe]) async -> [RecipeMatchCandidate] {
+		guard !candidateName.isEmpty, !recipes.isEmpty else { return [] }
+
+		var candidates: [RecipeMatchCandidate] = []
+		for recipe in recipes {
+			let recipeName = recipe.displayName ?? recipe.name ?? ""
+			let recipeId = recipe.identifier ?? ""
+			guard !recipeName.isEmpty, !recipeId.isEmpty else { continue }
+
+			let score = await AppNameMatcher.score(candidateName, recipeName)
+			guard score >= 90 else { continue }
+
+			candidates.append(
+				RecipeMatchCandidate(
+					displayName: recipeName,
+					identifier: recipeId,
+					score: score,
+					matchedOn: "name"
+				)
+			)
+		}
+
+		return Array(
+			candidates
+				.sorted {
+					if $0.score == $1.score {
+						return $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+					}
+					return $0.score > $1.score
+				}
+				.prefix(5)
+		)
+	}
 }

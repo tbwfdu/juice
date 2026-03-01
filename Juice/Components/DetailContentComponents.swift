@@ -1041,7 +1041,7 @@ struct ImportAppDetailContent: View {
 			VStack(alignment: .leading, spacing: 4) {
 				HStack(alignment: .top, spacing: 8) {
 					ImportAppIconView(item: item)
-						.frame(width: 32, height: 32)
+						.frame(width: 40, height: 40)
 					VStack(alignment: .leading, spacing: 4) {
 						Text(item.displayTitle)
 							.font(.system(.callout, weight: .semibold))

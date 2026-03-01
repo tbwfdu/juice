@@ -246,9 +246,11 @@ struct ImportView: View {
 			updateInspector()
 		}
 		.onDisappear {
+			if selectedApp != nil || !downloadQueueModel.shouldPresentPanel {
+				inspector.hide()
+			}
 			queueNoticeTask?.cancel()
 			queueNoticeTask = nil
-			inspector.hide()
 		}
 		.frame(
 			maxWidth: .infinity,
@@ -263,6 +265,15 @@ struct ImportView: View {
 				resultsItems = model.importResults
 				state.hasInitialized = true
 			}
+			
+			// Ensure inspector content is correct on appear
+			if selectedApp == nil {
+				if downloadQueueModel.shouldPresentPanel {
+					inspector.show(
+						downloadPanelView(panelMinHeight: panelMinHeightCache > 0 ? panelMinHeightCache : basePanelMinHeight)
+					)
+				}
+			}
 		}
 		.sheet(isPresented: binding(\.confirmationVisible)) {
 			QueueActionSheet(
@@ -272,6 +283,8 @@ struct ImportView: View {
 					confirmationVisible = false
 					if confirmationMode == .download {
 						completeDownloadOnlyQueue()
+					} else if confirmationMode == .upload {
+						startQueueProcessing()
 					}
 				},
 				onCancel: {
@@ -552,14 +565,15 @@ struct ImportView: View {
 
 				Spacer()
 
-				#if os(macOS)
-					if #available(macOS 26.0, *) {
-						Button(action: {
-							selectFolder()
-							expandActionsTrigger &+= 1
-						}) {
-							Image(systemName: "plus")
-								.symbolRenderingMode(.hierarchical)
+					#if os(macOS)
+						if #available(macOS 26.0, *) {
+							Button(action: {
+								if selectFolder() {
+									expandActionsTrigger &+= 1
+								}
+							}) {
+								Image(systemName: "plus")
+									.symbolRenderingMode(.hierarchical)
 								.symbolVariant(.none)
 								.fontWeight(.regular)
 								.padding(.horizontal, 2)
@@ -568,22 +582,24 @@ struct ImportView: View {
 						.padding(1)
 						.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 						.frame(minWidth: 30, minHeight: 30)
-					} else {
+						} else {
+							Button("Select Folder") {
+								if selectFolder() {
+									expandActionsTrigger &+= 1
+								}
+							}
+							.juiceGradientGlassProminentButtonStyle(controlSize: .large)
+							.padding(.horizontal, 4)
+							.frame(minWidth: 110, minHeight: 30)
+						}
+					#else
 						Button("Select Folder") {
-							selectFolder()
-							expandActionsTrigger &+= 1
+							if selectFolder() {
+								expandActionsTrigger &+= 1
+							}
 						}
 						.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 						.padding(.horizontal, 4)
-						.frame(minWidth: 110, minHeight: 30)
-					}
-				#else
-					Button("Select Folder") {
-						selectFolder()
-						expandActionsTrigger &+= 1
-					}
-					.juiceGradientGlassProminentButtonStyle(controlSize: .large)
-					.padding(.horizontal, 4)
 					.frame(minWidth: 110, minHeight: 30)
 				#endif
 			}
@@ -1051,7 +1067,8 @@ struct ImportView: View {
 		}
 	}
 
-	private func selectFolder() {
+	@discardableResult
+	private func selectFolder() -> Bool {
 		#if os(macOS)
 			let panel = NSOpenPanel()
 			panel.canChooseDirectories = true
@@ -1060,7 +1077,11 @@ struct ImportView: View {
 			panel.prompt = "Choose Folder"
 			if panel.runModal() == .OK {
 				selectedFolderURL = panel.url
+				return panel.url != nil
 			}
+			return false
+		#else
+			return false
 		#endif
 	}
 
@@ -1105,6 +1126,19 @@ struct ImportView: View {
 		}
 		let noun = uniqueQueuedItems.count == 1 ? "app" : "apps"
 		showQueueNotice("Completed \(uniqueQueuedItems.count) \(noun) (download only)", isDuplicate: false)
+	}
+
+	private func startQueueProcessing() {
+		guard !queueItems.isEmpty else { return }
+		downloadQueueModel.configureForImport(
+			items: queueItems,
+			recipes: catalog.recipes
+		)
+		queueItems.removeAll()
+		selectedAppIds.removeAll()
+		inspector.show(
+			downloadPanelView(panelMinHeight: panelMinHeightCache)
+		)
 	}
 
 	private func restoreQueueItemsToImportList(
@@ -1524,6 +1558,7 @@ private struct ImportHeaderRowHeightKey: PreferenceKey {
 	ImportView(model: .sample, state: ImportViewState())
 		.environmentObject(InspectorCoordinator())
 		.environmentObject(LocalCatalog())
+		.environmentObject(DownloadQueueViewModel())
 		.frame(width: 800, height: 500)
 		.background(JuiceGradient())
 }

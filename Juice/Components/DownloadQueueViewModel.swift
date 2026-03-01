@@ -35,17 +35,20 @@ final class DownloadQueueViewModel: ObservableObject {
 	private var mode: ConfirmationActionMode = .upload
 	private var cancelRequested = false
 	private var started = false
-	private var recipesById: [String: Recipe] = [:]
+	var recipesById: [String: Recipe] = [:]
 	private var skippedUploadIds: Set<String> = []
+	private var importItemsByAppId: [String: ImportedApplication] = [:]
 
 	var queueCountText: String {
-		let remaining = stage == .editing
-			? (editableDownloads.isEmpty ? queueItems.count : editableDownloads.count)
-			: queueItems.count
-		if stage == .editing {
-			return remaining == 1 ? "1 item ready to edit" : "\(remaining) items ready to edit"
+		let remainingQueue = queueItems.count
+		let remainingEdit = editableDownloads.count
+		
+		if remainingQueue > 0 && remainingEdit > 0 {
+			return "\(remainingQueue) downloading, \(remainingEdit) ready to edit"
+		} else if remainingEdit > 0 {
+			return remainingEdit == 1 ? "1 item ready to edit" : "\(remainingEdit) items ready to edit"
 		}
-		return remaining == 1 ? "1 item remaining" : "\(remaining) items remaining"
+		return remainingQueue == 1 ? "1 item remaining" : "\(remainingQueue) items remaining"
 	}
 
 	var resultsCountText: String {
@@ -54,6 +57,9 @@ final class DownloadQueueViewModel: ObservableObject {
 	}
 
 	var stageText: String {
+		if stage == .downloading && !editableDownloads.isEmpty {
+			return "Downloading & Review"
+		}
 		switch stage {
 		case .idle: return "Ready"
 		case .downloading: return "Downloading"
@@ -79,6 +85,9 @@ final class DownloadQueueViewModel: ObservableObject {
 	}
 
 	var shouldPresentPanel: Bool {
+		if !queueItems.isEmpty || !editableDownloads.isEmpty {
+			return true
+		}
 		switch stage {
 		case .downloading, .editing, .uploading:
 			return true
@@ -91,6 +100,10 @@ final class DownloadQueueViewModel: ObservableObject {
 
 	func reset() {
 		results.removeAll()
+		queueItems.removeAll()
+		editableDownloads.removeAll()
+		uploadProgress.removeAll()
+		importItemsByAppId.removeAll()
 		stage = .idle
 		isRunning = false
 		started = false
@@ -101,29 +114,17 @@ final class DownloadQueueViewModel: ObservableObject {
 	}
 
 	func configure(queue: [CaskApplication], mode: ConfirmationActionMode, recipes: [Recipe]) {
+		// If we are already running, just enqueue
+		if isRunning || !queueItems.isEmpty || !editableDownloads.isEmpty {
+			enqueue(queue: queue, mode: mode, recipes: recipes)
+			return
+		}
+
 		self.queueItems = queue
 		self.mode = mode
-		var map: [String: Recipe] = [:]
-		var duplicateIds: [String] = []
-		for recipe in recipes {
-			guard let id = recipe.identifier else { continue }
-			if map[id] != nil {
-				duplicateIds.append(id)
-			}
-			// Prefer the last occurrence if duplicates exist.
-			map[id] = recipe
-		}
-		self.recipesById = map
-		if !duplicateIds.isEmpty {
-			let unique = Array(Set(duplicateIds)).sorted()
-			appLog(
-				.debug,
-				LogCategory.queue,
-				"Duplicate recipe identifiers found",
-				event: "queue.recipe_duplicates",
-				metadata: ["ids": unique.joined(separator: ",")]
-			)
-		}
+		updateRecipes(recipes)
+		importItemsByAppId.removeAll()
+		
 		self.results = []
 		self.editableDownloads = []
 		self.successCount = 0
@@ -135,6 +136,97 @@ final class DownloadQueueViewModel: ObservableObject {
 		self.statusText = "Ready to begin"
 		self.started = false
 		resetProgress()
+	}
+
+	func enqueue(queue: [CaskApplication], mode: ConfirmationActionMode, recipes: [Recipe]) {
+		updateRecipes(recipes)
+		let newItems = queue.filter { newItem in 
+			!queueItems.contains(where: { $0.id == newItem.id }) &&
+			!editableDownloads.contains(where: { $0.baseDownload.macApplication?.id == newItem.id })
+		}
+		
+		guard !newItems.isEmpty else { return }
+		
+		for item in newItems {
+			item.downloadProgress = DownloadProgress()
+		}
+		
+		self.queueItems.append(contentsOf: newItems)
+		self.totalCount += newItems.count
+		
+		if stage == .idle || stage == .completed || stage == .cancelled {
+			stage = .downloading
+			self.mode = mode
+		}
+		
+		if !isRunning && started {
+			start()
+		}
+	}
+
+	func configureForImport(items: [ImportedApplication], recipes: [Recipe]) {
+		// If we are already running, just enqueue import
+		if isRunning || !queueItems.isEmpty || !editableDownloads.isEmpty {
+			enqueueImport(items: items, recipes: recipes)
+			return
+		}
+
+		self.mode = .upload
+		updateRecipes(recipes)
+
+		self.results = []
+		self.queueItems = []
+		self.editableDownloads = []
+		self.importItemsByAppId.removeAll()
+		self.successCount = 0
+		self.errorCount = 0
+		self.completedCount = 0
+		self.totalCount = 0
+		self.cancelRequested = false
+		self.stage = .downloading
+		self.statusText = "Generating metadata (munkiimport)..."
+		self.started = true
+		self.isRunning = false
+
+		enqueueImport(items: items, recipes: recipes)
+	}
+
+	func enqueueImport(items: [ImportedApplication], recipes: [Recipe]) {
+		updateRecipes(recipes)
+		let existingQueueIds = Set(queueItems.map(\.id))
+		let existingEditableIds = Set(editableDownloads.map(\.id))
+		let newItems = items.filter { item in
+			let importId = item.id.uuidString
+			return !existingQueueIds.contains(importId)
+				&& !existingEditableIds.contains(importId)
+				&& importItemsByAppId[importId] == nil
+		}
+
+		guard !newItems.isEmpty else { return }
+
+		let queueApps = newItems.map(queueAppForImport)
+		for (app, imported) in zip(queueApps, newItems) {
+			importItemsByAppId[app.id] = imported
+		}
+		queueItems.append(contentsOf: queueApps)
+		totalCount += queueApps.count
+
+		if stage == .idle || stage == .completed || stage == .cancelled {
+			stage = .downloading
+			statusText = "Generating metadata (munkiimport)..."
+		}
+
+		if !isRunning && started {
+			isRunning = true
+			Task { await processImportQueueWithMunkiimport() }
+		}
+	}
+
+	private func updateRecipes(_ recipes: [Recipe]) {
+		for recipe in recipes {
+			guard let id = recipe.identifier else { continue }
+			self.recipesById[id] = recipe
+		}
 	}
 
 	func startIfNeeded() {
@@ -159,6 +251,7 @@ final class DownloadQueueViewModel: ObservableObject {
 		queueItems.removeAll()
 		editableDownloads.removeAll()
 		uploadProgress.removeAll()
+		importItemsByAppId.removeAll()
 		successCount = 0
 		errorCount = 0
 		completedCount = 0
@@ -170,6 +263,7 @@ final class DownloadQueueViewModel: ObservableObject {
 
 	func clearQueue() {
 		queueItems.removeAll()
+		importItemsByAppId.removeAll()
 	}
 
 	func clearResults() {
@@ -181,7 +275,7 @@ final class DownloadQueueViewModel: ObservableObject {
 	}
 
 	private var hasMetadataErrors: Bool {
-		editableDownloads.contains { $0.metadataError != nil }
+		editableDownloads.contains { $0.metadataError != nil || $0.plistError != nil }
 	}
 
 	private var hasRecipeErrors: Bool {
@@ -198,10 +292,13 @@ final class DownloadQueueViewModel: ObservableObject {
 	) {
 		guard let index = editableDownloads.firstIndex(where: { $0.id == downloadId }) else { return }
 		editableDownloads[index].metadataText = metadataText
-		if let parsed = parseMetadata(from: metadataText) {
-			editableDownloads[index].parsedMetadata = parsed
-			editableDownloads[index].displayName = EditableDownload.resolvedDisplayName(
-				metadata: parsed,
+			if let parsed = parseMetadata(from: metadataText) {
+				editableDownloads[index].parsedMetadata = parsed
+				editableDownloads[index].plistText = EditableDownload.encodeMetadataPlist(parsed)
+				editableDownloads[index].plistError = nil
+				editableDownloads[index].isPlistDirty = false
+				editableDownloads[index].displayName = EditableDownload.resolvedDisplayName(
+					metadata: parsed,
 				fallbackName: editableDownloads[index].baseDownload.macApplication?.name.first,
 				fileName: editableDownloads[index].baseDownload.fileName
 			)
@@ -261,9 +358,35 @@ final class DownloadQueueViewModel: ObservableObject {
 
 		var metadata = editableDownloads[index].parsedMetadata ?? ParsedMetadata()
 		applyScripts(from: editableDownloads[index], to: &metadata)
-		editableDownloads[index].parsedMetadata = metadata
-		editableDownloads[index].metadataText = EditableDownload.encodeMetadata(metadata)
-		editableDownloads[index].metadataError = nil
+			editableDownloads[index].parsedMetadata = metadata
+			editableDownloads[index].metadataText = EditableDownload.encodeMetadata(metadata)
+			editableDownloads[index].plistText = EditableDownload.encodeMetadataPlist(metadata)
+			editableDownloads[index].plistError = nil
+			editableDownloads[index].isPlistDirty = false
+			editableDownloads[index].metadataError = nil
+		}
+
+	func updateEditablePlist(
+		_ downloadId: String,
+		plistText: String
+	) {
+		guard let index = editableDownloads.firstIndex(where: { $0.id == downloadId }) else { return }
+		editableDownloads[index].plistText = plistText
+		editableDownloads[index].isPlistDirty = true
+		if let parsed = EditableDownload.decodeMetadataPlist(plistText) {
+			editableDownloads[index].parsedMetadata = parsed
+			editableDownloads[index].metadataText = EditableDownload.encodeMetadata(parsed)
+			editableDownloads[index].metadataError = nil
+			editableDownloads[index].plistError = nil
+			editableDownloads[index].syncScripts(from: parsed)
+			editableDownloads[index].displayName = EditableDownload.resolvedDisplayName(
+				metadata: parsed,
+				fallbackName: editableDownloads[index].baseDownload.macApplication?.name.first,
+				fileName: editableDownloads[index].baseDownload.fileName
+			)
+		} else {
+			editableDownloads[index].plistError = "Invalid XML property list. Fix syntax before saving."
+		}
 	}
 
 	func selectIcon(downloadId: String, iconIndex: Int) {
@@ -277,6 +400,16 @@ final class DownloadQueueViewModel: ObservableObject {
 			statusText = "Fix errors before continuing"
 			return
 		}
+
+		// Add editable apps back to queueItems so they show up in the progress UI during Stage 3 (Upload).
+		for editable in editableDownloads {
+			if let app = editable.baseDownload.macApplication {
+				if !queueItems.contains(where: { $0.id == app.id }) {
+					queueItems.append(app)
+				}
+			}
+		}
+
 		stage = .uploading
 		statusText = "Checking existing apps"
 		isRunning = true
@@ -329,6 +462,138 @@ final class DownloadQueueViewModel: ObservableObject {
 			app.downloadProgress.isComplete = false
 			app.downloadProgress.isSuccess = false
 		}
+	}
+
+	private func queueAppForImport(_ imported: ImportedApplication) -> CaskApplication {
+		let sourceApp = imported.macApplication
+		let sourceName = sourceApp?.name.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+		let fallbackName = imported.displayTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+		let resolvedName = (sourceName?.isEmpty == false) ? sourceName! : fallbackName
+		let resolvedVersion = imported.parsedMetadata?.version ?? sourceApp?.version ?? ""
+		let app = CaskApplication(
+			token: imported.id.uuidString,
+			fullToken: imported.id.uuidString,
+			name: [resolvedName],
+			desc: sourceApp?.desc ?? imported.queueSubtitle,
+			url: imported.fullFilePath,
+			version: resolvedVersion,
+			matchingRecipeId: imported.matchingRecipeId,
+			matchingRecipeCandidates: imported.matchingRecipeCandidates,
+			matchedOn: imported.matchedOn,
+			matchedScore: imported.matchedScore
+		)
+		app.parsedMetadata = imported.parsedMetadata ?? sourceApp?.parsedMetadata
+		app.downloadProgress.iconFilePath = imported.selectedIconPath ?? imported.availableIconPaths.first
+		app.downloadProgress.currentState = "Queued for metadata generation"
+		app.downloadProgress.isIndeterminate = true
+		return app
+	}
+
+	private func processImportQueueWithMunkiimport() async {
+		stage = .downloading
+		statusText = "Generating metadata (munkiimport)..."
+
+		var index = 0
+		while index < queueItems.count {
+			if cancelRequested { break }
+			let app = queueItems[index]
+			index += 1
+
+			currentAppName = app.displayName
+			app.downloadProgress.currentState = "Generating metadata (munkiimport)..."
+			app.downloadProgress.inProgress = true
+			app.downloadProgress.isIndeterminate = true
+
+			guard let imported = importItemsByAppId[app.id] else {
+				app.downloadProgress.isComplete = true
+				app.downloadProgress.inProgress = false
+				app.downloadProgress.isSuccess = false
+				app.downloadProgress.currentState = "Failed"
+				errorCount += 1
+				appendResult(
+					name: currentAppName,
+					message: "munkiimport failed: queued import item could not be resolved",
+					isSuccess: false,
+					iconFilePath: app.downloadProgress.iconFilePath
+				)
+				completedCount += 1
+				continue
+			}
+
+			do {
+				let output = try await DownloadUploadService.prepareImportedForUpload(
+					imported,
+					shouldCancel: { [weak self] in
+						self?.cancelRequested ?? false
+					},
+					mode: mode
+				)
+
+				var editable = EditableDownload.from(output: output)
+				editable.recipeCandidates = imported.matchingRecipeCandidates
+				editable.selectedRecipeId = imported.matchingRecipeId
+				editable.recipeIdentifier = imported.matchingRecipeId
+				if let recipeId = imported.matchingRecipeId,
+				   let recipe = recipesById[recipeId] {
+					editable = editable.withRecipe(recipeId: recipeId, recipe: recipe)
+				}
+
+				editableDownloads.append(editable)
+				applyQueueIcon(from: editable, to: app)
+				app.downloadProgress.currentState = "Downloaded - ready to edit"
+				app.downloadProgress.inProgress = false
+				app.downloadProgress.isComplete = true
+				app.downloadProgress.isSuccess = true
+			} catch {
+				let reason = error.localizedDescription
+				app.downloadProgress.isComplete = true
+				app.downloadProgress.inProgress = false
+				app.downloadProgress.isSuccess = false
+				app.downloadProgress.currentState = "Failed"
+				errorCount += 1
+				appendResult(
+					name: currentAppName,
+					message: "munkiimport failed: \(reason)",
+					isSuccess: false,
+					iconFilePath: app.downloadProgress.iconFilePath
+				)
+				appLog(
+					.error,
+					LogCategory.queue,
+					"Import metadata generation failed",
+					event: "queue.import_munkiimport_failed",
+					metadata: [
+						"app_name": currentAppName,
+						"reason": reason
+					]
+				)
+			}
+
+			importItemsByAppId.removeValue(forKey: app.id)
+			completedCount += 1
+		}
+
+		if cancelRequested {
+			objectWillChange.send()
+			cancelAndClearQueues()
+			return
+		}
+
+		queueItems.removeAll()
+		importItemsByAppId.removeAll()
+
+		if !editableDownloads.isEmpty {
+			objectWillChange.send()
+			stage = .editing
+			statusText = "Edit Metadata"
+			isRunning = false
+			return
+		}
+
+		objectWillChange.send()
+		stage = .completed
+		statusText = "Finished"
+		isRunning = false
 	}
 
 	private func preflightAndUpload() async {
@@ -401,12 +666,26 @@ final class DownloadQueueViewModel: ObservableObject {
 						isSuccess: false,
 						iconFilePath: app.downloadProgress.iconFilePath
 					)
-				} else {
-					var editable = EditableDownload.from(output: output)
-					if let recipeId = app.matchingRecipeId {
-						editable.recipeIdentifier = recipeId
-						if let recipe = recipesById[recipeId] {
-							editable = editable.withRecipe(recipeId: recipeId, recipe: recipe)
+					} else {
+						// Ensure matching is done if not already present
+						if app.matchingRecipeCandidates == nil || app.matchingRecipeCandidates?.isEmpty == true {
+							if let aliasesURL = Bundle.main.url(forResource: "app_aliases", withExtension: "json") {
+								try? await AppNameMatcher.loadAliases(aliasesURL)
+							}
+							let candidateName = app.displayName
+							let recipes = Array(recipesById.values)
+							let candidates = await AppNameMatcher.matchRecipes(candidateName: candidateName, recipes: recipes)
+							app.matchingRecipeCandidates = candidates
+							app.matchingRecipeId = candidates.first?.identifier
+						}
+
+						var editable = EditableDownload.from(output: output)
+						editable.recipeCandidates = app.matchingRecipeCandidates ?? []
+						editable.selectedRecipeId = app.matchingRecipeId
+						if let recipeId = app.matchingRecipeId {
+							editable.recipeIdentifier = recipeId
+							if let recipe = recipesById[recipeId] {
+								editable = editable.withRecipe(recipeId: recipeId, recipe: recipe)
 						}
 					}
 					
@@ -469,7 +748,13 @@ final class DownloadQueueViewModel: ObservableObject {
 
 		queueItems.removeAll { app in
 			let currentState = app.downloadProgress.currentState ?? ""
-			return mode == .download || currentState.contains("Archive type is not supported") || currentState.contains("Metadata cannot be processed") || currentState.contains("File cannot be uncompressed") || currentState.contains("Skipped") || currentState.contains("Failed")
+			return mode == .download || 
+				currentState.contains("Downloaded - ready to edit") ||
+				currentState.contains("Archive type is not supported") || 
+				currentState.contains("Metadata cannot be processed") || 
+				currentState.contains("File cannot be uncompressed") || 
+				currentState.contains("Skipped") || 
+				currentState.contains("Failed")
 		}
 
 		if cancelRequested {
@@ -479,13 +764,13 @@ final class DownloadQueueViewModel: ObservableObject {
 		}
 
 		if mode == .upload || mode == .uploadOnly {
-			if editableDownloads.isEmpty {
+			if editableDownloads.isEmpty && queueItems.isEmpty {
 				// Nothing to edit (all failed or skipped)
 				objectWillChange.send()
 				stage = .completed
 				statusText = "Finished"
 				isRunning = false
-			} else {
+			} else if !editableDownloads.isEmpty {
 				objectWillChange.send()
 				stage = .editing
 				statusText = "Edit Metadata"
@@ -704,7 +989,10 @@ final class DownloadQueueViewModel: ObservableObject {
 	private func preparedDownload(from editable: EditableDownload) -> SuccessfulDownload {
 		var updated = editable.toSuccessfulDownload()
 		var metadata = updated.parsedMetadata ?? ParsedMetadata()
-		if let recipe = editable.parsedRecipe {
+		if let selectedRecipeId = editable.selectedRecipeId ?? editable.recipeIdentifier,
+		   let selectedRecipe = recipesById[selectedRecipeId] {
+			applyRecipe(selectedRecipe, to: &metadata)
+		} else if let recipe = editable.parsedRecipe {
 			applyRecipe(recipe, to: &metadata)
 		}
 		applyScripts(from: editable, to: &metadata)
@@ -722,8 +1010,9 @@ final class DownloadQueueViewModel: ObservableObject {
 
 		if let value = pkgInfo.category, shouldSet(metadata.category) { metadata.category = value }
 		if let value = pkgInfo.iconName, shouldSet(metadata.icon_name) { metadata.icon_name = value }
-		if let value = pkgInfo.requires, metadata.requires == nil { metadata.requires = value }
-		if let value = pkgInfo.minimumOsVersion, shouldSet(metadata.minimum_os_version) { metadata.minimum_os_version = value }
+			if let value = pkgInfo.requires, metadata.requires == nil { metadata.requires = value }
+			if let value = pkgInfo.installs, metadata.installs == nil { metadata.installs = value }
+			if let value = pkgInfo.minimumOsVersion, shouldSet(metadata.minimum_os_version) { metadata.minimum_os_version = value }
 		if let value = pkgInfo.developer, shouldSet(metadata.developer) { metadata.developer = value }
 		if let value = pkgInfo.unattendedInstall, shouldSet(metadata.unattended_install) { metadata.unattended_install = value }
 		if let value = pkgInfo.displayName, shouldSet(metadata.display_name) { metadata.display_name = value }
@@ -756,6 +1045,19 @@ final class DownloadQueueViewModel: ObservableObject {
 	func updateEditedDownload(_ updated: EditableDownload) {
 		guard let index = editableDownloads.firstIndex(where: { $0.id == updated.id }) else { return }
 		editableDownloads[index] = updated
+	}
+
+	func selectRecipeCandidate(_ downloadId: String, recipeId: String) {
+		guard let index = editableDownloads.firstIndex(where: { $0.id == downloadId }) else { return }
+		editableDownloads[index].selectedRecipeId = recipeId
+		editableDownloads[index].recipeIdentifier = recipeId
+		guard let recipe = recipesById[recipeId] else {
+			editableDownloads[index].parsedRecipe = nil
+			editableDownloads[index].recipeText = nil
+			editableDownloads[index].recipeError = "Recipe not found for selected identifier."
+			return
+		}
+		editableDownloads[index] = editableDownloads[index].withRecipe(recipeId: recipeId, recipe: recipe)
 	}
 }
 
@@ -905,12 +1207,17 @@ extension DownloadQueueViewModel {
 			parsedMetadata: ParsedMetadata(),
 			metadataText: "{}",
 			metadataError: nil,
-			preparationError: nil,
-			recipeIdentifier: nil,
-			recipeText: nil,
-			recipeError: nil,
-			parsedRecipe: nil,
-			preinstallScript: "",
+				preparationError: nil,
+				recipeIdentifier: nil,
+				recipeCandidates: [],
+				selectedRecipeId: nil,
+				recipeText: nil,
+				recipeError: nil,
+				parsedRecipe: nil,
+				plistText: "",
+				plistError: nil,
+				isPlistDirty: false,
+				preinstallScript: "",
 			postinstallScript: "",
 			preuninstallScript: "",
 			postuninstallScript: "",
@@ -978,9 +1285,14 @@ struct EditableDownload: Identifiable {
 	var metadataError: String?
 	var preparationError: String?
 	var recipeIdentifier: String?
+	var recipeCandidates: [RecipeMatchCandidate]
+	var selectedRecipeId: String?
 	var recipeText: String?
 	var recipeError: String?
 	var parsedRecipe: Recipe?
+	var plistText: String
+	var plistError: String?
+	var isPlistDirty: Bool
 	var preinstallScript: String
 	var postinstallScript: String
 	var preuninstallScript: String
@@ -1006,12 +1318,23 @@ struct EditableDownload: Identifiable {
 	}
 
 	static func from(output: DownloadUploadService.DownloadOutput) -> EditableDownload {
-		let download = output.successfulDownload
+		var download = output.successfulDownload
 		let appName = resolvedDisplayName(
 			metadata: download.parsedMetadata,
 			fallbackName: download.macApplication?.name.first,
 			fileName: download.fileName
 		)
+		
+		if download.macApplication == nil {
+			download.macApplication = CaskApplication(
+				token: download.guid.uuidString,
+				fullToken: download.guid.uuidString,
+				name: [appName],
+				url: download.fileName,
+				version: download.parsedMetadata?.version ?? ""
+			)
+		}
+		
 		let outputFolder = URL(fileURLWithPath: download.fullFolderPath)
 			.appendingPathComponent("output", isDirectory: true)
 		let iconFiles = (try? FileManager.default.contentsOfDirectory(
@@ -1021,6 +1344,7 @@ struct EditableDownload: Identifiable {
 		let pngFiles = iconFiles.filter { $0.pathExtension.lowercased() == "png" }
 		let metadata = download.parsedMetadata
 		let metadataText = encodeMetadata(metadata)
+		let plistText = encodeMetadataPlist(metadata)
 		return EditableDownload(
 			id: download.guid.uuidString,
 			displayName: appName,
@@ -1032,9 +1356,14 @@ struct EditableDownload: Identifiable {
 			metadataError: nil,
 			preparationError: nil,
 			recipeIdentifier: nil,
+			recipeCandidates: [],
+			selectedRecipeId: nil,
 			recipeText: nil,
 			recipeError: nil,
 			parsedRecipe: nil,
+			plistText: plistText,
+			plistError: nil,
+			isPlistDirty: false,
 			preinstallScript: metadata?.preinstall_script ?? "",
 			postinstallScript: metadata?.postinstall_script ?? "",
 			preuninstallScript: metadata?.preuninstall_script ?? "",
@@ -1043,6 +1372,161 @@ struct EditableDownload: Identifiable {
 			uninstallcheckScript: metadata?.uninstallcheck_script
 		)
 	}
+
+	static func from(imported: ImportedApplication) -> EditableDownload {
+		let appName = imported.displayTitle
+		let metadata = hydratedImportMetadata(for: imported, fallbackName: appName)
+		let metadataText = encodeMetadata(metadata)
+		let plistText = encodeMetadataPlist(metadata)
+		
+		let cask = imported.macApplication ?? CaskApplication(
+			token: imported.id.uuidString,
+			fullToken: imported.id.uuidString,
+			name: [appName],
+			url: imported.fileName,
+			version: nonEmpty(metadata?.version) ?? ""
+		)
+		
+		let base = SuccessfulDownload(
+			fileName: imported.fileName,
+			fileExtension: imported.fileExtension,
+			fullFilePath: imported.fullFilePath,
+			fullFolderPath: URL(fileURLWithPath: imported.fullFilePath).deletingLastPathComponent().path,
+			munkiMetadata: imported.munkiMetadata,
+			macApplication: cask,
+			parsedMetadata: metadata,
+			proposedMetadata: imported.proposedMetadata ?? metadata
+		)
+		
+		let iconPaths = resolvedImportIconPaths(for: imported)
+		let selectedIndex = min(max(imported.selectedIconIndex ?? 0, 0), max(iconPaths.count - 1, 0))
+
+		return EditableDownload(
+			id: imported.id.uuidString,
+			displayName: appName,
+			baseDownload: base,
+			iconPaths: iconPaths,
+			selectedIconIndex: selectedIndex,
+			parsedMetadata: metadata,
+			metadataText: metadataText,
+			metadataError: nil,
+			preparationError: nil,
+			recipeIdentifier: imported.matchingRecipeId,
+			recipeCandidates: imported.matchingRecipeCandidates,
+			selectedRecipeId: imported.matchingRecipeId,
+			recipeText: nil,
+			recipeError: nil,
+			parsedRecipe: nil,
+			plistText: plistText,
+			plistError: nil,
+			isPlistDirty: false,
+			preinstallScript: metadata?.preinstall_script ?? "",
+			postinstallScript: metadata?.postinstall_script ?? "",
+			preuninstallScript: metadata?.preuninstall_script ?? "",
+			postuninstallScript: metadata?.postuninstall_script ?? "",
+			installcheckScript: metadata?.installcheck_script ?? "",
+			uninstallcheckScript: metadata?.uninstallcheck_script
+		)
+	}
+
+	private static func hydratedImportMetadata(
+		for imported: ImportedApplication,
+		fallbackName: String
+	) -> ParsedMetadata? {
+		var metadata = imported.parsedMetadata ?? imported.macApplication?.parsedMetadata ?? ParsedMetadata()
+		let resolvedName = nonEmpty(metadata.display_name)
+			?? nonEmpty(metadata.name)
+			?? nonEmpty(imported.macApplication?.name.first)
+			?? nonEmpty(fallbackName)
+		let resolvedVersion = nonEmpty(metadata.version)
+			?? nonEmpty(imported.macApplication?.version)
+
+		if let resolvedName {
+			if nonEmpty(metadata.name) == nil {
+				metadata.name = resolvedName
+			}
+			if nonEmpty(metadata.display_name) == nil {
+				metadata.display_name = resolvedName
+			}
+		}
+		if let resolvedVersion, nonEmpty(metadata.version) == nil {
+			metadata.version = resolvedVersion
+		}
+
+		return metadata
+	}
+
+	private static func nonEmpty(_ value: String?) -> String? {
+		guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+			return nil
+		}
+		return trimmed
+	}
+
+	private static func resolvedImportIconPaths(for imported: ImportedApplication) -> [URL] {
+		let fromPaths = imported.availableIconPaths
+			.map { URL(fileURLWithPath: $0) }
+			.filter { FileManager.default.fileExists(atPath: $0.path) }
+		if !fromPaths.isEmpty {
+			return fromPaths
+		}
+
+		if let selectedPath = imported.selectedIconPath {
+			let url = URL(fileURLWithPath: selectedPath)
+			if FileManager.default.fileExists(atPath: url.path) {
+				return [url]
+			}
+		}
+
+		#if os(macOS)
+		return materializedImportIconPaths(for: imported)
+		#else
+		return []
+		#endif
+	}
+
+	#if os(macOS)
+	private static func materializedImportIconPaths(for imported: ImportedApplication) -> [URL] {
+		var images: [NSImage] = []
+		if let selected = imported.selectedIcon {
+			images.append(selected)
+		}
+		if let icns = imported.importedIcnsImage {
+			images.append(icns)
+		}
+		images.append(contentsOf: imported.availableIcons)
+		guard !images.isEmpty else { return [] }
+
+		let outputFolder = FileManager.default.temporaryDirectory
+			.appendingPathComponent("juice_import_icons", isDirectory: true)
+			.appendingPathComponent(imported.id.uuidString, isDirectory: true)
+		try? FileManager.default.createDirectory(
+			at: outputFolder,
+			withIntermediateDirectories: true
+		)
+
+		var written: [URL] = []
+		for (index, image) in images.enumerated() {
+			guard let tiffData = image.tiffRepresentation,
+			      let rep = NSBitmapImageRep(data: tiffData),
+			      let pngData = rep.representation(using: .png, properties: [:]) else {
+				continue
+			}
+			let iconURL = outputFolder.appendingPathComponent("icon_\(index).png")
+			do {
+				try pngData.write(to: iconURL, options: .atomic)
+				written.append(iconURL)
+			} catch {
+				continue
+			}
+		}
+
+		if written.isEmpty {
+			return []
+		}
+		return Array(Set(written)).sorted { $0.lastPathComponent < $1.lastPathComponent }
+	}
+	#endif
 
 	static func fromFallback(
 		download: SuccessfulDownload,
@@ -1060,6 +1544,7 @@ struct EditableDownload: Identifiable {
 			includingPropertiesForKeys: nil
 		)) ?? []
 		let pngFiles = iconFiles.filter { $0.pathExtension.lowercased() == "png" }
+		let plistText = encodeMetadataPlist(download.parsedMetadata)
 		return EditableDownload(
 			id: download.guid.uuidString,
 			displayName: appName,
@@ -1071,9 +1556,14 @@ struct EditableDownload: Identifiable {
 			metadataError: "Metadata not generated",
 			preparationError: error,
 			recipeIdentifier: nil,
+			recipeCandidates: [],
+			selectedRecipeId: nil,
 			recipeText: nil,
 			recipeError: nil,
 			parsedRecipe: nil,
+			plistText: plistText,
+			plistError: nil,
+			isPlistDirty: false,
 			preinstallScript: "",
 			postinstallScript: "",
 			preuninstallScript: "",
@@ -1089,6 +1579,19 @@ struct EditableDownload: Identifiable {
 		encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
 		guard let data = try? encoder.encode(metadata) else { return "{}" }
 		return String(data: data, encoding: .utf8) ?? "{}"
+	}
+
+	static func encodeMetadataPlist(_ metadata: ParsedMetadata?) -> String {
+		guard let metadata else { return "" }
+		let encoder = PropertyListEncoder()
+		encoder.outputFormat = .xml
+		guard let data = try? encoder.encode(metadata) else { return "" }
+		return String(data: data, encoding: .utf8) ?? ""
+	}
+
+	static func decodeMetadataPlist(_ text: String) -> ParsedMetadata? {
+		guard let data = text.data(using: .utf8) else { return nil }
+		return try? PropertyListDecoder().decode(ParsedMetadata.self, from: data)
 	}
 
 	static func encodeRecipe(_ recipe: Recipe?) -> String {
@@ -1111,6 +1614,7 @@ struct EditableDownload: Identifiable {
 	func withRecipe(recipeId: String, recipe: Recipe) -> EditableDownload {
 		var updated = self
 		updated.recipeIdentifier = recipeId
+		updated.selectedRecipeId = recipeId
 		updated.parsedRecipe = recipe
 		updated.recipeText = EditableDownload.encodeRecipe(recipe)
 		updated.recipeError = nil

@@ -223,7 +223,8 @@ struct WindowConfigurator: NSViewRepresentable {
         private var observers: [NSObjectProtocol] = []
         private weak var configuredWindow: NSWindow?
         private var trafficLightRelativeOffsets: (mini: CGPoint, zoom: CGPoint)?
-        private var trafficLightCloseY: CGFloat?
+        private var trafficLightConstraints: [NSLayoutConstraint] = []
+        private weak var trafficLightConstraintContainer: NSView?
         private var initialReapplyTask: Task<Void, Never>?
 		private weak var closeButton: NSButton?
         // Adjust these to tune the traffic-light insets from the top-left titlebar edge.
@@ -235,7 +236,9 @@ struct WindowConfigurator: NSViewRepresentable {
             if configuredWindow !== window {
                 configuredWindow = window
                 trafficLightRelativeOffsets = nil
-                trafficLightCloseY = nil
+                NSLayoutConstraint.deactivate(trafficLightConstraints)
+                trafficLightConstraints.removeAll()
+                trafficLightConstraintContainer = nil
                 initialReapplyTask?.cancel()
                 stopObserving()
             }
@@ -303,44 +306,29 @@ struct WindowConfigurator: NSViewRepresentable {
                 )
             }
 
-            if trafficLightCloseY == nil {
-                let initialCloseY: CGFloat
-                if container.isFlipped {
-                    initialCloseY = trafficLightTopInset
-                } else {
-                    initialCloseY = max(0, container.bounds.height - close.frame.height - trafficLightTopInset)
-                }
-                trafficLightCloseY = initialCloseY
+            if trafficLightConstraintContainer !== container {
+                NSLayoutConstraint.deactivate(trafficLightConstraints)
+                trafficLightConstraints.removeAll()
+                trafficLightConstraintContainer = container
             }
-            let closeY = trafficLightCloseY ?? close.frame.minY
 
-            // Keep this deterministic and non-animated so controls do not visibly jump.
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0
-                context.allowsImplicitAnimation = false
+            if trafficLightConstraints.isEmpty, let offsets = trafficLightRelativeOffsets {
+                close.translatesAutoresizingMaskIntoConstraints = false
+                mini.translatesAutoresizingMaskIntoConstraints = false
+                zoom.translatesAutoresizingMaskIntoConstraints = false
 
-                close.setFrameOrigin(
-                    CGPoint(
-                        x: round(trafficLightLeadingInset),
-                        y: round(closeY)
-                    )
-                )
-
-                if let offsets = trafficLightRelativeOffsets {
-                    mini.setFrameOrigin(
-                        CGPoint(
-                            x: round(trafficLightLeadingInset + offsets.mini.x),
-                            y: round(closeY + offsets.mini.y)
-                        )
-                    )
-                    zoom.setFrameOrigin(
-                        CGPoint(
-                            x: round(trafficLightLeadingInset + offsets.zoom.x),
-                            y: round(closeY + offsets.zoom.y)
-                        )
-                    )
-                }
+                trafficLightConstraints = [
+                    close.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: trafficLightLeadingInset),
+                    close.topAnchor.constraint(equalTo: container.topAnchor, constant: trafficLightTopInset),
+                    mini.leadingAnchor.constraint(equalTo: close.leadingAnchor, constant: offsets.mini.x),
+                    mini.topAnchor.constraint(equalTo: close.topAnchor, constant: offsets.mini.y),
+                    zoom.leadingAnchor.constraint(equalTo: close.leadingAnchor, constant: offsets.zoom.x),
+                    zoom.topAnchor.constraint(equalTo: close.topAnchor, constant: offsets.zoom.y)
+                ]
+                NSLayoutConstraint.activate(trafficLightConstraints)
             }
+
+            container.layoutSubtreeIfNeeded()
         }
 
         private func scheduleInitialReapplyPasses() {
@@ -370,7 +358,6 @@ struct WindowConfigurator: NSViewRepresentable {
             let center = NotificationCenter.default
             let names: [NSNotification.Name] = [
                 NSWindow.didEndLiveResizeNotification,
-                NSWindow.didResizeNotification,
                 NSWindow.didChangeScreenNotification
             ]
             observers = names.map { name in
@@ -392,8 +379,6 @@ struct WindowConfigurator: NSViewRepresentable {
 
         private func reapplyTrafficLightsIfStable() {
             guard let window = self.window else { return }
-            guard window.inLiveResize == false else { return }
-            guard window.contentView?.inLiveResize != true else { return }
             applyConfig()
             applyTrafficLightInsets(in: window)
         }
