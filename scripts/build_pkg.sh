@@ -42,10 +42,10 @@ fi
 
 mkdir -p "$BUILD_DIR" "$DIST_DIR" "$APP_STAGE_DIR" "$DEPS_DIR" "$RESOURCES_DIR"
 
-APP_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ROOT_DIR/Juice/Info.plist" 2>/dev/null || echo "1.0")"
-APP_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$ROOT_DIR/Juice/Info.plist" 2>/dev/null || echo "1")"
+APP_VERSION=""
+APP_BUILD=""
 STAMP="$(date +%Y%m%d-%H%M%S)"
-PRODUCT_PKG="$DIST_DIR/Juice-Installer-${APP_VERSION}.pkg"
+PRODUCT_PKG=""
 APP_COMPONENT_PKG="$BUILD_DIR/${APP_PKG_ID}.pkg"
 RUNTIME_COMPONENT_PKG="$BUILD_DIR/${RUNTIME_PKG_ID}.pkg"
 
@@ -89,6 +89,17 @@ if [[ -z "$APP_SOURCE" || ! -d "$APP_SOURCE" ]]; then
   echo "error: could not locate built app in $DERIVED_DATA/Build/Products/$CONFIGURATION" >&2
   exit 1
 fi
+
+APP_INFO_PLIST="$APP_SOURCE/Contents/Info.plist"
+APP_VERSION="$(
+  /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_INFO_PLIST" 2>/dev/null \
+  || echo "${MARKETING_VERSION:-1.0}"
+)"
+APP_BUILD="$(
+  /usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_INFO_PLIST" 2>/dev/null \
+  || echo "${CURRENT_PROJECT_VERSION:-1}"
+)"
+PRODUCT_PKG="$DIST_DIR/Juice-Installer-${APP_VERSION}.pkg"
 
 echo "==> Staging app payload"
 rm -rf "$APP_STAGE_DIR/$APP_NAME"

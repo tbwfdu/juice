@@ -32,11 +32,16 @@ struct MetadataEditSheet: View {
 	@State private var activeRecipe: Recipe?
 	@State private var recipeSelectionError: String?
 	@State private var showRecipePreview: Bool = false
+	@State private var baselineMetadata: ParsedMetadata
+	@State private var showSaveConfirmation: Bool = false
+	@State private var pendingSaveDownload: EditableDownload?
+	@State private var pendingMetadataChanges: [MetadataChange] = []
+	@State private var confirmationViewMode: ConfirmationViewMode = .changes
 	@State private var isHeaderDetailsExpanded: Bool = true
-	@State private var isInstallsSectionExpanded: Bool = true
+	@State private var isInstallsSectionExpanded: Bool = false
 	@State private var installItemExpansionState: [Int: Bool] = [:]
-	@State private var isAdditionalFieldsExpanded: Bool = true
-	@State private var isScriptsSectionExpanded: Bool = true
+	@State private var isAdditionalFieldsExpanded: Bool = false
+	@State private var isScriptsSectionExpanded: Bool = false
 	@StateObject private var focusObserver = WindowFocusObserver()
 
 	let download: EditableDownload
@@ -56,6 +61,7 @@ struct MetadataEditSheet: View {
 		self.onSelectRecipe = onSelectRecipe
 		let initial = download.parsedMetadata ?? ParsedMetadata()
 		_draft = State(initialValue: initial)
+		_baselineMetadata = State(initialValue: initial)
 
 		let initialRecipeId =
 			download.selectedRecipeId ?? download.recipeIdentifier
@@ -96,7 +102,7 @@ struct MetadataEditSheet: View {
 		}
 	}
 
-	private enum AdditionalFieldType: String, CaseIterable, Identifiable {
+		private enum AdditionalFieldType: String, CaseIterable, Identifiable {
 		case string = "String"
 		case number = "Number"
 		case bool = "Bool"
@@ -122,7 +128,66 @@ struct MetadataEditSheet: View {
 		case index(Int)
 	}
 
-	private typealias AdditionalPath = [AdditionalPathComponent]
+		private typealias AdditionalPath = [AdditionalPathComponent]
+
+	private struct MetadataChange: Identifiable {
+		enum Kind: String {
+			case added
+			case removed
+			case modified
+
+			var label: String {
+				switch self {
+				case .added: return "Added"
+				case .removed: return "Removed"
+				case .modified: return "Modified"
+				}
+			}
+
+			var sortOrder: Int {
+				switch self {
+				case .added: return 0
+				case .removed: return 1
+				case .modified: return 2
+				}
+			}
+
+			var color: Color {
+				switch self {
+				case .added: return .green
+				case .removed: return .red
+				case .modified: return .orange
+				}
+			}
+		}
+
+		let id: String
+		let path: String
+		let kind: Kind
+		let beforeValue: String?
+		let afterValue: String?
+
+		init(path: String, kind: Kind, beforeValue: String?, afterValue: String?) {
+			self.path = path
+			self.kind = kind
+			self.beforeValue = beforeValue
+			self.afterValue = afterValue
+			self.id = "\(path)|\(kind.rawValue)|\(beforeValue ?? "nil")|\(afterValue ?? "nil")"
+		}
+	}
+
+	private enum ConfirmationViewMode: String, CaseIterable, Identifiable {
+		case changes = "Changes"
+		case raw = "Raw"
+		var id: String { rawValue }
+
+		var icon: String {
+			switch self {
+			case .changes: return "list.bullet.rectangle"
+			case .raw: return "chevron.left.forwardslash.chevron.right"
+			}
+		}
+	}
 
 	private static let curatedFieldKeys: Set<String> = [
 		"name",
@@ -215,18 +280,21 @@ struct MetadataEditSheet: View {
 		.glassCompatBorder(in: shape, context: glassState, role: .strong)
 		.glassCompatShadow(context: glassState, elevation: .panel)
 		.background(WindowFocusReader { focusObserver.attach($0) })
-		.onChange(of: editorMode) { _, newMode in
-			if newMode == .raw {
-				plistText = EditableDownload.encodeMetadataPlist(draft)
-			} else if let parsed = EditableDownload.decodeMetadataPlist(
-				plistText
-			) {
-				draft = parsed
-				refreshAdditionalFieldState(from: parsed)
-				plistError = nil
+			.onChange(of: editorMode) { _, newMode in
+				if newMode == .raw {
+					plistText = EditableDownload.encodeMetadataPlist(draft)
+				} else if let parsed = EditableDownload.decodeMetadataPlist(
+					plistText
+				) {
+					draft = parsed
+					refreshAdditionalFieldState(from: parsed)
+					plistError = nil
+				}
 			}
-		}
-		.animation(.easeInOut(duration: 0.2), value: isHeaderDetailsExpanded)
+			.sheet(isPresented: $showSaveConfirmation) {
+				metadataSaveConfirmationSheet
+			}
+			.animation(.easeInOut(duration: 0.2), value: isHeaderDetailsExpanded)
 	}
 
 	private var header: some View {
@@ -1262,13 +1330,13 @@ struct MetadataEditSheet: View {
 				dismiss()
 			}
 			.nativeActionButtonStyle(.secondary, controlSize: .large)
-			Button("Save") { save() }
+			Button("Save") { prepareSave() }
 				.juiceGradientGlassProminentButtonStyle(controlSize: .large)
 				.disabled(editorMode == .raw && plistError != nil)
 		}
 	}
 
-	private func save() {
+	private func prepareSave() {
 		if editorMode == .raw {
 			guard let parsed = EditableDownload.decodeMetadataPlist(plistText)
 			else {
@@ -1280,7 +1348,25 @@ struct MetadataEditSheet: View {
 			refreshAdditionalFieldState(from: parsed)
 		}
 		syncDraftToPlist()
+		guard plistError == nil else { return }
 
+		let updated = buildUpdatedDownload()
+		let changes = Self.computeMetadataChanges(
+			from: baselineMetadata,
+			to: updated.parsedMetadata ?? ParsedMetadata()
+		)
+		if changes.isEmpty {
+			onSave(updated)
+			dismiss()
+			return
+		}
+		pendingSaveDownload = updated
+		pendingMetadataChanges = changes
+		confirmationViewMode = .changes
+		showSaveConfirmation = true
+	}
+
+	private func buildUpdatedDownload() -> EditableDownload {
 		var updated = download
 		updated.selectedIconIndex = selectedIconIndex
 		updated.parsedMetadata = draft
@@ -1291,8 +1377,206 @@ struct MetadataEditSheet: View {
 		updated.isPlistDirty = false
 		updated.selectedRecipeId = selectedRecipeId
 		updated.recipeIdentifier = selectedRecipeId ?? updated.recipeIdentifier
-		onSave(updated)
+		return updated
+	}
+
+	private func commitPendingSave() {
+		guard let pending = pendingSaveDownload else {
+			showSaveConfirmation = false
+			return
+		}
+		onSave(pending)
+		pendingSaveDownload = nil
+		pendingMetadataChanges = []
+		confirmationViewMode = .changes
+		showSaveConfirmation = false
 		dismiss()
+	}
+
+	private func cancelPendingSave() {
+		showSaveConfirmation = false
+		pendingSaveDownload = nil
+		pendingMetadataChanges = []
+		confirmationViewMode = .changes
+	}
+
+	private var metadataSaveConfirmationSheet: some View {
+		let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+		return VStack(alignment: .leading, spacing: 10) {
+			Text("Review Metadata Changes")
+				.font(.system(size: 18, weight: .semibold))
+			Text("These changes will be saved.")
+				.font(.system(size: 13))
+				.foregroundStyle(.secondary)
+			Text(
+				"\(pendingMetadataChanges.count) change\(pendingMetadataChanges.count == 1 ? "" : "s") from default metadata"
+			)
+			.font(.system(size: 12, weight: .medium))
+			.foregroundStyle(.secondary)
+				confirmationModePicker
+					.padding(.top, 2)
+
+			if confirmationViewMode == .changes {
+				ScrollView {
+					VStack(alignment: .leading, spacing: 8) {
+						ForEach(pendingMetadataChanges) { change in
+							metadataChangeRow(change)
+						}
+					}
+					.padding(.vertical, 2)
+				}
+				.frame(minHeight: 220, maxHeight: 340)
+				} else {
+					rawConfirmationSection
+						.frame(minHeight: 220, maxHeight: 360)
+				}
+
+			HStack {
+				Spacer()
+				Button("Cancel") { cancelPendingSave() }
+					.nativeActionButtonStyle(.secondary, controlSize: .large)
+				Button("Save Metadata") { commitPendingSave() }
+					.juiceGradientGlassProminentButtonStyle(controlSize: .large)
+			}
+		}
+		.padding(16)
+		.frame(minWidth: 700, minHeight: 440)
+		.background {
+			Color.clear
+				.glassCompatSurface(
+					in: shape,
+					style: .regular,
+					context: glassState,
+					fillColor: GlassThemeTokens.controlBackgroundBase(for: glassState),
+					fillOpacity: min(
+						1,
+						GlassThemeTokens.panelBaseTintOpacity(for: glassState)
+							+ GlassThemeTokens.panelNeutralOverlayOpacity(for: glassState)
+					),
+					surfaceOpacity: GlassThemeTokens.panelSurfaceOpacity(for: glassState)
+				)
+		}
+		.clipShape(shape)
+		.glassCompatBorder(in: shape, context: glassState, role: .standard)
+		.glassCompatShadow(context: glassState, elevation: .panel)
+	}
+
+	private var confirmationModePicker: some View {
+		Group {
+			if #available(macOS 26.0, iOS 16.0, *) {
+				LiquidGlassSegmentedPicker(
+					items: ConfirmationViewMode.allCases.map { mode in
+						.init(
+							title: mode.rawValue,
+							icon: mode.icon,
+							tag: mode
+						)
+					},
+					selection: $confirmationViewMode
+				)
+			} else {
+				Picker("Review Mode", selection: $confirmationViewMode) {
+					ForEach(ConfirmationViewMode.allCases) { mode in
+						HStack {
+							Image(systemName: mode.icon)
+							Text(mode.rawValue)
+						}
+						.tag(mode)
+					}
+				}
+				.pickerStyle(.segmented)
+				.frame(maxWidth: 260)
+			}
+		}
+	}
+
+	private var rawConfirmationSection: some View {
+		ScrollView {
+			VStack(alignment: .leading, spacing: 10) {
+				VStack(alignment: .leading, spacing: 6) {
+					Text("Raw Changes")
+						.font(.system(size: 12, weight: .semibold))
+					Text(pendingRawChangesText)
+						.font(.system(size: 11, design: .monospaced))
+						.foregroundStyle(.secondary)
+						.textSelection(.enabled)
+						.frame(maxWidth: .infinity, alignment: .leading)
+				}
+				.padding(8)
+				.glassPanelStyle(cornerRadius: 10)
+
+				VStack(alignment: .leading, spacing: 6) {
+					Text("Proposed Saved Plist")
+						.font(.system(size: 12, weight: .semibold))
+					Text(proposedSavePlistText)
+						.font(.system(size: 11, design: .monospaced))
+						.foregroundStyle(.secondary)
+						.textSelection(.enabled)
+						.frame(maxWidth: .infinity, alignment: .leading)
+				}
+				.padding(8)
+				.glassPanelStyle(cornerRadius: 10)
+			}
+			.padding(.vertical, 2)
+		}
+	}
+
+	private var proposedSavePlistText: String {
+		if let pendingText = pendingSaveDownload?.plistText, !pendingText.isEmpty {
+			return pendingText
+		}
+		return plistText
+	}
+
+	private var pendingRawChangesText: String {
+		guard !pendingMetadataChanges.isEmpty else { return "No metadata changes." }
+		var lines: [String] = []
+		for change in pendingMetadataChanges {
+			switch change.kind {
+			case .added:
+				lines.append("+ \(change.path): \(change.afterValue ?? "nil")")
+			case .removed:
+				lines.append("- \(change.path): \(change.beforeValue ?? "nil")")
+			case .modified:
+				lines.append("~ \(change.path)")
+				lines.append("  before: \(change.beforeValue ?? "nil")")
+				lines.append("  after:  \(change.afterValue ?? "nil")")
+			}
+		}
+		return lines.joined(separator: "\n")
+	}
+
+	private func metadataChangeRow(_ change: MetadataChange) -> some View {
+		VStack(alignment: .leading, spacing: 6) {
+			HStack(alignment: .center, spacing: 8) {
+				Text(change.path)
+					.font(.system(size: 12, weight: .semibold, design: .monospaced))
+					.lineLimit(1)
+					.truncationMode(.middle)
+				Spacer()
+				Text(change.kind.label)
+					.font(.system(size: 10, weight: .semibold))
+					.padding(.horizontal, 8)
+					.padding(.vertical, 3)
+					.foregroundStyle(change.kind.color)
+					.background(change.kind.color.opacity(0.12))
+					.clipShape(Capsule())
+			}
+			if let beforeValue = change.beforeValue {
+				Text("Before: \(beforeValue)")
+					.font(.system(size: 11, design: .monospaced))
+					.foregroundStyle(.secondary)
+					.textSelection(.enabled)
+			}
+			if let afterValue = change.afterValue {
+				Text("After: \(afterValue)")
+					.font(.system(size: 11, design: .monospaced))
+					.foregroundStyle(.secondary)
+					.textSelection(.enabled)
+			}
+		}
+		.padding(10)
+		.glassPanelStyle(cornerRadius: 10)
 	}
 
 	private func parseRawPlist(_ raw: String) {
@@ -1624,28 +1908,93 @@ struct MetadataEditSheet: View {
 		guard let pkg = activeRecipe?.pkgInfo ?? activeRecipe?.input?.pkgInfo
 		else { return nil }
 		switch key {
-		case "display_name": return pkg.displayName
-		case "description": return pkg.description
-		case "category": return pkg.category
-		case "developer": return pkg.developer
-		case "minimum_os_version": return pkg.minimumOsVersion
-		case "maximum_os_version": return pkg.maximumOsVersion
-		case "unattended_install": return pkg.unattendedInstall
-		case "unattended_uninstall": return pkg.unattendedUninstall
-		case "uninstall_method": return pkg.uninstallMethod
-		case "restart_action": return pkg.restartAction
-		case "icon_name": return pkg.iconName
-		case "requires": return pkg.requires?.joined(separator: ", ")
+		case "display_name": return sanitizedRecipeValue(pkg.displayName)
+		case "description": return sanitizedRecipeValue(pkg.description)
+		case "category": return sanitizedRecipeValue(pkg.category)
+		case "developer": return sanitizedRecipeValue(pkg.developer)
+		case "minimum_os_version":
+			return sanitizedRecipeValue(pkg.minimumOsVersion)
+		case "maximum_os_version":
+			return sanitizedRecipeValue(pkg.maximumOsVersion)
+		case "unattended_install":
+			return sanitizedRecipeValue(pkg.unattendedInstall)
+		case "unattended_uninstall":
+			return sanitizedRecipeValue(pkg.unattendedUninstall)
+		case "uninstall_method": return sanitizedRecipeValue(pkg.uninstallMethod)
+		case "restart_action": return sanitizedRecipeValue(pkg.restartAction)
+		case "icon_name": return sanitizedRecipeValue(pkg.iconName)
+		case "requires":
+			return sanitizedRecipeListValue(pkg.requires)
 		case "blocking_applications":
-			return pkg.blockingApplications?.joined(separator: ", ")
-		case "preinstall_script": return pkg.preinstallScript
-		case "postinstall_script": return pkg.postinstallScript
-		case "preuninstall_script": return pkg.preuninstallScript
-		case "postuninstall_script": return pkg.postuninstallScript
-		case "installcheck_script": return pkg.installcheckScript
-		case "uninstallcheck_script": return pkg.uninstallScript  // Munki's uninstall_script is used for check often or vice versa
+			return sanitizedRecipeListValue(pkg.blockingApplications)
+		case "preinstall_script": return sanitizedRecipeValue(pkg.preinstallScript)
+		case "postinstall_script": return sanitizedRecipeValue(pkg.postinstallScript)
+		case "preuninstall_script":
+			return sanitizedRecipeValue(pkg.preuninstallScript)
+		case "postuninstall_script":
+			return sanitizedRecipeValue(pkg.postuninstallScript)
+		case "installcheck_script":
+			return sanitizedRecipeValue(pkg.installcheckScript)
+		case "uninstallcheck_script":
+			return sanitizedRecipeValue(pkg.uninstallScript)  // Munki's uninstall_script is used for check often or vice versa
 		default: return nil
 		}
+	}
+
+	private func sanitizedRecipeListValue(_ values: [String]?) -> String? {
+		guard let values else { return nil }
+		let cleaned = values.compactMap { sanitizedRecipeValue($0) }
+		guard !cleaned.isEmpty else { return nil }
+		return cleaned.joined(separator: ", ")
+	}
+
+	private func sanitizedRecipeValue(_ value: String?) -> String? {
+		guard let value else { return nil }
+		let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !trimmed.isEmpty else { return nil }
+		guard !looksLikeRecipePlaceholder(trimmed) else { return nil }
+		return trimmed
+	}
+
+	private func looksLikeRecipePlaceholder(_ value: String) -> Bool {
+		let strippedQuotes = value.trimmingCharacters(
+			in: CharacterSet(charactersIn: "\"'")
+		)
+		let placeholderPatterns = [
+			"^%[A-Za-z_][A-Za-z0-9_.-]*%$",
+			"^%\\([A-Za-z_][A-Za-z0-9_.-]*\\)s$",
+			"^\\$\\{[A-Za-z_][A-Za-z0-9_.-]*\\}$",
+			"^\\$[A-Za-z_][A-Za-z0-9_.-]*$",
+			"^\\{\\{\\s*[A-Za-z_][A-Za-z0-9_.-]*\\s*\\}\\}$",
+			"^\\[\\[\\s*[A-Za-z_][A-Za-z0-9_.-]*\\s*\\]\\]$",
+			"^__?[A-Z0-9_]+__?$",
+		]
+
+		for pattern in placeholderPatterns {
+			if strippedQuotes.range(of: pattern, options: .regularExpression) != nil
+			{
+				return true
+			}
+		}
+
+		// Guard against template token values like "%MUNKI_CATEGORY%" that may
+		// be surrounded by punctuation/whitespace only.
+		let tokenPattern = "%[A-Za-z_][A-Za-z0-9_.-]*%"
+		if strippedQuotes.range(of: tokenPattern, options: .regularExpression) != nil
+		{
+			let remaining = strippedQuotes
+				.replacingOccurrences(
+					of: tokenPattern,
+					with: "",
+					options: .regularExpression
+				)
+				.trimmingCharacters(in: .whitespacesAndNewlines)
+			if remaining.isEmpty {
+				return true
+			}
+		}
+
+		return false
 	}
 
 	private var recipeInstalls: [InstallItem]? {
@@ -1816,6 +2165,181 @@ struct MetadataEditSheet: View {
 		case .null:
 			return nil
 		}
+	}
+
+	private static func computeMetadataChanges(
+		from old: ParsedMetadata,
+		to new: ParsedMetadata
+	) -> [MetadataChange] {
+		guard
+			let oldDictionary = metadataDictionary(from: old),
+			let newDictionary = metadataDictionary(from: new)
+		else {
+			let oldText = EditableDownload.encodeMetadataPlist(old)
+			let newText = EditableDownload.encodeMetadataPlist(new)
+			guard oldText != newText else { return [] }
+			return [
+				MetadataChange(
+					path: "metadata",
+					kind: .modified,
+					beforeValue: truncatedChangeValue(oldText),
+					afterValue: truncatedChangeValue(newText)
+				)
+			]
+		}
+
+		var changes: [MetadataChange] = []
+		diffAny(old: oldDictionary, new: newDictionary, path: "", collector: &changes)
+		return changes.sorted {
+			if $0.path == $1.path {
+				return $0.kind.sortOrder < $1.kind.sortOrder
+			}
+			return $0.path < $1.path
+		}
+	}
+
+	private static func diffAny(
+		old: Any?,
+		new: Any?,
+		path: String,
+		collector: inout [MetadataChange]
+	) {
+		switch (old, new) {
+		case (nil, nil):
+			return
+		case (nil, .some(let newValue)):
+			collector.append(
+				MetadataChange(
+					path: normalizedChangePath(path),
+					kind: .added,
+					beforeValue: "nil",
+					afterValue: formattedChangeValue(newValue)
+				)
+			)
+			return
+		case (.some(let oldValue), nil):
+			collector.append(
+				MetadataChange(
+					path: normalizedChangePath(path),
+					kind: .removed,
+					beforeValue: formattedChangeValue(oldValue),
+					afterValue: "nil"
+				)
+			)
+			return
+		case (.some(let oldValue), .some(let newValue)):
+			if let oldDictionary = oldValue as? [String: Any],
+				let newDictionary = newValue as? [String: Any]
+			{
+				let keys = Set(oldDictionary.keys).union(newDictionary.keys).sorted()
+				for key in keys {
+					let childPath =
+						path.isEmpty ? key : "\(path).\(key)"
+					diffAny(
+						old: oldDictionary[key],
+						new: newDictionary[key],
+						path: childPath,
+						collector: &collector
+					)
+				}
+				return
+			}
+
+			if let oldArray = oldValue as? [Any], let newArray = newValue as? [Any] {
+				let commonCount = min(oldArray.count, newArray.count)
+				if commonCount > 0 {
+					for index in 0..<commonCount {
+						let childPath = "\(path)[\(index)]"
+						diffAny(
+							old: oldArray[index],
+							new: newArray[index],
+							path: childPath,
+							collector: &collector
+						)
+					}
+				}
+				if oldArray.count > commonCount {
+					for index in commonCount..<oldArray.count {
+						diffAny(
+							old: oldArray[index],
+							new: nil,
+							path: "\(path)[\(index)]",
+							collector: &collector
+						)
+					}
+				}
+				if newArray.count > commonCount {
+					for index in commonCount..<newArray.count {
+						diffAny(
+							old: nil,
+							new: newArray[index],
+							path: "\(path)[\(index)]",
+							collector: &collector
+						)
+					}
+				}
+				return
+			}
+
+			guard !areChangeValuesEqual(oldValue, newValue) else { return }
+			collector.append(
+				MetadataChange(
+					path: normalizedChangePath(path),
+					kind: .modified,
+					beforeValue: formattedChangeValue(oldValue),
+					afterValue: formattedChangeValue(newValue)
+				)
+			)
+		}
+	}
+
+	private static func areChangeValuesEqual(_ lhs: Any, _ rhs: Any) -> Bool {
+		if let lhsObject = lhs as? NSObject, let rhsObject = rhs as? NSObject {
+			return lhsObject.isEqual(rhsObject)
+		}
+		return String(describing: lhs) == String(describing: rhs)
+	}
+
+	private static func normalizedChangePath(_ path: String) -> String {
+		path.isEmpty ? "metadata" : path
+	}
+
+	private static func formattedChangeValue(_ value: Any) -> String {
+		switch value {
+		case let string as String:
+			return "\"\(truncatedChangeValue(string.replacingOccurrences(of: "\n", with: "\\n")))\""
+		case let bool as Bool:
+			return bool ? "true" : "false"
+		case let number as NSNumber:
+			if CFGetTypeID(number) == CFBooleanGetTypeID() {
+				return number.boolValue ? "true" : "false"
+			}
+			return number.stringValue
+		case let intValue as Int:
+			return String(intValue)
+		case let doubleValue as Double:
+			return String(doubleValue)
+		case let date as Date:
+			return ISO8601DateFormatter().string(from: date)
+		case let data as Data:
+			return "<data: \(data.count) byte\(data.count == 1 ? "" : "s")>"
+		case let dictionary as [String: Any]:
+			return "{\(dictionary.count) key\(dictionary.count == 1 ? "" : "s")}"
+		case let array as [Any]:
+			return "[\(array.count) item\(array.count == 1 ? "" : "s")]"
+		case is NSNull:
+			return "nil"
+		default:
+			return truncatedChangeValue(String(describing: value))
+		}
+	}
+
+	private static func truncatedChangeValue(_ value: String, maxLength: Int = 180)
+		-> String
+	{
+		guard value.count > maxLength else { return value }
+		let prefixCount = max(0, maxLength - 1)
+		return "\(value.prefix(prefixCount))…"
 	}
 
 	private static func uniqueDictionaryKey(base: String, existing: Set<String>)
