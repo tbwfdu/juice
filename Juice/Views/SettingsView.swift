@@ -24,6 +24,7 @@ struct SettingsView: View {
 	@EnvironmentObject private var catalog: LocalCatalog
 	@AppStorage("juice.debugThemeOverride") private var debugThemeOverrideRaw: String = "system"
 	@ObservedObject private var styleConfig = JuiceStyleConfig.shared
+	@ObservedObject private var appUpdater = AppUpdaterService.shared
 	@State private var activeEnvironmentIndex: Int
 	@State private var selectedEnvironmentIndex: Int
 	@State private var storedEnvironments: [UemEnvironment]
@@ -66,6 +67,9 @@ struct SettingsView: View {
 	@State private var isLoadingActiveEnvironmentDetails: Bool = false
 	@State private var activeEnvironmentDetailsError: String? = nil
 	@State private var isCheckingDatabase: Bool = false
+	@State private var sparkleAutoCheckEnabled: Bool
+	@State private var sparkleCheckIntervalHours: Int
+	@State private var sparkleAutoDownloadEnabled: Bool
 	@State private var actionsButtonMeasuredMaxWidth: CGFloat = 0
 	@State private var actionsButtonMeasuredMaxHeight: CGFloat = 0
 	private let basePanelMinHeight: CGFloat = 680
@@ -125,6 +129,9 @@ struct SettingsView: View {
 		_useActiveEnvironmentBrandingTint = State(
 			initialValue: loadedState.useActiveEnvironmentBrandingTint
 		)
+		_sparkleAutoCheckEnabled = State(initialValue: loadedState.sparkleAutoCheckEnabled)
+		_sparkleCheckIntervalHours = State(initialValue: loadedState.sparkleCheckIntervalHours)
+		_sparkleAutoDownloadEnabled = State(initialValue: loadedState.sparkleAutoDownloadEnabled)
 	}
 
 	var body: some View {
@@ -236,12 +243,15 @@ struct SettingsView: View {
 					$databaseRecipesEndpointOverride,
 				databaseVersionEndpointOverride:
 					$databaseVersionEndpointOverride,
-				prominentTintPosition: $prominentTintPosition,
-				useActiveEnvironmentBrandingTint:
-					$useActiveEnvironmentBrandingTint,
-				currentDatabaseAppsEndpoint: settingsState
-					.databaseAppsEndpoint,
-				currentDatabaseRecipesEndpoint: settingsState
+					prominentTintPosition: $prominentTintPosition,
+					useActiveEnvironmentBrandingTint:
+						$useActiveEnvironmentBrandingTint,
+					sparkleAutoCheckEnabled: $sparkleAutoCheckEnabled,
+					sparkleCheckIntervalHours: $sparkleCheckIntervalHours,
+					sparkleAutoDownloadEnabled: $sparkleAutoDownloadEnabled,
+					currentDatabaseAppsEndpoint: settingsState
+						.databaseAppsEndpoint,
+					currentDatabaseRecipesEndpoint: settingsState
 					.databaseRecipesEndpoint,
 				currentDatabaseVersionEndpoint: settingsState
 					.databaseVersionEndpoint,
@@ -251,15 +261,29 @@ struct SettingsView: View {
 				onProminentTintCommit: { position in
 					applyProminentTint(position: position, persist: true)
 				},
-				onUseActiveBrandingTintChanged: { useBrandingTint in
-					applyUseActiveEnvironmentBrandingTint(
-						useBrandingTint,
-						persist: true
-					)
-				},
-				onResetProminentTint: {
-					let defaultPosition = JuiceStyleConfig.spectrumPosition(
-						forHex: JuiceStyleConfig.defaultTintHex
+					onUseActiveBrandingTintChanged: { useBrandingTint in
+						applyUseActiveEnvironmentBrandingTint(
+							useBrandingTint,
+							persist: true
+						)
+					},
+					onSparkleAutoCheckChanged: { enabled in
+						settingsState.sparkleAutoCheckEnabled = enabled
+						applySparklePreferences(persist: false)
+					},
+					onSparkleCheckIntervalChanged: { interval in
+						let normalized = AppUpdaterService.normalizedIntervalHours(interval)
+						sparkleCheckIntervalHours = normalized
+						settingsState.sparkleCheckIntervalHours = normalized
+						applySparklePreferences(persist: false)
+					},
+					onSparkleAutoDownloadChanged: { enabled in
+						settingsState.sparkleAutoDownloadEnabled = enabled
+						applySparklePreferences(persist: false)
+					},
+					onResetProminentTint: {
+						let defaultPosition = JuiceStyleConfig.spectrumPosition(
+							forHex: JuiceStyleConfig.defaultTintHex
 					)
 					prominentTintPosition = defaultPosition
 					applyProminentTint(
@@ -1851,6 +1875,11 @@ struct SettingsView: View {
 		if !apps.isEmpty { updated.databaseAppsEndpoint = apps }
 		if !recipes.isEmpty { updated.databaseRecipesEndpoint = recipes }
 		if !version.isEmpty { updated.databaseVersionEndpoint = version }
+		updated.sparkleAutoCheckEnabled = sparkleAutoCheckEnabled
+		updated.sparkleCheckIntervalHours = AppUpdaterService.normalizedIntervalHours(
+			sparkleCheckIntervalHours
+		)
+		updated.sparkleAutoDownloadEnabled = sparkleAutoDownloadEnabled
 
 		settingsState = updated
 		persistSettings(activeIndex: activeEnvironmentIndex)
@@ -2073,6 +2102,17 @@ struct SettingsView: View {
 		}
 	}
 
+	private func applySparklePreferences(persist: Bool) {
+		appUpdater.applyPreferences(
+			autoCheckEnabled: sparkleAutoCheckEnabled,
+			checkIntervalHours: sparkleCheckIntervalHours,
+			autoDownloadEnabled: sparkleAutoDownloadEnabled
+		)
+		if persist {
+			persistSettings(activeIndex: activeEnvironmentIndex)
+		}
+	}
+
 	private func applyEffectiveProminentTint() {
 		if useActiveEnvironmentBrandingTint,
 			let brandingHex = resolveActiveEnvironmentBrandingHighlightHex()
@@ -2195,6 +2235,13 @@ struct SettingsView: View {
 			forHex: JuiceStyleConfig.defaultTintHex
 		)
 		settingsState.prominentButtonTintHex = JuiceStyleConfig.defaultTintHex
+		sparkleAutoCheckEnabled = true
+		sparkleCheckIntervalHours = 24
+		sparkleAutoDownloadEnabled = false
+		settingsState.sparkleAutoCheckEnabled = true
+		settingsState.sparkleCheckIntervalHours = 24
+		settingsState.sparkleAutoDownloadEnabled = false
+		applySparklePreferences(persist: false)
 		applyEffectiveProminentTint()
 		showInfoBar(
 			.warning(
@@ -2218,16 +2265,20 @@ struct SettingsView: View {
 			databaseDownloadEndpoint: settingsState.databaseDownloadEndpoint,
 			storagePath: settingsState.storagePath,
 			prominentButtonTintHex: settingsState.prominentButtonTintHex,
-			useActiveEnvironmentBrandingTint:
-				settingsState.useActiveEnvironmentBrandingTint,
-			activeEnvironmentDeviceCount: settingsState.activeEnvironmentDeviceCount,
-			activeEnvironmentAppCount: settingsState.activeEnvironmentAppCount,
-			availableUpdatesCount: settingsState.availableUpdatesCount
-		)
-		settingsState = updated
-		do {
-			try settingsStore.save(updated)
-			Task {
+				useActiveEnvironmentBrandingTint:
+					settingsState.useActiveEnvironmentBrandingTint,
+				activeEnvironmentDeviceCount: settingsState.activeEnvironmentDeviceCount,
+				activeEnvironmentAppCount: settingsState.activeEnvironmentAppCount,
+				availableUpdatesCount: settingsState.availableUpdatesCount,
+				sparkleAutoCheckEnabled: settingsState.sparkleAutoCheckEnabled,
+				sparkleCheckIntervalHours: settingsState.sparkleCheckIntervalHours,
+				sparkleAutoDownloadEnabled: settingsState.sparkleAutoDownloadEnabled
+			)
+			settingsState = updated
+			do {
+				try settingsStore.save(updated)
+				applySparklePreferences(persist: false)
+				Task {
 				await Runtime.Config.updateEnvironments(
 					storedEnvironments,
 					activeUuid: activeUuid
@@ -2285,6 +2336,9 @@ struct SettingsView: View {
 		)
 		await MainActor.run {
 			settingsState = loaded
+			sparkleAutoCheckEnabled = loaded.sparkleAutoCheckEnabled
+			sparkleCheckIntervalHours = loaded.sparkleCheckIntervalHours
+			sparkleAutoDownloadEnabled = loaded.sparkleAutoDownloadEnabled
 			useActiveEnvironmentBrandingTint =
 				loaded.useActiveEnvironmentBrandingTint
 			prominentTintPosition = JuiceStyleConfig.spectrumPosition(
@@ -2300,6 +2354,11 @@ struct SettingsView: View {
 			selectedEnvironmentIndex = activeEnvironmentIndex
 			applyEffectiveProminentTint()
 		}
+		appUpdater.applyPreferences(
+			autoCheckEnabled: loaded.sparkleAutoCheckEnabled,
+			checkIntervalHours: loaded.sparkleCheckIntervalHours,
+			autoDownloadEnabled: loaded.sparkleAutoDownloadEnabled
+		)
 		await Runtime.Config.applySettings(loaded)
 	}
 
@@ -2315,6 +2374,9 @@ struct SettingsView: View {
 		)
 		await MainActor.run {
 			settingsState = imported
+			sparkleAutoCheckEnabled = imported.sparkleAutoCheckEnabled
+			sparkleCheckIntervalHours = imported.sparkleCheckIntervalHours
+			sparkleAutoDownloadEnabled = imported.sparkleAutoDownloadEnabled
 			useActiveEnvironmentBrandingTint =
 				imported.useActiveEnvironmentBrandingTint
 			prominentTintPosition = JuiceStyleConfig.spectrumPosition(
@@ -2330,6 +2392,11 @@ struct SettingsView: View {
 			selectedEnvironmentIndex = activeEnvironmentIndex
 			applyEffectiveProminentTint()
 		}
+		appUpdater.applyPreferences(
+			autoCheckEnabled: imported.sparkleAutoCheckEnabled,
+			checkIntervalHours: imported.sparkleCheckIntervalHours,
+			autoDownloadEnabled: imported.sparkleAutoDownloadEnabled
+		)
 		await Runtime.Config.applySettings(imported)
 		showInfoBar(
 			.success(
@@ -2357,6 +2424,9 @@ struct SettingsView: View {
 			fallback: model
 		)
 		settingsState = imported
+		sparkleAutoCheckEnabled = imported.sparkleAutoCheckEnabled
+		sparkleCheckIntervalHours = imported.sparkleCheckIntervalHours
+		sparkleAutoDownloadEnabled = imported.sparkleAutoDownloadEnabled
 		useActiveEnvironmentBrandingTint =
 			imported.useActiveEnvironmentBrandingTint
 		prominentTintPosition = JuiceStyleConfig.spectrumPosition(
@@ -2371,6 +2441,11 @@ struct SettingsView: View {
 		)
 		selectedEnvironmentIndex = activeEnvironmentIndex
 		applyEffectiveProminentTint()
+		appUpdater.applyPreferences(
+			autoCheckEnabled: imported.sparkleAutoCheckEnabled,
+			checkIntervalHours: imported.sparkleCheckIntervalHours,
+			autoDownloadEnabled: imported.sparkleAutoDownloadEnabled
+		)
 		Task { await Runtime.Config.applySettings(imported) }
 		showInfoBar(
 			.success(
@@ -2594,12 +2669,18 @@ private struct AdvancedConfigurationSheet: View {
 	@Binding var databaseVersionEndpointOverride: String
 	@Binding var prominentTintPosition: Double
 	@Binding var useActiveEnvironmentBrandingTint: Bool
+	@Binding var sparkleAutoCheckEnabled: Bool
+	@Binding var sparkleCheckIntervalHours: Int
+	@Binding var sparkleAutoDownloadEnabled: Bool
 	let currentDatabaseAppsEndpoint: String?
 	let currentDatabaseRecipesEndpoint: String?
 	let currentDatabaseVersionEndpoint: String?
 	let onProminentTintChanged: (Double) -> Void
 	let onProminentTintCommit: (Double) -> Void
 	let onUseActiveBrandingTintChanged: (Bool) -> Void
+	let onSparkleAutoCheckChanged: (Bool) -> Void
+	let onSparkleCheckIntervalChanged: (Int) -> Void
+	let onSparkleAutoDownloadChanged: (Bool) -> Void
 	let onResetProminentTint: () -> Void
 	let onCancel: () -> Void
 	let onSave: () -> Void
@@ -2693,6 +2774,43 @@ private struct AdvancedConfigurationSheet: View {
 						}
 						.explicitClearGlassButtonStyle(controlSize: .large)
 						Spacer(minLength: 0)
+					}
+
+					Divider()
+						.padding(.vertical, 4)
+
+					Text("App Updates")
+						.font(.system(size: 14, weight: .semibold))
+						.padding(.bottom, 1)
+
+					Toggle(
+						"Automatically check for updates",
+						isOn: $sparkleAutoCheckEnabled
+					)
+					.toggleStyle(.switch)
+					.onChange(of: sparkleAutoCheckEnabled) { _, newValue in
+						onSparkleAutoCheckChanged(newValue)
+					}
+
+					Picker(
+						"Update Check Interval",
+						selection: $sparkleCheckIntervalHours
+					) {
+						Text("Daily").tag(24)
+						Text("Weekly").tag(168)
+					}
+					.pickerStyle(.segmented)
+					.onChange(of: sparkleCheckIntervalHours) { _, newValue in
+						onSparkleCheckIntervalChanged(newValue)
+					}
+
+					Toggle(
+						"Automatically download updates when available",
+						isOn: $sparkleAutoDownloadEnabled
+					)
+					.toggleStyle(.switch)
+					.onChange(of: sparkleAutoDownloadEnabled) { _, newValue in
+						onSparkleAutoDownloadChanged(newValue)
 					}
 				}
 			}

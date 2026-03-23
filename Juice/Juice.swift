@@ -8,6 +8,7 @@ struct Juice: App {
 	static let mainWindowSceneID = "juice.main.window"
     @StateObject private var catalog = LocalCatalog()
 	@StateObject private var appVisibility = AppVisibilityCoordinator.shared
+	@StateObject private var appUpdater = AppUpdaterService.shared
     @State private var hasBootstrapped = false
 	@NSApplicationDelegateAdaptor(JuiceAppDelegate.self) private var appDelegate
 	
@@ -33,6 +34,13 @@ struct Juice: App {
         .windowStyle(.hiddenTitleBar)
 
 		MenuBarExtra("Juice", image: "JuiceMenuBarIcon") { JuiceMenuBarContent() }
+		.commands {
+			CommandGroup(after: .appInfo) {
+				Button("Check for Updates…") {
+					appUpdater.checkForUpdates()
+				}
+			}
+		}
     }
 
     @MainActor
@@ -52,6 +60,11 @@ struct Juice: App {
 			hex: settings.prominentButtonTintHex
 		)
 		settingsStore.syncWidgetFromStoredState()
+		appUpdater.applyPreferences(
+			autoCheckEnabled: settings.sparkleAutoCheckEnabled,
+			checkIntervalHours: settings.sparkleCheckIntervalHours,
+			autoDownloadEnabled: settings.sparkleAutoDownloadEnabled
+		)
 		await Runtime.Config.applySettings(settings)
     }
 

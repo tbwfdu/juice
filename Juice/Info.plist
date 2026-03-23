@@ -37,5 +37,11 @@
 	<string>Pete Lindley</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://juice.omnissafoundry.com/db/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>1+S7FpSNMMy2kh29wT1u7TXRAgyLsU0IstE5SfaTXho=</string>
 </dict>
 </plist>

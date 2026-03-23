@@ -29,6 +29,10 @@ Optional env vars:
 - `NOTARIZE=1 NOTARY_PROFILE=<profile>`: submit and staple notarization
 - `MIN_OS_VERSION=14.6`: minimum macOS installer target
 
+## Sparkle Note
+
+Juice Sparkle updates are distributed as signed/notarized `.app` archives (`.zip`) and do not use the `.pkg` installer channel. The installer scripts in this folder remain for offline/bootstrap installation only.
+
 ## Notarize Separately
 
 After building a signed installer pkg, run:

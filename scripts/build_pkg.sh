@@ -121,6 +121,7 @@ if [[ -n "$APP_SIGN_IDENTITY" ]]; then
     while IFS= read -r appex; do
       codesign \
         --force \
+        --timestamp \
         --options runtime \
         --entitlements "$WIDGET_ENTITLEMENTS" \
         --sign "$APP_SIGN_IDENTITY" \
@@ -131,16 +132,29 @@ if [[ -n "$APP_SIGN_IDENTITY" ]]; then
   echo "==> Signing embedded frameworks"
   if [[ -d "$APP_STAGE_DIR/$APP_NAME/Contents/Frameworks" ]]; then
     while IFS= read -r framework; do
-      codesign \
-        --force \
-        --options runtime \
-        --sign "$APP_SIGN_IDENTITY" \
-        "$framework"
+      if [[ "$framework" == *.framework ]]; then
+        # Sparkle embeds nested helper executables and XPC services.
+        codesign \
+          --force \
+          --deep \
+          --timestamp \
+          --options runtime \
+          --sign "$APP_SIGN_IDENTITY" \
+          "$framework"
+      else
+        codesign \
+          --force \
+          --timestamp \
+          --options runtime \
+          --sign "$APP_SIGN_IDENTITY" \
+          "$framework"
+      fi
     done < <(find "$APP_STAGE_DIR/$APP_NAME/Contents/Frameworks" -maxdepth 1 -type d \( -name "*.framework" -o -name "*.dylib" \) | sort)
   fi
 
   codesign \
     --force \
+    --timestamp \
     --options runtime \
     --entitlements "$APP_ENTITLEMENTS" \
     --sign "$APP_SIGN_IDENTITY" \

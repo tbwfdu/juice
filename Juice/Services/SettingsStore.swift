@@ -24,6 +24,9 @@ struct SettingsStore {
 		var activeEnvironmentDeviceCount: Int?
 		var activeEnvironmentAppCount: Int?
 		var availableUpdatesCount: Int?
+		var sparkleAutoCheckEnabled: Bool
+		var sparkleCheckIntervalHours: Int
+		var sparkleAutoDownloadEnabled: Bool
 
 		init(
 			activeEnvironmentUuid: String? = nil,
@@ -39,7 +42,10 @@ struct SettingsStore {
 			useActiveEnvironmentBrandingTint: Bool = false,
 			activeEnvironmentDeviceCount: Int? = nil,
 			activeEnvironmentAppCount: Int? = nil,
-			availableUpdatesCount: Int? = nil
+			availableUpdatesCount: Int? = nil,
+			sparkleAutoCheckEnabled: Bool = true,
+			sparkleCheckIntervalHours: Int = 24,
+			sparkleAutoDownloadEnabled: Bool = false
 		) {
 			self.activeEnvironmentUuid = activeEnvironmentUuid
 			self.uemEnvironments = uemEnvironments
@@ -55,6 +61,9 @@ struct SettingsStore {
 			self.activeEnvironmentDeviceCount = activeEnvironmentDeviceCount
 			self.activeEnvironmentAppCount = activeEnvironmentAppCount
 			self.availableUpdatesCount = availableUpdatesCount
+			self.sparkleAutoCheckEnabled = sparkleAutoCheckEnabled
+			self.sparkleCheckIntervalHours = sparkleCheckIntervalHours
+			self.sparkleAutoDownloadEnabled = sparkleAutoDownloadEnabled
 		}
 	}
 
@@ -74,6 +83,9 @@ struct SettingsStore {
 		static let activeEnvironmentDeviceCount = prefix + "activeEnvironmentDeviceCount"
 		static let activeEnvironmentAppCount = prefix + "activeEnvironmentAppCount"
 		static let availableUpdatesCount = prefix + "availableUpdatesCount"
+		static let sparkleAutoCheckEnabled = prefix + "sparkleAutoCheckEnabled"
+		static let sparkleCheckIntervalHours = prefix + "sparkleCheckIntervalHours"
+		static let sparkleAutoDownloadEnabled = prefix + "sparkleAutoDownloadEnabled"
 		static let didImportLegacy = prefix + "didImportLegacy"
 	}
 
@@ -115,7 +127,10 @@ struct SettingsStore {
 					useActiveEnvironmentBrandingTint: defaults.bool(forKey: Keys.useActiveEnvironmentBrandingTint),
 					activeEnvironmentDeviceCount: defaults.object(forKey: Keys.activeEnvironmentDeviceCount) as? Int,
 					activeEnvironmentAppCount: defaults.object(forKey: Keys.activeEnvironmentAppCount) as? Int,
-					availableUpdatesCount: defaults.object(forKey: Keys.availableUpdatesCount) as? Int
+					availableUpdatesCount: defaults.object(forKey: Keys.availableUpdatesCount) as? Int,
+					sparkleAutoCheckEnabled: defaults.object(forKey: Keys.sparkleAutoCheckEnabled) as? Bool ?? true,
+					sparkleCheckIntervalHours: defaults.object(forKey: Keys.sparkleCheckIntervalHours) as? Int ?? 24,
+					sparkleAutoDownloadEnabled: defaults.object(forKey: Keys.sparkleAutoDownloadEnabled) as? Bool ?? false
 				)
 			)
 		}
@@ -141,7 +156,10 @@ struct SettingsStore {
 			useActiveEnvironmentBrandingTint: defaults.bool(forKey: Keys.useActiveEnvironmentBrandingTint),
 			activeEnvironmentDeviceCount: defaults.object(forKey: Keys.activeEnvironmentDeviceCount) as? Int,
 			activeEnvironmentAppCount: defaults.object(forKey: Keys.activeEnvironmentAppCount) as? Int,
-			availableUpdatesCount: defaults.object(forKey: Keys.availableUpdatesCount) as? Int
+			availableUpdatesCount: defaults.object(forKey: Keys.availableUpdatesCount) as? Int,
+			sparkleAutoCheckEnabled: defaults.object(forKey: Keys.sparkleAutoCheckEnabled) as? Bool ?? true,
+			sparkleCheckIntervalHours: defaults.object(forKey: Keys.sparkleCheckIntervalHours) as? Int ?? 24,
+			sparkleAutoDownloadEnabled: defaults.object(forKey: Keys.sparkleAutoDownloadEnabled) as? Bool ?? false
 			)
 		)
 		return state
@@ -174,6 +192,9 @@ struct SettingsStore {
 		defaults.set(state.activeEnvironmentDeviceCount, forKey: Keys.activeEnvironmentDeviceCount)
 		defaults.set(state.activeEnvironmentAppCount, forKey: Keys.activeEnvironmentAppCount)
 		defaults.set(state.availableUpdatesCount, forKey: Keys.availableUpdatesCount)
+		defaults.set(state.sparkleAutoCheckEnabled, forKey: Keys.sparkleAutoCheckEnabled)
+		defaults.set(state.sparkleCheckIntervalHours, forKey: Keys.sparkleCheckIntervalHours)
+		defaults.set(state.sparkleAutoDownloadEnabled, forKey: Keys.sparkleAutoDownloadEnabled)
 		var hydratedState = state
 		hydratedState.uemEnvironments = try hydrateSecrets(in: sanitizedEnvironments)
 		publishWidgetSharedState(from: hydratedState)
@@ -211,6 +232,9 @@ struct SettingsStore {
 		defaults.removeObject(forKey: Keys.activeEnvironmentDeviceCount)
 		defaults.removeObject(forKey: Keys.activeEnvironmentAppCount)
 		defaults.removeObject(forKey: Keys.availableUpdatesCount)
+		defaults.removeObject(forKey: Keys.sparkleAutoCheckEnabled)
+		defaults.removeObject(forKey: Keys.sparkleCheckIntervalHours)
+		defaults.removeObject(forKey: Keys.sparkleAutoDownloadEnabled)
 		defaults.removeObject(forKey: Keys.didImportLegacy)
 		publishWidgetSharedState(from: SettingsState())
 	}
@@ -247,12 +271,15 @@ struct SettingsStore {
 			databaseDownloadEndpoint: decoded.databaseDownloadEndpoint,
 			storagePath: decoded.storagePath,
 			prominentButtonTintHex: decoded.prominentButtonTintHex,
-			useActiveEnvironmentBrandingTint: decoded.useActiveEnvironmentBrandingTint ?? false,
-			activeEnvironmentDeviceCount: nil,
-			activeEnvironmentAppCount: nil,
-			availableUpdatesCount: nil
+				useActiveEnvironmentBrandingTint: decoded.useActiveEnvironmentBrandingTint ?? false,
+				activeEnvironmentDeviceCount: nil,
+				activeEnvironmentAppCount: nil,
+				availableUpdatesCount: nil,
+				sparkleAutoCheckEnabled: true,
+				sparkleCheckIntervalHours: 24,
+				sparkleAutoDownloadEnabled: false
+				)
 			)
-		)
 
 		do {
 			try save(state)
@@ -305,6 +332,10 @@ struct SettingsStore {
 				normalized.databaseVersionEndpoint = Self.defaultVersionEndpoint
 			}
 		}
+
+		normalized.sparkleCheckIntervalHours = AppUpdaterService.normalizedIntervalHours(
+			normalized.sparkleCheckIntervalHours
+		)
 
 		return normalized
 	}

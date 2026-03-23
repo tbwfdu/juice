@@ -121,246 +121,252 @@ struct EnvironmentWizard: View {
 			.padding(.top, 1)
 			.padding(.bottom, 2)
 
-			if let errorMessage {
-				EnvironmentWizardInfoBar(message: errorMessage)
-			}
-
-			EnvironmentWizardPanel {
-				switch step {
-				case .configureEnvironment:
-					VStack(alignment: .leading, spacing: 10) {
-						Text("Workspace ONE UEM Tenant Details")
-							.font(.system(size: 14, weight: .semibold))
-							.padding(.bottom, 1)
-
-						Text("Friendly Name")
-							.font(.system(size: 12, weight: .semibold))
-							.padding(.bottom, -4)
-						TextField("eg. Production Tenant", text: $draft.friendlyName)
-							.textFieldStyle(.roundedBorder)
-							.padding(.top, -2)
-
-						Text("Workspace ONE API Server URL")
-							.font(.system(size: 12, weight: .semibold))
-							.padding(.bottom, -4)
-						TextField("eg. https://as1234.awmdm.com", text: $draft.uemUrl)
-							.textFieldStyle(.roundedBorder)
-							.padding(.top, -2)
-
-						Text("Authentication Type")
-							.font(.system(size: 12, weight: .semibold))
-							.padding(.bottom, -4)
-						LiquidGlassSegmentedPicker(
-							items: [
-								.init(
-									title: "OAuth",
-									icon: "person.badge.key",
-									tag: UemAuthenticationType.oauthClientCredentials
-								),
-								.init(
-									title: "Basic + API Key",
-									icon: "key.fill",
-									tag: UemAuthenticationType.basicAuthApiKey
-								),
-							],
-							selection: $draft.authenticationType
-						)
-						.padding(.top, -2)
-
-						if draft.authenticationType == .oauthClientCredentials {
-							Text("Client ID")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-							TextField("Client ID", text: $draft.clientId)
-								.textFieldStyle(.roundedBorder)
-								.padding(.top, -2)
-
-							Text("Client Secret")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-
-							if mode == .edit {
-								HStack(spacing: 8) {
-									Group {
-										if showClientSecret {
-											TextField(
-												"Client Secret",
-												text: $draft.clientSecret
-											)
-										} else {
-											SecureField(
-												"Client Secret",
-												text: $draft.clientSecret
-											)
-										}
-									}
-									.textFieldStyle(.roundedBorder)
-									Button {
-										showClientSecret.toggle()
-									} label: {
-										Image(
-											systemName: showClientSecret
-												? "eye.slash" : "eye"
-										)
-										.font(
-											.system(
-												size: 12,
-												weight: .semibold
-											)
-										)
-										.foregroundStyle(.secondary)
-									}
-									.buttonStyle(.plain)
-									.juiceHelp(
-										HelpText.Settings.clientSecretToggle(
-											isRevealed: showClientSecret
-										)
-									)
-								}
-								.padding(.top, -2)
-							} else {
-								SecureField(
-									"Client Secret",
-									text: $draft.clientSecret
-								)
-								.textFieldStyle(.roundedBorder)
-								.padding(.top, -2)
-							}
-
-							Text("OAuth Region")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-							Picker("OAuth Region", selection: $draft.oauthRegion) {
-								ForEach(
-									normalizedOptions(
-										oauthRegions,
-										current: draft.oauthRegion
-									),
-									id: \.self
-								) { option in
-									Text(option).tag(option)
-								}
-							}
-							.pickerStyle(.menu)
-							.labelsHidden()
-							.padding(.top, -2)
-						} else {
-							Text("Username")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-							TextField("Username", text: $draft.basicUsername)
-								.textFieldStyle(.roundedBorder)
-								.padding(.top, -2)
-
-							Text("Password")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-							if mode == .edit {
-								HStack(spacing: 8) {
-									Group {
-										if showBasicPassword {
-											TextField(
-												"Password",
-												text: $draft.basicPassword
-											)
-										} else {
-											SecureField(
-												"Password",
-												text: $draft.basicPassword
-											)
-										}
-									}
-									.textFieldStyle(.roundedBorder)
-									Button {
-										showBasicPassword.toggle()
-									} label: {
-										Image(
-											systemName: showBasicPassword
-												? "eye.slash" : "eye"
-										)
-										.font(
-											.system(
-												size: 12,
-												weight: .semibold
-											)
-										)
-										.foregroundStyle(.secondary)
-									}
-									.buttonStyle(.plain)
-								}
-								.padding(.top, -2)
-							} else {
-								SecureField("Password", text: $draft.basicPassword)
-									.textFieldStyle(.roundedBorder)
-									.padding(.top, -2)
-							}
-
-							Text("API Key")
-								.font(.system(size: 12, weight: .semibold))
-								.padding(.bottom, -4)
-							SecureField("API Key", text: $draft.apiKey)
-								.textFieldStyle(.roundedBorder)
-								.padding(.top, -2)
-						}
+			ScrollView {
+				VStack(alignment: .leading, spacing: 11) {
+					if let errorMessage {
+						EnvironmentWizardInfoBar(message: errorMessage)
 					}
 
-				case .selectOrganizationGroup:
-					VStack(alignment: .leading, spacing: 10) {
-						Text("Select Org Group")
-							.font(.system(size: 14, weight: .semibold))
-							.padding(.bottom, 1)
+					EnvironmentWizardPanel {
+						switch step {
+						case .configureEnvironment:
+							VStack(alignment: .leading, spacing: 10) {
+								Text("Workspace ONE UEM Tenant Details")
+									.font(.system(size: 14, weight: .semibold))
+									.padding(.bottom, 1)
 
-						if isSaving {
-							VStack(spacing: 7) {
-								ProgressView().controlSize(.small)
-								Text("Validating configuration before saving...")
-									.font(.caption)
-									.foregroundStyle(.secondary)
-							}
-							.frame(maxWidth: .infinity, minHeight: 102)
-						} else if isLoadingOrgGroups {
-							VStack(spacing: 7) {
-								ProgressView().controlSize(.small)
-								Text("Loading Org Groups...")
-									.font(.caption)
-									.foregroundStyle(.secondary)
-							}
-							.frame(maxWidth: .infinity, minHeight: 102)
-						} else {
-							Text("Org Group")
-								.font(.caption.weight(.semibold))
-							Picker(
-								"Org Group",
-								selection: $selectedOrgGroupName
-							) {
-								ForEach(
-									normalizedOptions(
-										orgGroupNames,
-										current: selectedOrgGroupName
-									),
-									id: \.self
-								) { option in
-									Text(option).tag(option)
+								Text("Friendly Name")
+									.font(.system(size: 12, weight: .semibold))
+									.padding(.bottom, -4)
+								TextField("eg. Production Tenant", text: $draft.friendlyName)
+									.textFieldStyle(.roundedBorder)
+									.padding(.top, -2)
+
+								Text("Workspace ONE API Server URL")
+									.font(.system(size: 12, weight: .semibold))
+									.padding(.bottom, -4)
+								TextField("eg. https://as1234.awmdm.com", text: $draft.uemUrl)
+									.textFieldStyle(.roundedBorder)
+									.padding(.top, -2)
+
+								Text("Authentication Type")
+									.font(.system(size: 12, weight: .semibold))
+									.padding(.bottom, -4)
+								LiquidGlassSegmentedPicker(
+									items: [
+										.init(
+											title: "OAuth",
+											icon: "person.badge.key",
+											tag: UemAuthenticationType.oauthClientCredentials
+										),
+										.init(
+											title: "Basic + API Key",
+											icon: "key.fill",
+											tag: UemAuthenticationType.basicAuthApiKey
+										),
+									],
+									selection: $draft.authenticationType
+								)
+								.padding(.top, -2)
+
+								if draft.authenticationType == .oauthClientCredentials {
+									Text("Client ID")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+									TextField("Client ID", text: $draft.clientId)
+										.textFieldStyle(.roundedBorder)
+										.padding(.top, -2)
+
+									Text("Client Secret")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+
+									if mode == .edit {
+										HStack(spacing: 8) {
+											Group {
+												if showClientSecret {
+													TextField(
+														"Client Secret",
+														text: $draft.clientSecret
+													)
+												} else {
+													SecureField(
+														"Client Secret",
+														text: $draft.clientSecret
+													)
+												}
+											}
+											.textFieldStyle(.roundedBorder)
+											Button {
+												showClientSecret.toggle()
+											} label: {
+												Image(
+													systemName: showClientSecret
+														? "eye.slash" : "eye"
+												)
+												.font(
+													.system(
+														size: 12,
+														weight: .semibold
+													)
+												)
+												.foregroundStyle(.secondary)
+											}
+											.buttonStyle(.plain)
+											.juiceHelp(
+												HelpText.Settings.clientSecretToggle(
+													isRevealed: showClientSecret
+												)
+											)
+										}
+										.padding(.top, -2)
+									} else {
+										SecureField(
+											"Client Secret",
+											text: $draft.clientSecret
+										)
+										.textFieldStyle(.roundedBorder)
+										.padding(.top, -2)
+									}
+
+									Text("OAuth Region")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+									Picker("OAuth Region", selection: $draft.oauthRegion) {
+										ForEach(
+											normalizedOptions(
+												oauthRegions,
+												current: draft.oauthRegion
+											),
+											id: \.self
+										) { option in
+											Text(option).tag(option)
+										}
+									}
+									.pickerStyle(.menu)
+									.labelsHidden()
+									.padding(.top, -2)
+								} else {
+									Text("Username")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+									TextField("Username", text: $draft.basicUsername)
+										.textFieldStyle(.roundedBorder)
+										.padding(.top, -2)
+
+									Text("Password")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+									if mode == .edit {
+										HStack(spacing: 8) {
+											Group {
+												if showBasicPassword {
+													TextField(
+														"Password",
+														text: $draft.basicPassword
+													)
+												} else {
+													SecureField(
+														"Password",
+														text: $draft.basicPassword
+													)
+												}
+											}
+											.textFieldStyle(.roundedBorder)
+											Button {
+												showBasicPassword.toggle()
+											} label: {
+												Image(
+													systemName: showBasicPassword
+														? "eye.slash" : "eye"
+												)
+												.font(
+													.system(
+														size: 12,
+														weight: .semibold
+													)
+												)
+												.foregroundStyle(.secondary)
+											}
+											.buttonStyle(.plain)
+										}
+										.padding(.top, -2)
+									} else {
+										SecureField("Password", text: $draft.basicPassword)
+											.textFieldStyle(.roundedBorder)
+											.padding(.top, -2)
+									}
+
+									Text("API Key")
+										.font(.system(size: 12, weight: .semibold))
+										.padding(.bottom, -4)
+									SecureField("API Key", text: $draft.apiKey)
+										.textFieldStyle(.roundedBorder)
+										.padding(.top, -2)
 								}
 							}
-							.pickerStyle(.menu)
-							.onChange(of: selectedOrgGroupName) { _, newValue in
-								onSelectOrgGroup(newValue)
-							}
 
-							if let selectedGroupId {
-								HStack {
-									Text("Org Group ID")
+						case .selectOrganizationGroup:
+							VStack(alignment: .leading, spacing: 10) {
+								Text("Select Org Group")
+									.font(.system(size: 14, weight: .semibold))
+									.padding(.bottom, 1)
+
+								if isSaving {
+									VStack(spacing: 7) {
+										ProgressView().controlSize(.small)
+										Text("Validating configuration before saving...")
+											.font(.caption)
+											.foregroundStyle(.secondary)
+									}
+									.frame(maxWidth: .infinity, minHeight: 102)
+								} else if isLoadingOrgGroups {
+									VStack(spacing: 7) {
+										ProgressView().controlSize(.small)
+										Text("Loading Org Groups...")
+											.font(.caption)
+											.foregroundStyle(.secondary)
+									}
+									.frame(maxWidth: .infinity, minHeight: 102)
+								} else {
+									Text("Org Group")
 										.font(.caption.weight(.semibold))
-									Spacer()
-									Text(selectedGroupId).foregroundStyle(.secondary)
+									Picker(
+										"Org Group",
+										selection: $selectedOrgGroupName
+									) {
+										ForEach(
+											normalizedOptions(
+												orgGroupNames,
+												current: selectedOrgGroupName
+											),
+											id: \.self
+										) { option in
+											Text(option).tag(option)
+										}
+									}
+									.pickerStyle(.menu)
+									.onChange(of: selectedOrgGroupName) { _, newValue in
+										onSelectOrgGroup(newValue)
+									}
+
+									if let selectedGroupId {
+										HStack {
+											Text("Org Group ID")
+												.font(.caption.weight(.semibold))
+											Spacer()
+											Text(selectedGroupId).foregroundStyle(.secondary)
+										}
+										.padding(.top, 4)
+									}
 								}
-								.padding(.top, 4)
 							}
 						}
 					}
 				}
+				.padding(.vertical, 1) // prevent clipping of shadows/borders
 			}
+			.scrollIndicators(.automatic)
 
 			Spacer(minLength: 0)
 			Divider().padding(.top, 1)

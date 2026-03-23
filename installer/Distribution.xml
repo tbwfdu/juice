@@ -33,8 +33,8 @@
   <choice id="dep.03-munkitools-admin-6.6.5.4711" visible="false" title="03-munkitools-admin-6.6.5.4711">
     <pkg-ref id="03-munkitools-admin-6.6.5.4711"/>
   </choice>
-  <pkg-ref id="com.tbwfdu.juice.app" version="1.0.1">com.tbwfdu.juice.app.pkg</pkg-ref>
-  <pkg-ref id="com.tbwfdu.juice.runtime" version="1.0.1">com.tbwfdu.juice.runtime.pkg</pkg-ref>
+  <pkg-ref id="com.tbwfdu.juice.app" version="1.0.2">com.tbwfdu.juice.app.pkg</pkg-ref>
+  <pkg-ref id="com.tbwfdu.juice.runtime" version="1.0.2">com.tbwfdu.juice.runtime.pkg</pkg-ref>
   <pkg-ref id="01-munkitools-python-6.6.5.4711">01-munkitools-python-6.6.5.4711.pkg</pkg-ref>
   <pkg-ref id="02-munkitools-core-6.6.5.4711">02-munkitools-core-6.6.5.4711.pkg</pkg-ref>
   <pkg-ref id="03-munkitools-admin-6.6.5.4711">03-munkitools-admin-6.6.5.4711.pkg</pkg-ref>

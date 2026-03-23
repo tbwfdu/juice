@@ -2,7 +2,7 @@ import SwiftUI
 import Runtime
 
 private let onboardingSheetMinWidth: CGFloat = 620
-private let onboardingSheetMinHeight: CGFloat = 520
+private let onboardingSheetMinHeight: CGFloat = 560
 
 struct OnboardingFlowView: View {
 	enum Stage {
@@ -31,42 +31,52 @@ struct OnboardingFlowView: View {
 		"https://emea.uemauth.workspaceone.com",
 	]
 
-		var body: some View {
-			VStack(alignment: .leading, spacing: 14) {
-				Text("Juice Setup")
-					.font(.system(size: 28, weight: .bold))
+	var body: some View {
+		VStack(alignment: .leading, spacing: 14) {
+			Text("Juice Setup")
+				.font(.system(size: 28, weight: .bold))
 
-			switch stage {
-			case .eula:
+			if stage == .eula {
 				Text("Review and accept the EULA to continue.")
 					.font(.system(size: 14, weight: .regular))
 					.foregroundStyle(.secondary)
 					.padding(.top, -12)
-				eulaStage
-				case .environment:
-					EnvironmentWizard(
-						mode: .add,
-						step: $wizardStep,
-						draft: $draftEnvironment,
-						errorMessage: $wizardErrorMessage,
-						orgGroups: $wizardOrgGroups,
-						isLoadingOrgGroups: $isLoadingOrgGroups,
-						isSaving: $isSaving,
-						selectedOrgGroupName: $selectedOrgGroupName,
-						horizontalPadding: 0,
-						oauthRegions: oauthRegions,
-						onSelectOrgGroup: selectWizardOrgGroup,
-						onCancel: declineAndQuit,
-					onBack: wizardStepBack,
-					onNext: wizardStepForward,
-					onSave: commitOnboardingEnvironment
-				).padding(.top, -12)
 			}
+
+			stageBody
+				.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 		}
 		.padding(22)
 		.frame(minWidth: onboardingSheetMinWidth, minHeight: onboardingSheetMinHeight, alignment: .topLeading)
 		.onAppear {
 			appLog(.info, "Onboarding", "onboarding.started")
+		}
+	}
+
+	@ViewBuilder
+	private var stageBody: some View {
+		switch stage {
+		case .eula:
+			eulaStage
+		case .environment:
+			EnvironmentWizard(
+				mode: .add,
+				step: $wizardStep,
+				draft: $draftEnvironment,
+				errorMessage: $wizardErrorMessage,
+				orgGroups: $wizardOrgGroups,
+				isLoadingOrgGroups: $isLoadingOrgGroups,
+				isSaving: $isSaving,
+				selectedOrgGroupName: $selectedOrgGroupName,
+				horizontalPadding: 0,
+				oauthRegions: oauthRegions,
+				onSelectOrgGroup: selectWizardOrgGroup,
+				onCancel: declineAndQuit,
+				onBack: wizardStepBack,
+				onNext: wizardStepForward,
+				onSave: commitOnboardingEnvironment
+			)
+			.padding(.top, -12)
 		}
 	}
 

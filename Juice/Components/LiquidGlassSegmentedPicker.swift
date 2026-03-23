@@ -147,8 +147,7 @@ struct LiquidGlassSegmentedPicker<Tag: Hashable>: View {
 				.contentShape(Rectangle())
 			}
 		}
-		.modifier(ProminentSegmentButtonStyle())
-		.tint(isSelected ? JuiceStyleConfig.defaultAccentColor : .clear)
+		.modifier(ProminentSegmentButtonStyle(isSelected: isSelected))
 		.disabled(!item.isEnabled)
 		.background {
 			if !isSelected && backgroundOpacity > 0 {
@@ -194,6 +193,8 @@ struct LiquidGlassSegmentedPicker<Tag: Hashable>: View {
 	}
 
 	private struct ProminentSegmentButtonStyle: ViewModifier {
+		let isSelected: Bool
+
 		func body(content: Content) -> some View {
 			if #available(macOS 26.0, iOS 26.0, *) {
 				content
@@ -201,10 +202,18 @@ struct LiquidGlassSegmentedPicker<Tag: Hashable>: View {
 					.buttonBorderShape(.capsule)
 					.controlSize(.small)
 			} else {
-				content
-					.buttonStyle(.borderedProminent)
-					.buttonBorderShape(.capsule)
-					.controlSize(.small)
+				if isSelected {
+					content
+						.buttonStyle(.borderedProminent)
+						.buttonBorderShape(.capsule)
+						.controlSize(.small)
+						.tint(JuiceStyleConfig.defaultAccentColor)
+				} else {
+					content
+						.buttonStyle(.bordered)
+						.buttonBorderShape(.capsule)
+						.controlSize(.small)
+				}
 			}
 		}
 	}
@@ -431,8 +440,7 @@ struct LiquidGlassSegmentedPickerExtraLarge<Tag: Hashable>: View {
 				.contentShape(Rectangle())
 			}
 		}
-		.modifier(ProminentSegmentButtonStyle())
-		.tint(isSelected ? JuiceStyleConfig.defaultAccentColor : .clear)
+		.modifier(ProminentSegmentButtonStyle(isSelected: isSelected))
 		.disabled(!item.isEnabled)
 		.background {
 			if !isSelected && backgroundOpacity > 0 {
@@ -478,6 +486,8 @@ struct LiquidGlassSegmentedPickerExtraLarge<Tag: Hashable>: View {
 	}
 
 	private struct ProminentSegmentButtonStyle: ViewModifier {
+		let isSelected: Bool
+
 		func body(content: Content) -> some View {
 			if #available(macOS 26.0, iOS 26.0, *) {
 				content
@@ -485,10 +495,18 @@ struct LiquidGlassSegmentedPickerExtraLarge<Tag: Hashable>: View {
 					.buttonBorderShape(.capsule)
 					.controlSize(.small)
 			} else {
-				content
-					.buttonStyle(.borderedProminent)
-					.buttonBorderShape(.capsule)
-					.controlSize(.small)
+				if isSelected {
+					content
+						.buttonStyle(.borderedProminent)
+						.buttonBorderShape(.capsule)
+						.controlSize(.small)
+						.tint(JuiceStyleConfig.defaultAccentColor)
+				} else {
+					content
+						.buttonStyle(.bordered)
+						.buttonBorderShape(.capsule)
+						.controlSize(.small)
+				}
 			}
 		}
 	}

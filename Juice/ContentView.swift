@@ -203,7 +203,7 @@ struct ContentView: View {
 					#endif
 						}
 					)
-					.frame(minWidth: 620, minHeight: 520)
+					.frame(minWidth: 620, minHeight: 560)
 					.interactiveDismissDisabled(true)
 				}
 			}

@@ -34,16 +34,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>
+				<string>        .windowStyle(.hiddenTitleBar)
 </string>
 				<key>leading</key>
-				<string>        }
-        .windowStyle(.hiddenTitleBar)
+				<string>                }
+        }
 </string>
 				<key>trailing</key>
-				<string>		MenuBarExtra("Juice", image: "JuiceMenuBarIcon") { JuiceMenuBarContent() }
-    }
-
+				<string>
+		MenuBarExtra("Juice", image: "JuiceMenuBarIcon") { JuiceMenuBarContent() }
+		.commands {
 </string>
 			</dict>
 			<key>title</key>
@@ -128,13 +128,13 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>					}
-			)
+				<string>						)
+						.frame(width: 220, height: 28)
 </string>
 				<key>trailing</key>
-				<string>		}
-		.frame(minHeight: 24)
-		.accessibilityLabel("Prominent Button Color Spectrum")
+				<string>						Button("Preview") {}
+							.juiceGradientGlassProminentButtonStyle(
+								controlSize: .large
 </string>
 			</dict>
 			<key>type</key>
@@ -172,13 +172,13 @@
 				<key>focused</key>
 				<string></string>
 				<key>leading</key>
-				<string>					}
-			)
+				<string>						)
+						.frame(width: 220, height: 28)
 </string>
 				<key>trailing</key>
-				<string>		}
-		.frame(minHeight: 24)
-		.accessibilityLabel("Prominent Button Color Spectrum")
+				<string>						Button("Preview") {}
+							.juiceGradientGlassProminentButtonStyle(
+								controlSize: .large
 </string>
 			</dict>
 			<key>type</key>
