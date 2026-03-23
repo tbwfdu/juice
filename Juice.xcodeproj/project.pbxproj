@@ -25,6 +25,7 @@
 		D10000000000000000000009 /* AvailableUpdatesEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000019 /* AvailableUpdatesEntryView.swift */; };
 		D1000000000000000000000A /* AvailableUpdatesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000018 /* AvailableUpdatesProvider.swift */; };
 		D1000000000000000000000B /* AvailableUpdatesEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000019 /* AvailableUpdatesEntryView.swift */; };
+		E10000000000000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E10000000000000000000003 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -94,6 +95,15 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E10000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				E10000000000000000000001 /* Sparkle in Frameworks */,
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		A1B2C3D4E5F6010203040511 /* Juice */ = {
@@ -177,6 +187,7 @@
 			buildConfigurationList = A1B2C3D4E5F6010203040515 /* Build configuration list for PBXNativeTarget "Juice" */;
 			buildPhases = (
 				A1B2C3D4E5F6010203040516 /* Sources */,
+				E10000000000000000000002 /* Frameworks */,
 				A1B2C3D4E5F6010203040518 /* Resources */,
 				C166BB9B2F2D91FC0041147B /* Embed Foundation Extensions */,
 			);
@@ -191,6 +202,9 @@
 				C1A8B0D92F28539900921C70 /* State */,
 			);
 			name = Juice;
+			packageProductDependencies = (
+				E10000000000000000000003 /* Sparkle */,
+			);
 			productName = Juice;
 			productReference = A1B2C3D4E5F601020304050E /* Juice.app */;
 			productType = "com.apple.product-type.application";
@@ -235,6 +249,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F6010203040513;
+			packageReferences = (
+				E10000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = A1B2C3D4E5F6010203040512 /* Products */;
 			projectDirPath = "";
@@ -298,7 +315,7 @@
 				CODE_SIGN_ENTITLEMENTS = Juice/Juice.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = ZV33P8H324;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -308,8 +325,13 @@
 				INFOPLIST_FILE = Juice/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Juice;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tbwfdu.juice;
 				PRODUCT_NAME = Juice;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -329,7 +351,7 @@
 				CODE_SIGN_ENTITLEMENTS = Juice/Juice.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = ZV33P8H324;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -338,8 +360,13 @@
 				INFOPLIST_FILE = Juice/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Juice;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.0.1;
+				MARKETING_VERSION = 1.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tbwfdu.juice;
 				PRODUCT_NAME = Juice;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -530,6 +557,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E10000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E10000000000000000000003 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E10000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A1B2C3D4E5F6010203040519 /* Project object */;
 }
