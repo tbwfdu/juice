@@ -1,0 +1,15 @@
+*
+!.gitignore
+!.github/
+!.github/workflows/
+!.github/workflows/jekyll-gh-pages.yml
+!pages/
+!pages/**
+
+# Generated or local-only files inside the Pages tree should stay untracked.
+pages/.DS_Store
+pages/assets/.DS_Store
+pages/assets/images/.DS_Store
+pages/assets/screenshot/.DS_Store
+pages/.sass-cache/
+pages/_site/
